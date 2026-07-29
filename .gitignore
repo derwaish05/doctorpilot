@@ -1,0 +1,20 @@
+# Dependencies
+/vendor/
+/node_modules/
+
+# Build artifacts
+/build/
+/dist/
+*.zip
+
+# Environment and editor
+.env
+.DS_Store
+Thumbs.db
+/.idea/
+/.vscode/
+
+# Test and tooling caches
+/.phpunit.result.cache
+/coverage/
+/.phpcs.cache

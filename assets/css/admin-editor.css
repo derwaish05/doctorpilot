@@ -1,0 +1,476 @@
+/* DoctorPilot admin editor styles. Scoped to .dp-editor to avoid CSS bleed.
+   Tab strip follows the native WordPress admin tab pattern. */
+
+.dp-editor .dp-tabs {
+	display: flex;
+	align-items: flex-end;
+	flex-wrap: wrap;
+	gap: 3px;
+	margin: 0;
+	padding: 12px 0 0;
+	border-bottom: 1px solid #c3c4c7;
+}
+
+.dp-editor .dp-tab {
+	position: relative;
+	bottom: -1px;
+	display: inline-flex;
+	align-items: center;
+	gap: 7px;
+	height: 32px;
+	margin: 0;
+	padding: 0 13px;
+	border: 1px solid #dcdcde;
+	border-bottom-color: #c3c4c7;
+	border-radius: 0;
+	background: #f6f7f7;
+	color: #50575e;
+	font-size: 13px;
+	line-height: 1;
+	cursor: pointer;
+	box-shadow: none;
+	appearance: none;
+	-webkit-appearance: none;
+	font-family: inherit;
+	transition: background 0.1s ease, color 0.1s ease;
+}
+
+/* Neutralize WordPress core / browser button styling inside the tab strip. */
+.dp-editor .dp-tabs .dp-tab,
+.dp-editor .dp-tabs .dp-tab:hover,
+.dp-editor .dp-tabs .dp-tab:focus,
+.dp-editor .dp-tabs .dp-tab:active {
+	text-decoration: none;
+	text-shadow: none;
+}
+
+.dp-editor .dp-tab:hover {
+	background: #fff;
+	color: #1d2327;
+}
+
+.dp-editor .dp-tab.is-active {
+	height: 34px;
+	border-color: #c3c4c7;
+	border-bottom-color: #fff;
+	background: #fff;
+	color: #1d2327;
+	font-weight: 600;
+}
+
+.dp-editor .dp-tab:focus-visible {
+	outline: 2px solid #2271b1;
+	outline-offset: -2px;
+}
+
+/* Numeric count badge on a tab. */
+.dp-editor .dp-tab__count {
+	display: inline-flex;
+	align-items: center;
+	height: 17px;
+	padding: 0 6px;
+	border-radius: 9px;
+	background: #dcdcde;
+	color: #50575e;
+	font-size: 11px;
+	font-weight: 600;
+}
+
+.dp-editor .dp-tab.is-active .dp-tab__count {
+	background: #2271b1;
+	color: #fff;
+}
+
+.dp-editor .dp-panel {
+	padding: 0;
+}
+
+.dp-editor .dp-panel[hidden] {
+	display: none;
+}
+
+/* Pane header: title + help on the left, section meta on the right. */
+.dp-editor .dp-pane-head {
+	display: flex;
+	align-items: flex-start;
+	gap: 10px;
+	padding: 18px 2px 6px;
+}
+
+.dp-editor .dp-pane-head__text {
+	flex: 1;
+	min-width: 0;
+}
+
+.dp-editor .dp-pane-title {
+	margin: 0 0 4px;
+	font-size: 15px;
+	font-weight: 600;
+	line-height: 1.3;
+}
+
+.dp-editor .dp-pane-help {
+	margin: 0;
+	max-width: 78ch;
+	font-size: 13px;
+	line-height: 1.5;
+	color: #646970;
+}
+
+.dp-editor .dp-pane-meta {
+	flex: 0 0 auto;
+	padding-top: 3px;
+	font-size: 12px;
+	color: #8c8f94;
+	white-space: nowrap;
+}
+
+.dp-editor .dp-pane-body {
+	max-width: 960px;
+	padding: 8px 2px 6px;
+}
+
+.dp-editor .dp-field {
+	margin: 0 0 22px;
+}
+
+.dp-editor .dp-label {
+	display: block;
+	font-weight: 600;
+	margin-bottom: 5px;
+}
+
+.dp-editor .dp-desc {
+	color: #646970;
+	font-size: 12px;
+	margin: 5px 0 0;
+}
+
+/* Field header: label on the left, live count on the right. */
+.dp-editor .dp-field__head {
+	display: flex;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: 12px;
+	margin-bottom: 7px;
+}
+
+.dp-editor .dp-field__label {
+	font-weight: 600;
+}
+
+.dp-editor .dp-field__count {
+	font-size: 12px;
+	color: #8c8f94;
+	white-space: nowrap;
+}
+
+/* "Private" and similar inline badges. */
+.dp-editor .dp-badge {
+	display: inline-flex;
+	align-items: center;
+	margin-left: 6px;
+	padding: 1px 6px;
+	border-radius: 3px;
+	background: #e0e0e0;
+	color: #50575e;
+	font-size: 10px;
+	font-weight: 600;
+	letter-spacing: 0.04em;
+	text-transform: uppercase;
+	vertical-align: middle;
+}
+
+.dp-editor .dp-badge--private {
+	background: #f0f0f1;
+	color: #787c82;
+	border: 1px solid #dcdcde;
+}
+
+/* Chip / pill multi-select for taxonomy terms. */
+.dp-editor .dp-chips {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 7px;
+	padding: 12px;
+	border: 1px solid #dcdcde;
+	border-radius: 4px;
+	background: #fff;
+}
+
+.dp-editor .dp-chip {
+	display: inline-flex;
+	align-items: center;
+	gap: 5px;
+	padding: 6px 12px;
+	border: 1px solid #c3c4c7;
+	border-radius: 4px;
+	background: #fff;
+	color: #1d2327;
+	font-size: 13px;
+	line-height: 1.2;
+	cursor: pointer;
+	transition: background 0.1s ease, border-color 0.1s ease, color 0.1s ease;
+}
+
+.dp-editor .dp-chip:hover {
+	border-color: #8c8f94;
+	background: #f6f7f7;
+}
+
+.dp-editor .dp-chip.is-selected {
+	border-color: #2271b1;
+	background: #2271b1;
+	color: #fff;
+}
+
+/* Visually-hidden but focusable checkbox inside each chip. */
+.dp-editor .dp-chip input {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	margin: -1px;
+	padding: 0;
+	border: 0;
+	overflow: hidden;
+	clip: rect(0 0 0 0);
+	white-space: nowrap;
+}
+
+.dp-editor .dp-chip__check {
+	width: 15px;
+	height: 15px;
+	font-size: 15px;
+	line-height: 15px;
+	display: none;
+}
+
+.dp-editor .dp-chip.is-selected .dp-chip__check {
+	display: inline-block;
+}
+
+.dp-editor .dp-chip:focus-within {
+	outline: 2px solid #2271b1;
+	outline-offset: 1px;
+}
+
+/* Empty-taxonomy state. */
+.dp-editor .dp-empty-tax {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	padding: 14px 16px;
+	border: 1px solid #dcdcde;
+	border-radius: 4px;
+	background: #f6f7f7;
+	font-size: 13px;
+	color: #50575e;
+}
+
+.dp-editor .dp-empty-tax__add {
+	white-space: nowrap;
+	text-decoration: none;
+}
+
+/* Checkbox "flag" rows (featured, accepting new patients). */
+.dp-editor .dp-flag {
+	display: flex;
+	align-items: flex-start;
+	gap: 9px;
+	cursor: pointer;
+}
+
+.dp-editor .dp-flag + .dp-flag {
+	margin-top: 10px;
+}
+
+.dp-editor .dp-flag input {
+	margin-top: 2px;
+}
+
+.dp-editor .dp-flag__text {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+}
+
+.dp-editor .dp-flag__title {
+	font-size: 13.5px;
+	color: #1d2327;
+}
+
+.dp-editor .dp-flag__desc {
+	font-size: 12px;
+	color: #787c82;
+}
+
+/* Character counter for SEO fields. */
+.dp-editor .dp-counter {
+	display: block;
+	margin-top: 5px;
+	font-size: 12px;
+	color: #8c8f94;
+}
+
+/* Google-style search preview. */
+.dp-editor .dp-serp {
+	display: flex;
+	flex-direction: column;
+	gap: 3px;
+	max-width: 600px;
+	margin-top: 6px;
+	padding: 14px 16px;
+	border: 1px solid #dcdcde;
+	border-radius: 4px;
+	background: #f6f7f7;
+}
+
+.dp-editor .dp-serp__label {
+	font-size: 11px;
+	font-weight: 600;
+	letter-spacing: 0.05em;
+	text-transform: uppercase;
+	color: #8c8f94;
+	margin-bottom: 4px;
+}
+
+.dp-editor .dp-serp__url {
+	font-size: 13px;
+	color: #3c8c40;
+}
+
+.dp-editor .dp-serp__title {
+	font-size: 17px;
+	color: #1a0dab;
+	line-height: 1.3;
+}
+
+.dp-editor .dp-serp__desc {
+	font-size: 13px;
+	color: #4d5156;
+	line-height: 1.5;
+}
+
+/* Repeater rows: gutter (handle + number) + fields + remove. */
+.dp-editor .dp-repeater .dp-rows {
+	counter-reset: dp-row;
+}
+
+.dp-editor .dp-repeater .dp-row {
+	display: flex;
+	align-items: flex-start;
+	gap: 12px;
+	counter-increment: dp-row;
+	padding: 12px 14px;
+	margin-bottom: 8px;
+	background: #f6f7f7;
+	border: 1px solid #dcdcde;
+	border-radius: 4px;
+}
+
+.dp-editor .dp-row__gutter {
+	flex: 0 0 auto;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 6px;
+	padding-top: 20px;
+	color: #a7aaad;
+}
+
+.dp-editor .dp-row__handle {
+	cursor: grab;
+	width: 18px;
+	height: 18px;
+	font-size: 18px;
+	line-height: 18px;
+}
+
+.dp-editor .dp-row__num::before {
+	content: counter(dp-row, decimal-leading-zero);
+	font-size: 12px;
+	font-weight: 600;
+	color: #787c82;
+}
+
+.dp-editor .dp-row__fields {
+	flex: 1;
+	min-width: 0;
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+	gap: 12px;
+	align-items: start;
+}
+
+.dp-editor .dp-row-field {
+	display: flex;
+	flex-direction: column;
+	gap: 3px;
+	min-width: 0;
+}
+
+.dp-editor .dp-row-field__label {
+	font-size: 12px;
+	font-weight: 600;
+	color: #1d2327;
+}
+
+.dp-editor .dp-row-field--textarea {
+	grid-column: 1 / -1;
+}
+
+.dp-editor .dp-row-field input[type="text"],
+.dp-editor .dp-row-field textarea {
+	width: 100%;
+	box-sizing: border-box;
+}
+
+.dp-editor .dp-remove-row {
+	flex: 0 0 auto;
+	padding-top: 20px;
+	color: #b32d2e;
+	text-decoration: none;
+}
+
+/* Repeater footer: Add row + hint. */
+.dp-editor .dp-repeater__foot {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	margin-top: 4px;
+}
+
+.dp-editor .dp-add-row {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	text-decoration: none;
+}
+
+.dp-editor .dp-add-row .dashicons {
+	font-size: 16px;
+	width: 16px;
+	height: 16px;
+}
+
+.dp-editor .dp-repeater__hint {
+	font-size: 12px;
+	color: #8c8f94;
+}
+
+/* Sortable placeholder while dragging a row. */
+.dp-editor .dp-row.dp-row--placeholder {
+	border: 1px dashed #2271b1;
+	background: #f0f6fc;
+}
+
+.dp-completeness {
+	font-size: 14px;
+}
+
+.dp-missing {
+	margin: 4px 0 0 18px;
+	list-style: disc;
+	color: #646970;
+}

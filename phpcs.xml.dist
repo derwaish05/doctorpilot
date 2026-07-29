@@ -1,0 +1,48 @@
+<?xml version="1.0"?>
+<ruleset name="DoctorPilot">
+	<description>Coding standards for the DoctorPilot plugin.</description>
+
+	<file>.</file>
+
+	<!-- Exclude non-source paths. -->
+	<exclude-pattern>/vendor/*</exclude-pattern>
+	<exclude-pattern>/node_modules/*</exclude-pattern>
+	<exclude-pattern>/tests/*</exclude-pattern>
+	<exclude-pattern>/docs/*</exclude-pattern>
+	<exclude-pattern>/tasks/*</exclude-pattern>
+
+	<arg name="extensions" value="php"/>
+	<arg name="colors"/>
+	<arg value="ps"/>
+
+	<!-- WordPress coding standards. -->
+	<rule ref="WordPress">
+		<exclude name="WordPress.Files.FileName"/>
+	</rule>
+
+	<!-- Enforce prefixes and text domain. -->
+	<rule ref="WordPress.NamingConventions.PrefixAllGlobals">
+		<properties>
+			<property name="prefixes" type="array">
+				<element value="bstdz_doctorpilot"/>
+				<element value="DOCTORPILOT"/>
+				<element value="BrainStudioz\DoctorPilot"/>
+			</property>
+		</properties>
+	</rule>
+
+	<rule ref="WordPress.WP.I18n">
+		<properties>
+			<property name="text_domain" type="array">
+				<element value="doctorpilot"/>
+			</property>
+		</properties>
+	</rule>
+
+	<!-- Target the supported PHP baseline. -->
+	<config name="testVersion" value="8.1-"/>
+	<rule ref="PHPCompatibilityWP"/>
+
+	<!-- Minimum supported WordPress version for deprecation checks. -->
+	<config name="minimum_wp_version" value="6.4"/>
+</ruleset>
