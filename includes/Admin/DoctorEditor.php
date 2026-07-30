@@ -12,6 +12,8 @@ namespace BrainStudioz\DoctorPilot\Admin;
 use BrainStudioz\DoctorPilot\Application\Doctors\SaveDoctor;
 use BrainStudioz\DoctorPilot\Domain\Doctor\Completeness;
 use BrainStudioz\DoctorPilot\Fields\FieldRegistry;
+use BrainStudioz\DoctorPilot\Library\DoctorContentResolver;
+use BrainStudioz\DoctorPilot\Library\LibraryPostTypes;
 use BrainStudioz\DoctorPilot\PostTypes\DoctorPostType;
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -60,6 +62,10 @@ final class DoctorEditor {
 			'side',
 			'high'
 		);
+
+		// The Headline is edited inside the Profile tab, so hide the default
+		// excerpt box to avoid a duplicate field.
+		remove_meta_box( 'postexcerpt', DoctorPostType::POST_TYPE, 'normal' );
 	}
 
 	/**
@@ -132,7 +138,7 @@ final class DoctorEditor {
 
 		$groups = FieldRegistry::groups();
 		$help   = self::group_help();
-		$total  = count( $groups );
+		$titles = self::group_pane_titles();
 
 		echo '<div class="dp-editor">';
 
@@ -164,12 +170,9 @@ final class DoctorEditor {
 		}
 		echo '</div>';
 
-		// Panels, each with a pane header (title, help, section meta).
+		// Panels, each with a pane header (title, help, row count).
 		$first = true;
-		$index = 0;
 		foreach ( $groups as $group_key => $group_label ) {
-			++$index;
-
 			printf(
 				'<div class="dp-panel%1$s" role="tabpanel" id="dp-panel-%2$s" aria-labelledby="dp-tab-%2$s"%3$s>',
 				$first ? ' is-active' : '',
@@ -179,28 +182,20 @@ final class DoctorEditor {
 
 			echo '<div class="dp-pane-head">';
 			echo '<div class="dp-pane-head__text">';
-			echo '<h3 class="dp-pane-title">' . esc_html( $group_label ) . '</h3>';
+			echo '<h3 class="dp-pane-title">' . esc_html( $titles[ $group_key ] ?? $group_label ) . '</h3>';
 			if ( isset( $help[ $group_key ] ) && '' !== $help[ $group_key ] ) {
 				echo '<p class="dp-pane-help">' . esc_html( $help[ $group_key ] ) . '</p>';
 			}
 			echo '</div>';
-			printf(
-				'<span class="dp-pane-meta">%s</span>',
-				esc_html(
-					sprintf(
-						/* translators: 1: current section number, 2: total number of sections. */
-						__( 'Section %1$d of %2$d', 'doctorpilot' ),
-						$index,
-						$total
-					)
-				)
-			);
+
+			$rows = $this->group_row_count( $post->ID, $group_key );
+			if ( $rows > 0 ) {
+				echo '<span class="dp-pane-meta">' . esc_html( $this->count_label( $rows, 'row' ) ) . '</span>';
+			}
 			echo '</div>';
 
 			echo '<div class="dp-pane-body">';
-			foreach ( FieldRegistry::by_group( $group_key ) as $field ) {
-				$this->render_field( $post->ID, $field );
-			}
+			$this->render_pane_fields( $post->ID, $group_key );
 			if ( 'seo' === $group_key ) {
 				$this->render_seo_preview( $post->ID );
 			}
@@ -220,16 +215,55 @@ final class DoctorEditor {
 	 */
 	private static function group_help(): array {
 		return array(
-			'profile'        => __( 'Name, photo, and how this doctor appears on listing cards.', 'doctorpilot' ),
-			'professional'   => __( 'Departments, specialties, experience, and languages.', 'doctorpilot' ),
-			'clinical'       => __( 'Symptoms, conditions, treatments, and procedures.', 'doctorpilot' ),
-			'history'        => __( 'Education and professional experience.', 'doctorpilot' ),
-			'certifications' => __( 'Certifications, memberships, and publications.', 'doctorpilot' ),
-			'location'       => __( 'Where this doctor practises and how to reach them.', 'doctorpilot' ),
+			'profile'        => __( 'Name and identity as they appear in search results, listing cards and the public profile header.', 'doctorpilot' ),
+			'professional'   => __( 'Taxonomy assignments drive filtering and related-doctor modules. Select every term that applies, then name the primary one.', 'doctorpilot' ),
+			'clinical'       => __( 'What patients can search for. Symptoms and treatments feed the “find care for…” index.', 'doctorpilot' ),
+			'history'        => __( 'Training, fellowships and appointments. One row per entry.', 'doctorpilot' ),
+			'certifications' => __( 'Board certifications, memberships and peer-reviewed work.', 'doctorpilot' ),
+			'location'       => __( 'Where this doctor practises and how patients reach them.', 'doctorpilot' ),
 			'booking'        => __( 'How patients book an appointment with this doctor.', 'doctorpilot' ),
-			'seo'            => __( 'Search engine title, description, and indexing.', 'doctorpilot' ),
-			'faqs'           => __( 'Frequently asked questions for this doctor.', 'doctorpilot' ),
+			'seo'            => __( 'Overrides for the profile’s search appearance. Leave blank to inherit the site defaults.', 'doctorpilot' ),
+			'faqs'           => __( 'Answers shown on the profile and exposed as FAQ schema.', 'doctorpilot' ),
 		);
+	}
+
+	/**
+	 * Sentence-case pane titles (the tab labels stay Title Case).
+	 *
+	 * @return array<string, string>
+	 */
+	private static function group_pane_titles(): array {
+		return array(
+			'profile'        => __( 'Profile', 'doctorpilot' ),
+			'professional'   => __( 'Professional information', 'doctorpilot' ),
+			'clinical'       => __( 'Clinical services', 'doctorpilot' ),
+			'history'        => __( 'Experience & education', 'doctorpilot' ),
+			'certifications' => __( 'Certifications & publications', 'doctorpilot' ),
+			'location'       => __( 'Location & contact', 'doctorpilot' ),
+			'booking'        => __( 'Booking', 'doctorpilot' ),
+			'seo'            => __( 'SEO', 'doctorpilot' ),
+			'faqs'           => __( 'Frequently asked questions', 'doctorpilot' ),
+		);
+	}
+
+	/**
+	 * Total repeater rows in a group (used for the pane's "N rows" meta).
+	 *
+	 * @param int    $post_id   Doctor post ID.
+	 * @param string $group_key Group key.
+	 * @return int
+	 */
+	private function group_row_count( int $post_id, string $group_key ): int {
+		$rows = 0;
+
+		foreach ( FieldRegistry::by_group( $group_key ) as $field ) {
+			if ( 'repeater' === (string) $field['input'] ) {
+				$value = get_post_meta( $post_id, (string) $field['key'], true );
+				$rows += is_array( $value ) ? count( $value ) : 0;
+			}
+		}
+
+		return $rows;
 	}
 
 	/**
@@ -251,13 +285,137 @@ final class DoctorEditor {
 			if ( 'terms' === $input ) {
 				$terms  = wp_get_object_terms( $post_id, (string) $field['taxonomy'], array( 'fields' => 'ids' ) );
 				$count += is_wp_error( $terms ) ? 0 : count( $terms );
-			} elseif ( 'repeater' === $input || 'lines' === $input ) {
+			} elseif ( in_array( $input, array( 'repeater', 'lines', 'library' ), true ) ) {
 				$value  = get_post_meta( $post_id, (string) $field['key'], true );
 				$count += is_array( $value ) ? count( $value ) : 0;
 			}
 		}
 
 		return $count;
+	}
+
+	/**
+	 * Render a group's fields, grouping consecutive fields that share a `row`
+	 * into a grid and consecutive fields that share a `box` into a fieldset.
+	 *
+	 * @param int    $post_id   Doctor post ID.
+	 * @param string $group_key Group key.
+	 * @return void
+	 */
+	private function render_pane_fields( int $post_id, string $group_key ): void {
+		$fields = array();
+		foreach ( FieldRegistry::by_group( $group_key ) as $field ) {
+			if ( $this->is_renderable( $field ) ) {
+				$fields[] = $field;
+			}
+		}
+
+		$total = count( $fields );
+		$i     = 0;
+
+		// Top-level walk groups consecutive fields into a box first; inside a box,
+		// members are further grouped into rows.
+		while ( $i < $total ) {
+			$box = (string) ( $fields[ $i ]['box'] ?? '' );
+
+			if ( '' !== $box ) {
+				$members = array();
+				while ( $i < $total && (string) ( $fields[ $i ]['box'] ?? '' ) === $box ) {
+					$members[] = $fields[ $i ];
+					++$i;
+				}
+
+				list( $label, $private, $box_desc ) = $this->box_meta( $box );
+
+				echo '<fieldset class="dp-fieldset">';
+				echo '<legend class="dp-fieldset__legend">' . esc_html( $label ) . $this->private_badge( $private ) . '</legend>';
+				$this->render_members( $post_id, $members );
+				if ( '' !== $box_desc ) {
+					echo '<p class="dp-desc dp-fieldset__desc">' . esc_html( $box_desc ) . '</p>';
+				}
+				echo '</fieldset>';
+			} else {
+				// Collect the run of non-box fields and render with row grouping.
+				$members = array();
+				while ( $i < $total && '' === (string) ( $fields[ $i ]['box'] ?? '' ) ) {
+					$members[] = $fields[ $i ];
+					++$i;
+				}
+				$this->render_members( $post_id, $members );
+			}
+		}
+	}
+
+	/**
+	 * Render a list of fields, grouping consecutive same-`row` fields into a grid.
+	 *
+	 * @param int                            $post_id Doctor post ID.
+	 * @param array<int, array<string,mixed>> $members Field list.
+	 * @return void
+	 */
+	private function render_members( int $post_id, array $members ): void {
+		$total = count( $members );
+		$i     = 0;
+
+		while ( $i < $total ) {
+			$row = (string) ( $members[ $i ]['row'] ?? '' );
+
+			if ( '' !== $row ) {
+				$columns = array();
+				$group   = array();
+				while ( $i < $total && (string) ( $members[ $i ]['row'] ?? '' ) === $row ) {
+					$group[]   = $members[ $i ];
+					$columns[] = '' !== (string) ( $members[ $i ]['width'] ?? '' ) ? (string) $members[ $i ]['width'] : 'minmax(0, 1fr)';
+					++$i;
+				}
+				printf( '<div class="dp-grid" style="grid-template-columns:%s">', esc_attr( implode( ' ', $columns ) ) );
+				foreach ( $group as $member ) {
+					$this->render_field( $post_id, $member );
+				}
+				echo '</div>';
+			} else {
+				$this->render_field( $post_id, $members[ $i ] );
+				++$i;
+			}
+		}
+	}
+
+	/**
+	 * Whether a field produces editor output.
+	 *
+	 * @param array<string, mixed> $field Field definition.
+	 * @return bool
+	 */
+	private function is_renderable( array $field ): bool {
+		$storage = (string) $field['storage'];
+		$input   = (string) $field['input'];
+
+		if ( in_array( $storage, array( 'post_title', 'post_content', 'thumbnail', 'derived' ), true ) ) {
+			return false;
+		}
+
+		return 'none' !== $input;
+	}
+
+	/**
+	 * Box legend label, private flag, and description.
+	 *
+	 * @param string $box Box key.
+	 * @return array{0:string,1:bool,2:string}
+	 */
+	private function box_meta( string $box ): array {
+		$boxes = array(
+			'listing_flags' => array( __( 'Listing flags', 'doctorpilot' ), false, '' ),
+			'licensing'     => array(
+				__( 'Licensing', 'doctorpilot' ),
+				true,
+				__( 'Never shown publicly — stored for internal credential audits.', 'doctorpilot' ),
+			),
+			'experience'    => array( __( 'Experience', 'doctorpilot' ), false, '' ),
+			'education'     => array( __( 'Education', 'doctorpilot' ), false, '' ),
+		);
+
+		return $boxes[ $box ] ?? array( ucwords( str_replace( '_', ' ', $box ) ), false, '' );
 	}
 
 	/**
@@ -272,44 +430,72 @@ final class DoctorEditor {
 		$input   = (string) $field['input'];
 
 		// Native columns and derived/internal fields are not rendered here.
-		if ( in_array( $storage, array( 'post_title', 'post_content', 'post_excerpt', 'thumbnail', 'derived' ), true ) ) {
+		if ( in_array( $storage, array( 'post_title', 'post_content', 'thumbnail', 'derived' ), true ) ) {
 			return;
 		}
 		if ( 'none' === $input ) {
 			return;
 		}
 
-		$key     = (string) $field['key'];
-		$label   = (string) $field['label'];
-		$desc    = (string) $field['description'];
-		$name    = 'doctorpilot[' . $key . ']';
-		$id      = 'dp-' . sanitize_html_class( str_replace( array( '_', 'terms' ), array( '-', 'terms' ), $key ) );
-		$private = ! empty( $field['private'] );
+		// The Headline is stored in post_excerpt; submit it under the core
+		// `excerpt` name so WordPress persists it, and render a single-line input.
+		if ( 'post_excerpt' === $storage ) {
+			$this->render_headline_field( $post_id, $field );
+			return;
+		}
 
-		// Term and repeater fields get a header row with a live count on the right.
-		$is_block = in_array( $input, array( 'terms', 'repeater' ), true );
+		$key   = (string) $field['key'];
+		$label = (string) $field['label'];
+		$desc  = (string) $field['description'];
+		$name  = 'doctorpilot[' . $key . ']';
+		$id    = 'dp-' . sanitize_html_class( str_replace( array( '_', 'terms' ), array( '-', 'terms' ), $key ) );
+
+		// The box legend carries the "Private" badge, so suppress the per-field one there.
+		$badge = $this->private_badge( ! empty( $field['private'] ) && '' === (string) $field['box'] );
+
+		// Term, library, and repeater fields get a header row with a live count.
+		$is_block = in_array( $input, array( 'terms', 'library', 'repeater' ), true );
 
 		echo '<div class="dp-field dp-field--' . esc_attr( $input ) . '">';
 
 		if ( $is_block ) {
-			$unit  = 'terms' === $input ? 'selected' : 'row';
-			$count = $this->field_count( $post_id, $field );
-
 			echo '<div class="dp-field__head">';
-			echo '<span class="dp-field__label">' . esc_html( $label ) . $this->private_badge( $private ) . '</span>';
-			printf(
-				'<span class="dp-field__count" data-dp-count="%1$s">%2$s</span>',
-				esc_attr( $unit ),
-				esc_html( $this->count_label( $count, $unit ) )
-			);
+			echo '<span class="dp-field__label">' . esc_html( $label ) . $badge . '</span>';
+
+			if ( 'repeater' === $input ) {
+				$count = $this->field_count( $post_id, $field );
+				printf(
+					'<span class="dp-field__count" data-dp-count="row">%s</span>',
+					esc_html( $this->count_label( $count, 'row' ) )
+				);
+			} elseif ( is_array( $field['count_noun'] ) && 2 === count( $field['count_noun'] ) ) {
+				$count = $this->field_count( $post_id, $field );
+				$noun  = $field['count_noun'];
+				printf(
+					'<span class="dp-field__count" data-dp-count="selected" data-dp-noun-one="%1$s" data-dp-noun-many="%2$s">%3$s</span>',
+					esc_attr( (string) $noun[0] ),
+					esc_attr( (string) $noun[1] ),
+					esc_html(
+						sprintf(
+							/* translators: 1: count, 2: noun (e.g. "departments"). */
+							__( '%1$d %2$s selected', 'doctorpilot' ),
+							$count,
+							1 === $count ? (string) $noun[0] : (string) $noun[1]
+						)
+					)
+				);
+			}
 			echo '</div>';
 		} elseif ( 'checkbox' !== $input ) {
-			echo '<label class="dp-label" for="' . esc_attr( $id ) . '">' . esc_html( $label ) . $this->private_badge( $private ) . '</label>';
+			echo '<label class="dp-label" for="' . esc_attr( $id ) . '">' . esc_html( $label ) . $badge . '</label>';
 		}
 
 		switch ( $input ) {
 			case 'terms':
 				$this->render_terms_field( $post_id, $field, $name, $id );
+				break;
+			case 'library':
+				$this->render_library_field( $post_id, $field, $name, $id );
 				break;
 			case 'select':
 				$this->render_select_field( $post_id, $field, $name, $id );
@@ -318,20 +504,20 @@ final class DoctorEditor {
 				$this->render_checkbox_field( $post_id, $field, $name, $id, $label, $desc );
 				break;
 			case 'number':
-				$this->render_scalar_input( $post_id, $key, $name, $id, 'number' );
+				$this->render_scalar_input( $post_id, $key, $name, $id, 'number', $this->effective_placeholder( $post_id, $key, (string) $field['placeholder'] ) );
 				break;
 			case 'textarea':
-				$this->render_textarea( $post_id, $key, $name, $id );
+				$this->render_textarea( $post_id, $key, $name, $id, $this->effective_placeholder( $post_id, $key, (string) $field['placeholder'] ) );
 				break;
 			case 'lines':
-				$this->render_lines( $post_id, $key, $name, $id );
+				$this->render_lines( $post_id, $key, $name, $id, (string) $field['placeholder'] );
 				break;
 			case 'repeater':
 				$this->render_repeater( $post_id, $field, $key );
 				break;
 			case 'text':
 			default:
-				$this->render_scalar_input( $post_id, $key, $name, $id, 'text' );
+				$this->render_scalar_input( $post_id, $key, $name, $id, 'text', $this->effective_placeholder( $post_id, $key, (string) $field['placeholder'] ) );
 				break;
 		}
 
@@ -372,7 +558,7 @@ final class DoctorEditor {
 			return is_wp_error( $terms ) ? 0 : count( $terms );
 		}
 
-		if ( 'repeater' === $input || 'lines' === $input ) {
+		if ( in_array( $input, array( 'repeater', 'lines', 'library' ), true ) ) {
 			$value = get_post_meta( $post_id, (string) $field['key'], true );
 			return is_array( $value ) ? count( $value ) : 0;
 		}
@@ -422,6 +608,151 @@ final class DoctorEditor {
 	}
 
 	/**
+	 * Resolve the placeholder for a field, deriving SEO fields from the post's
+	 * own title, description (headline/excerpt or biography), and permalink.
+	 *
+	 * @param int    $post_id Doctor post ID.
+	 * @param string $key     Field key.
+	 * @param string $static  The registry's static placeholder.
+	 * @return string
+	 */
+	private function effective_placeholder( int $post_id, string $key, string $static ): string {
+		if ( str_ends_with( $key, 'seo_title' ) ) {
+			$title = $this->computed_seo_title( $post_id );
+			return '' !== $title ? $title : $static;
+		}
+
+		if ( str_ends_with( $key, 'seo_description' ) ) {
+			$description = $this->default_seo_description( $post_id );
+			return '' !== $description ? $description : $static;
+		}
+
+		if ( str_ends_with( $key, 'seo_canonical_url' ) ) {
+			$permalink = (string) get_permalink( $post_id );
+			return '' !== $permalink ? $permalink : $static;
+		}
+
+		return $static;
+	}
+
+	/**
+	 * The doctor's display name with prefix (e.g. "Dr. Layla Haddad").
+	 *
+	 * @param int $post_id Doctor post ID.
+	 * @return string
+	 */
+	private function display_name( int $post_id ): string {
+		$title = trim( (string) get_the_title( $post_id ) );
+
+		$prefix_key = (string) get_post_meta( $post_id, FieldRegistry::META_PREFIX . 'prefix', true );
+		$map        = array(
+			'dr'   => __( 'Dr.', 'doctorpilot' ),
+			'prof' => __( 'Prof.', 'doctorpilot' ),
+		);
+		$prefix = $map[ $prefix_key ] ?? '';
+
+		if ( '' !== $prefix && 0 === stripos( $title, rtrim( $prefix, '.' ) ) ) {
+			$prefix = '';
+		}
+
+		return trim( $prefix . ' ' . $title );
+	}
+
+	/**
+	 * Render a global content-library assignment field as selectable chips.
+	 *
+	 * @param int                  $post_id Doctor post ID.
+	 * @param array<string, mixed> $field   Field definition.
+	 * @param string               $name    Base input name.
+	 * @param string               $id      Group id.
+	 * @return void
+	 */
+	private function render_library_field( int $post_id, array $field, string $name, string $id ): void {
+		$cpt = DoctorContentResolver::cpt( (string) $field['library_type'] );
+		if ( '' === $cpt ) {
+			return;
+		}
+
+		$records = get_posts(
+			array(
+				'post_type'        => $cpt,
+				'post_status'      => array( 'publish', 'draft' ),
+				'posts_per_page'   => 200,
+				'orderby'          => 'title',
+				'order'            => 'ASC',
+				'no_found_rows'    => true,
+				'suppress_filters' => false,
+			)
+		);
+
+		$assigned = get_post_meta( $post_id, (string) $field['key'], true );
+		$assigned = is_array( $assigned ) ? array_map( 'intval', $assigned ) : array();
+
+		$add_url = admin_url( 'post-new.php?post_type=' . rawurlencode( $cpt ) );
+
+		if ( array() === $records ) {
+			echo '<div class="dp-empty-tax">';
+			echo '<span>' . esc_html__( 'No shared records yet.', 'doctorpilot' ) . '</span>';
+			printf(
+				'<a class="dp-empty-tax__add" href="%1$s">%2$s <span aria-hidden="true">&rarr;</span></a>',
+				esc_url( $add_url ),
+				esc_html__( 'Add a record', 'doctorpilot' )
+			);
+			echo '</div>';
+			return;
+		}
+
+		echo '<div class="dp-chips" role="group" id="' . esc_attr( $id ) . '">';
+		foreach ( $records as $record ) {
+			$selected = in_array( (int) $record->ID, $assigned, true );
+			$draft    = 'publish' !== $record->post_status;
+			printf(
+				'<label class="dp-chip%1$s"><input type="checkbox" name="%2$s[]" value="%3$d" %4$s /><span class="dp-chip__check dashicons dashicons-yes" aria-hidden="true"></span><span class="dp-chip__label">%5$s%6$s</span></label>',
+				$selected ? ' is-selected' : '',
+				esc_attr( $name ),
+				(int) $record->ID,
+				checked( $selected, true, false ),
+				esc_html( '' !== $record->post_title ? $record->post_title : __( '(untitled)', 'doctorpilot' ) ),
+				$draft ? ' <em class="dp-chip__draft">(' . esc_html__( 'draft', 'doctorpilot' ) . ')</em>' : ''
+			);
+		}
+		echo '</div>';
+		printf(
+			'<p class="dp-desc"><a href="%1$s">%2$s &rarr;</a></p>',
+			esc_url( $add_url ),
+			esc_html__( 'Add or manage shared records', 'doctorpilot' )
+		);
+	}
+
+	/**
+	 * The default SEO title: the doctor's post title.
+	 *
+	 * @param int $post_id Doctor post ID.
+	 * @return string
+	 */
+	private function computed_seo_title( int $post_id ): string {
+		return trim( (string) get_the_title( $post_id ) );
+	}
+
+	/**
+	 * The default meta description: the doctor's post description — the headline
+	 * (excerpt) when present, otherwise a trimmed excerpt of the biography.
+	 *
+	 * @param int $post_id Doctor post ID.
+	 * @return string
+	 */
+	private function default_seo_description( int $post_id ): string {
+		$excerpt = trim( (string) get_post_field( 'post_excerpt', $post_id ) );
+		if ( '' !== $excerpt ) {
+			return $excerpt;
+		}
+
+		$content = trim( wp_strip_all_tags( (string) get_post_field( 'post_content', $post_id ) ) );
+
+		return '' !== $content ? wp_trim_words( $content, 30, '…' ) : '';
+	}
+
+	/**
 	 * The character limit for SEO fields, or 0 when a field is uncounted.
 	 *
 	 * @param string $key Meta key.
@@ -461,27 +792,66 @@ final class DoctorEditor {
 	 * @return void
 	 */
 	private function render_seo_preview( int $post_id ): void {
-		$post  = get_post( $post_id );
-		$title = (string) get_post_meta( $post_id, FieldRegistry::META_PREFIX . 'seo_title', true );
-		if ( '' === $title ) {
-			$title = get_the_title( $post_id );
-			$title = '' !== $title ? $title : __( 'Doctor name', 'doctorpilot' );
-		}
+		$post = get_post( $post_id );
 
-		$desc        = (string) get_post_meta( $post_id, FieldRegistry::META_PREFIX . 'seo_description', true );
-		$placeholder = __( 'Add a meta description to control the snippet shown here.', 'doctorpilot' );
-		$host        = (string) wp_parse_url( home_url(), PHP_URL_HOST );
-		$slug        = ( $post instanceof \WP_Post && '' !== $post->post_name ) ? $post->post_name : 'doctor';
+		// Title: the SEO override, else the post title.
+		$title_default = $this->computed_seo_title( $post_id );
+		if ( '' === $title_default ) {
+			$title_default = __( 'Doctor name', 'doctorpilot' );
+		}
+		$seo_title = (string) get_post_meta( $post_id, FieldRegistry::META_PREFIX . 'seo_title', true );
+		$title     = '' !== $seo_title ? $seo_title : $title_default;
+
+		// Description: the SEO override, else the doctor's post description.
+		$seo_desc     = (string) get_post_meta( $post_id, FieldRegistry::META_PREFIX . 'seo_description', true );
+		$desc_default = $this->default_seo_description( $post_id );
+		$placeholder  = __( 'Add a meta description to control the snippet shown here.', 'doctorpilot' );
+		$desc_shown   = '' !== $seo_desc ? $seo_desc : ( '' !== $desc_default ? $desc_default : $placeholder );
+
+		// URL: the canonical override host/path, else the doctor permalink.
+		$permalink = (string) get_permalink( $post_id );
+		$canonical = (string) get_post_meta( $post_id, FieldRegistry::META_PREFIX . 'seo_canonical_url', true );
+		$url       = '' !== $canonical ? $canonical : $permalink;
+		$host      = (string) wp_parse_url( '' !== $url ? $url : home_url(), PHP_URL_HOST );
+		$slug      = ( $post instanceof \WP_Post && '' !== $post->post_name ) ? $post->post_name : 'doctor';
 
 		echo '<div class="dp-serp">';
 		echo '<span class="dp-serp__label">' . esc_html__( 'Search preview', 'doctorpilot' ) . '</span>';
 		echo '<span class="dp-serp__url">' . esc_html( $host ) . ' &rsaquo; ' . esc_html( DoctorPostType::directory_base() ) . ' &rsaquo; ' . esc_html( $slug ) . '</span>';
-		echo '<span class="dp-serp__title" data-dp-serp-title>' . esc_html( $title ) . '</span>';
 		printf(
-			'<span class="dp-serp__desc" data-dp-serp-desc data-dp-serp-placeholder="%1$s">%2$s</span>',
-			esc_attr( $placeholder ),
-			esc_html( '' !== $desc ? $desc : $placeholder )
+			'<span class="dp-serp__title" data-dp-serp-title data-dp-serp-title-default="%1$s">%2$s</span>',
+			esc_attr( $title_default ),
+			esc_html( $title )
 		);
+		printf(
+			'<span class="dp-serp__desc" data-dp-serp-desc data-dp-serp-default="%1$s" data-dp-serp-placeholder="%2$s">%3$s</span>',
+			esc_attr( $desc_default ),
+			esc_attr( $placeholder ),
+			esc_html( $desc_shown )
+		);
+		echo '</div>';
+	}
+
+	/**
+	 * Render the Headline field (stored in post_excerpt via the core name).
+	 *
+	 * @param int                  $post_id Doctor post ID.
+	 * @param array<string, mixed> $field   Field definition.
+	 * @return void
+	 */
+	private function render_headline_field( int $post_id, array $field ): void {
+		$value = (string) get_post_field( 'post_excerpt', $post_id );
+		$desc  = (string) $field['description'];
+
+		echo '<div class="dp-field dp-field--text">';
+		echo '<label class="dp-label" for="dp-headline">' . esc_html( (string) $field['label'] ) . '</label>';
+		printf(
+			'<input type="text" id="dp-headline" name="excerpt" value="%s" class="dp-input--full" autocomplete="off" data-lpignore="true" data-1p-ignore />',
+			esc_attr( $value )
+		);
+		if ( '' !== $desc ) {
+			echo '<p class="dp-desc">' . esc_html( $desc ) . '</p>';
+		}
 		echo '</div>';
 	}
 
@@ -495,7 +865,7 @@ final class DoctorEditor {
 	 * @param string $type    HTML input type.
 	 * @return void
 	 */
-	private function render_scalar_input( int $post_id, string $key, string $name, string $id, string $type ): void {
+	private function render_scalar_input( int $post_id, string $key, string $name, string $id, string $type, string $placeholder = '' ): void {
 		$value = get_post_meta( $post_id, $key, true );
 		$value = is_scalar( $value ) ? (string) $value : '';
 
@@ -510,13 +880,14 @@ final class DoctorEditor {
 		// Suppress password-manager / autofill overlays (e.g. the LastPass badge)
 		// on these admin fields; they are not login or payment inputs.
 		printf(
-			'<input type="%1$s" id="%2$s" name="%3$s" value="%4$s" class="regular-text" autocomplete="off" data-lpignore="true" data-1p-ignore data-form-type="other"%5$s%6$s />',
+			'<input type="%1$s" id="%2$s" name="%3$s" value="%4$s" class="regular-text" autocomplete="off" data-lpignore="true" data-1p-ignore data-form-type="other"%5$s%6$s%7$s />',
 			esc_attr( $type ),
 			esc_attr( $id ),
 			esc_attr( $name ),
 			esc_attr( $value ),
 			'number' === $type ? ' min="0"' : '',
-			$max > 0 ? ' maxlength="' . (int) $max . '" data-dp-counter="' . (int) $max . '"' : ''
+			$max > 0 ? ' maxlength="' . (int) $max . '" data-dp-counter="' . (int) $max . '"' : '',
+			'' !== $placeholder ? ' placeholder="' . esc_attr( $placeholder ) . '"' : ''
 		);
 
 		if ( $max > 0 ) {
@@ -533,17 +904,18 @@ final class DoctorEditor {
 	 * @param string $id      Input id.
 	 * @return void
 	 */
-	private function render_textarea( int $post_id, string $key, string $name, string $id ): void {
+	private function render_textarea( int $post_id, string $key, string $name, string $id, string $placeholder = '' ): void {
 		$value = get_post_meta( $post_id, $key, true );
 		$value = is_scalar( $value ) ? (string) $value : '';
 		$max   = $this->seo_maxlength( $key );
 
 		printf(
-			'<textarea id="%1$s" name="%2$s" rows="3" class="large-text"%4$s>%3$s</textarea>',
+			'<textarea id="%1$s" name="%2$s" rows="3" class="large-text"%4$s%5$s>%3$s</textarea>',
 			esc_attr( $id ),
 			esc_attr( $name ),
 			esc_textarea( $value ),
-			$max > 0 ? ' maxlength="' . (int) $max . '" data-dp-counter="' . (int) $max . '"' : ''
+			$max > 0 ? ' maxlength="' . (int) $max . '" data-dp-counter="' . (int) $max . '"' : '',
+			'' !== $placeholder ? ' placeholder="' . esc_attr( $placeholder ) . '"' : ''
 		);
 
 		if ( $max > 0 ) {
@@ -560,7 +932,7 @@ final class DoctorEditor {
 	 * @param string $id      Input id.
 	 * @return void
 	 */
-	private function render_lines( int $post_id, string $key, string $name, string $id ): void {
+	private function render_lines( int $post_id, string $key, string $name, string $id, string $placeholder = '' ): void {
 		$value = get_post_meta( $post_id, $key, true );
 		$lines = array();
 
@@ -577,10 +949,11 @@ final class DoctorEditor {
 		}
 
 		printf(
-			'<textarea id="%1$s" name="%2$s" rows="4" class="large-text">%3$s</textarea>',
+			'<textarea id="%1$s" name="%2$s" rows="4" class="large-text"%4$s>%3$s</textarea>',
 			esc_attr( $id ),
 			esc_attr( $name ),
-			esc_textarea( implode( "\n", array_filter( $lines, 'strlen' ) ) )
+			esc_textarea( implode( "\n", array_filter( $lines, 'strlen' ) ) ),
+			'' !== $placeholder ? ' placeholder="' . esc_attr( $placeholder ) . '"' : ''
 		);
 	}
 
@@ -693,18 +1066,29 @@ final class DoctorEditor {
 			)
 		);
 
-		// Empty-taxonomy state with a direct "add terms" link.
+		// Empty-taxonomy state with a direct "add {plural}" link.
 		if ( is_wp_error( $terms ) || array() === $terms ) {
 			$add_url = admin_url(
 				'edit-tags.php?taxonomy=' . rawurlencode( $taxonomy ) . '&post_type=' . rawurlencode( DoctorPostType::POST_TYPE )
 			);
+
+			$tax_object = get_taxonomy( $taxonomy );
+			$plural     = ( $tax_object && isset( $tax_object->labels->name ) )
+				? strtolower( (string) $tax_object->labels->name )
+				: __( 'terms', 'doctorpilot' );
 
 			echo '<div class="dp-empty-tax">';
 			echo '<span>' . esc_html__( 'No terms in this taxonomy yet.', 'doctorpilot' ) . '</span>';
 			printf(
 				'<a class="dp-empty-tax__add" href="%1$s">%2$s <span aria-hidden="true">&rarr;</span></a>',
 				esc_url( $add_url ),
-				esc_html__( 'Add terms', 'doctorpilot' )
+				esc_html(
+					sprintf(
+						/* translators: %s: taxonomy plural name, e.g. "conditions". */
+						__( 'Add %s', 'doctorpilot' ),
+						$plural
+					)
+				)
 			);
 			echo '</div>';
 			return;
@@ -796,31 +1180,51 @@ final class DoctorEditor {
 
 		echo '<div class="dp-row__fields">';
 		foreach ( $schema as $sub_key => $sub_def ) {
-			$sub_label  = isset( $sub_def['label'] ) ? (string) $sub_def['label'] : $sub_key;
-			$sanitize   = isset( $sub_def['sanitize'] ) ? (string) $sub_def['sanitize'] : 'text';
-			$field_name = 'doctorpilot[' . $key . '][' . $index . '][' . $sub_key . ']';
-			$value      = $row[ $sub_key ] ?? '';
+			$sub_label   = isset( $sub_def['label'] ) ? (string) $sub_def['label'] : $sub_key;
+			$sanitize    = isset( $sub_def['sanitize'] ) ? (string) $sub_def['sanitize'] : 'text';
+			$placeholder = isset( $sub_def['placeholder'] ) ? (string) $sub_def['placeholder'] : '';
+			$field_name  = 'doctorpilot[' . $key . '][' . $index . '][' . $sub_key . ']';
+			$value       = $row[ $sub_key ] ?? '';
 
-			echo '<label class="dp-row-field dp-row-field--' . esc_attr( $sanitize ) . '">';
-			echo '<span class="dp-row-field__label">' . esc_html( $sub_label ) . '</span>';
+			// Flex sizing per column; only textareas take a full-width row.
+			$full  = 'textarea' === $sanitize;
+			$basis = isset( $sub_def['basis'] ) ? (string) $sub_def['basis'] : ( 'bool' === $sanitize ? '160px' : '160px' );
+			$grow  = isset( $sub_def['grow'] ) ? (int) $sub_def['grow'] : ( 'bool' === $sanitize ? 0 : 1 );
+			$style = $full ? 'flex:1 1 100%' : 'flex:' . $grow . ' 1 ' . $basis;
+
+			printf(
+				'<label class="dp-row-field dp-row-field--%1$s" style="%2$s">',
+				esc_attr( $sanitize ),
+				esc_attr( $style )
+			);
+			if ( 'bool' !== $sanitize ) {
+				echo '<span class="dp-row-field__label">' . esc_html( $sub_label ) . '</span>';
+			}
+
+			$taxonomy = isset( $sub_def['taxonomy'] ) ? (string) $sub_def['taxonomy'] : '';
 
 			if ( 'bool' === $sanitize ) {
 				printf(
-					'<input type="checkbox" name="%1$s" value="1" %2$s />',
+					'<span class="dp-row-field__check"><input type="checkbox" name="%1$s" value="1" %2$s /> %3$s</span>',
 					esc_attr( $field_name ),
-					checked( ! empty( $value ), true, false )
+					checked( ! empty( $value ), true, false ),
+					esc_html( $sub_label )
 				);
+			} elseif ( '' !== $taxonomy ) {
+				$this->render_row_term_select( $field_name, $taxonomy, (int) ( is_scalar( $value ) ? $value : 0 ) );
 			} elseif ( 'textarea' === $sanitize ) {
 				printf(
-					'<textarea name="%1$s" rows="2">%2$s</textarea>',
+					'<textarea name="%1$s" rows="2"%3$s>%2$s</textarea>',
 					esc_attr( $field_name ),
-					esc_textarea( is_scalar( $value ) ? (string) $value : '' )
+					esc_textarea( is_scalar( $value ) ? (string) $value : '' ),
+					'' !== $placeholder ? ' placeholder="' . esc_attr( $placeholder ) . '"' : ''
 				);
 			} else {
 				printf(
-					'<input type="text" name="%1$s" value="%2$s" />',
+					'<input type="text" name="%1$s" value="%2$s"%3$s />',
 					esc_attr( $field_name ),
-					esc_attr( is_scalar( $value ) ? (string) $value : '' )
+					esc_attr( is_scalar( $value ) ? (string) $value : '' ),
+					'' !== $placeholder ? ' placeholder="' . esc_attr( $placeholder ) . '"' : ''
 				);
 			}
 			echo '</label>';
@@ -832,6 +1236,47 @@ final class DoctorEditor {
 			esc_html__( 'Remove', 'doctorpilot' )
 		);
 		echo '</div>';
+	}
+
+	/**
+	 * Render a repeater sub-field as a taxonomy-term dropdown.
+	 *
+	 * The stored value is a term ID, so a free-text box would coerce a typed name
+	 * to 0 on save. A select of the taxonomy's terms keeps the value a valid ID.
+	 *
+	 * @param string $field_name Input name.
+	 * @param string $taxonomy   Taxonomy slug.
+	 * @param int    $selected   Currently selected term ID.
+	 * @return void
+	 */
+	private function render_row_term_select( string $field_name, string $taxonomy, int $selected ): void {
+		$terms = get_terms(
+			array(
+				'taxonomy'   => $taxonomy,
+				'hide_empty' => false,
+				'orderby'    => 'name',
+				'order'      => 'ASC',
+			)
+		);
+
+		printf( '<select name="%1$s" class="dp-row-select">', esc_attr( $field_name ) );
+		printf( '<option value="0">%s</option>', esc_html__( '— Select —', 'doctorpilot' ) );
+
+		if ( is_array( $terms ) ) {
+			foreach ( $terms as $term ) {
+				if ( ! ( $term instanceof \WP_Term ) ) {
+					continue;
+				}
+				printf(
+					'<option value="%1$d" %2$s>%3$s</option>',
+					(int) $term->term_id,
+					selected( (int) $term->term_id, $selected, false ),
+					esc_html( $term->name )
+				);
+			}
+		}
+
+		echo '</select>';
 	}
 
 	/**

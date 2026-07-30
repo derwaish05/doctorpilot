@@ -84,6 +84,14 @@ final class Integration {
 				'icon'  => 'eicon-person',
 			)
 		);
+
+		$elements_manager->add_category(
+			'doctorpilot-single',
+			array(
+				'title' => __( 'Single DoctorPilot', 'doctorpilot' ),
+				'icon'  => 'eicon-single-post',
+			)
+		);
 	}
 
 	/**
@@ -99,6 +107,7 @@ final class Integration {
 			Widgets\DepartmentGrid::class,
 			Widgets\SymptomDirectory::class,
 			Widgets\DoctorProfile::class,
+			Widgets\PageHeader::class,
 			Widgets\BookingButton::class,
 		);
 

@@ -84,6 +84,9 @@ final class Settings {
 				'per_page'                  => 12,
 				'default_sort'              => 'relevance',
 				'placeholder_attachment_id' => 0,
+				// 0 = native template; otherwise an Elementor template/page ID
+				// rendered on single-doctor views.
+				'single_doctor_template'    => 0,
 			),
 			'search'  => array(
 				'minimum_characters' => 2,
@@ -126,6 +129,18 @@ final class Settings {
 	}
 
 	/**
+	 * The Elementor template/page ID to render on single-doctor views, or 0 to
+	 * use the native template.
+	 *
+	 * @return int
+	 */
+	public static function single_doctor_template(): int {
+		$settings = self::get();
+
+		return (int) ( $settings['general']['single_doctor_template'] ?? 0 );
+	}
+
+	/**
 	 * Sanitize and validate an incoming settings array.
 	 *
 	 * Unknown keys are dropped; each value is clamped to a safe range or enum.
@@ -151,6 +166,7 @@ final class Settings {
 		$clean['general']['per_page']                  = self::clamp_int( $general['per_page'] ?? $current['general']['per_page'], 1, 48, 12 );
 		$clean['general']['default_sort']              = self::enum( $general['default_sort'] ?? $current['general']['default_sort'], self::ALLOWED_SORTS, 'relevance' );
 		$clean['general']['placeholder_attachment_id'] = max( 0, (int) ( $general['placeholder_attachment_id'] ?? 0 ) );
+		$clean['general']['single_doctor_template']    = max( 0, (int) ( $general['single_doctor_template'] ?? $current['general']['single_doctor_template'] ) );
 
 		// Search.
 		$clean['search']['minimum_characters'] = self::clamp_int( $search['minimum_characters'] ?? $current['search']['minimum_characters'], 1, 5, 2 );

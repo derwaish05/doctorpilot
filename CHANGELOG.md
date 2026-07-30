@@ -6,13 +6,96 @@ versioning.
 
 ## [Unreleased]
 
+### Added
+- New Elementor widget category **Single DoctorPilot** with a **Page header with
+  dynamic data** widget. It renders a single-doctor hero from canonical data —
+  breadcrumb, name, role, primary specialty/department/languages/email/phone,
+  credential chips, photo with a specialty badge, and Book / Call actions — for
+  the selected or currently viewed doctor. Background and accent colors are
+  themeable via the widget's style controls; an optional Availability text field
+  is provided.
+- New **Single doctor layout** setting (DoctorPilot → Settings). Pick an Elementor
+  template or page to render on every single-doctor view. Because the Doctor
+  Profile widget resolves the currently viewed doctor, you can design the layout
+  once with **free** Elementor — no Elementor Pro / Theme Builder needed. Defaults
+  to the built-in native template, and falls back to it if the chosen template is
+  empty or Elementor is inactive.
+- **Locations** are now a global content type too (`doctorpilot_loc`). Create a
+  reusable hospital location once (name, address/area, city, phone, email, map
+  link, opening hours) and assign it to many doctors via the new "Shared locations"
+  selector. Shared locations render first in the profile's Locations section,
+  followed by the doctor's own location & contact records (which are unchanged and
+  still drive booking). A "Get directions" link shows when a map URL is set.
+- New **International doctor** listing flag (checkbox in the doctor editor's
+  Listing flags box). When enabled, an "International" tag shows on the doctor's
+  card (top-right badge) and profile header.
+- Extended the global content library to **Procedures, Publications, and FAQs**
+  (in addition to Experience and Education). Each is now an admin-managed record
+  type that can be created once and assigned to many doctors from the doctor
+  editor's shared-record selectors, and each renders on the public profile merged
+  with the doctor's own entries. `LibraryPostTypes` is now schema-driven, so all
+  five types share one registration, editor, save, resolver, and REST path.
+  Procedures/Publications/FAQs reuse their existing per-doctor repeaters as the
+  "this doctor only" store, so no data migration is required. All five types are
+  grouped under the "Global content" admin menu heading.
+- Global reusable content library for Experience and Education (ADR-0017). Two new
+  admin-managed record types — Experience (`doctorpilot_exp`) and Education
+  (`doctorpilot_edu`) — let a hospital create a record once and assign it to many
+  doctors; editing the record updates it everywhere it is used. Each record has a
+  position/qualification, organization/institution, start/end year, country, and an
+  optional description, with a read-only title composed from the first two. The
+  doctor editor's Experience and Education boxes now offer shared-record selectors
+  (chips) alongside the existing doctor-specific rows. A new authenticated
+  `GET doctorpilot/v1/library/search` route backs the picker, a `DoctorContentResolver`
+  merges shared and doctor-specific entries for display, and a reverse-reference
+  index cleans up assignments when a shared record is deleted. Managed by a new
+  `manage_doctorpilot_library` capability (granted to administrators).
+
+### Changed
+- SEO defaults now derive from the doctor's own post: the **SEO title** defaults to
+  the post title (previously name + specialty), and the **meta description**
+  defaults to the doctor's description — the headline (excerpt) when present,
+  otherwise a trimmed excerpt of the biography. The editor placeholders and search
+  preview, and the front-end `<title>`, meta description, and Open Graph tags all
+  reflect these defaults; explicit SEO overrides still win.
+- Global content records (Experience, Education, Procedures, Publications, FAQs)
+  now show an editable **title** field. Leaving it blank auto-composes the title
+  from the record's fields (as before); a typed title is preserved.
+- Global **FAQ**, **Procedure**, and **Publication** records now use the title
+  field as their single identifier (question / procedure name / publication
+  title), removing the duplicate field. FAQ and Procedure have no other fields, so
+  their Details box is removed entirely; Publication's box keeps journal, date,
+  URL, and DOI. Experience and Education are unchanged (their title is composed
+  from two distinct fields).
+- Doctor profiles now show separate **Experience** and **Education** sections
+  (previously one combined "Experience & education" list). Schema version 2 migrates
+  any existing combined entries into the two new lists automatically.
+- Admin menu: the DoctorPilot submenu is sorted into a fixed order — All Doctors,
+  Education, Experience, Locations, Procedures, Publications, FAQs, Health,
+  Analytics, Migration, Settings. (The earlier "Global content" heading was
+  removed.)
+
 ### Fixed
+- Doctor editor: the location repeater's **Location** and **Department at
+  location** fields are now taxonomy dropdowns instead of text boxes. They store
+  term IDs, so a typed name was previously coerced to `0` on save; you now pick a
+  term from the Location / Department taxonomy.
 - Translation loading no longer runs before `init` (WordPress 6.7
   `_load_textdomain_just_in_time` notice). Both plugins load their text domains on
   `init`, and the Pro add-on registers with the base using an untranslated brand
   name so no `__()` call fires during the early `plugins_loaded` boot.
 
 ### Changed
+- SEO tab now derives from the post's own data when overrides are blank: the SEO
+  title placeholder/preview shows the doctor's display name plus primary specialty
+  (and credentials in the preview), the meta description falls back to the
+  headline/excerpt, and the canonical URL placeholder shows the actual permalink.
+  The live search preview reflects these defaults, and the front-end output
+  already inherits them (canonical → permalink, description → excerpt).
+- Doctor editor: the main-editor term chips and the default sidebar taxonomy
+  metaboxes now stay in sync — selecting or deselecting a term in either updates
+  the other, and the save merges both sources so a term added from the sidebar's
+  "Add New" control is never dropped.
 - Doctor editor: reworked the tabbed meta box to the native WordPress admin tab
   pattern (active tab merges into the panel, grey inactive tabs with hover),
   added per-tab count badges and a pane header (title, help, and section meta).
@@ -25,6 +108,15 @@ versioning.
   flags; private fields show a "Private" badge; SEO title/description have live
   character counters and a Google-style search preview. Admin CSS/JS now
   cache-bust by file modification time so edits apply immediately.
+- Doctor editor aligned to the approved mockups across every tab: sentence-case
+  pane titles with exact help text and a right-aligned "N rows" pane meta;
+  per-term-field counts with the correct noun ("3 symptoms selected"); an
+  "Add <taxonomy>" empty-state link; side-by-side rows (Prefix · First · Last,
+  Credentials · Gender, Primary department · Primary specialty, Years · Manual
+  order, Canonical · Legacy URL); a bordered Licensing box with a PRIVATE badge
+  and note; repeater rows with per-column widths and placeholders; and
+  placeholder text on SEO and other inputs. Layout is driven by generic
+  row/width/box/placeholder/count_noun hints in the field registry.
 - Doctor name is now entered as separate First name / Last name fields; the post
   title is composed from them (via `wp_insert_post_data`, so no recursive save),
   the default title box is removed, and existing doctors pre-fill their name parts

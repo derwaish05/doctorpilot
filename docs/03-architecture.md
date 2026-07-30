@@ -72,7 +72,7 @@ flowchart TB
 | Doctor title/content/status | Posts | WordPress + Doctor service | No |
 | Doctor classification | Term relationships | Taxonomy service | No |
 | Structured doctor fields | Prefixed post meta | Field registry/repository | No |
-| Global library records (procedures, education, publications, FAQs) | Prefixed CPTs (`doctorpilot_proc/edu_exp/pub/faq`) | Library service | No |
+| Global library records (experience, education built; procedures, publications, FAQs planned) | Prefixed CPTs (`doctorpilot_exp/edu` built; `doctorpilot_proc/pub/faq` planned) | Library service | No |
 | Doctor → global assignments | Prefixed ordered ID-list meta (`_doctorpilot_*_ids`) | Doctor service | No |
 | Doctor-specific local items | Retained prefixed repeater meta | Doctor service | No |
 | Global reverse-reference index | Prefixed meta on each global (`_doctorpilot_assigned_doctor_ids`) | Library service | Yes (scan doctors in bounded batches) |

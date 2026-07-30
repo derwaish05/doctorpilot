@@ -38,6 +38,27 @@ final class SeoOwner {
 
 		add_action( 'wp_head', array( $this, 'render_head' ), 1 );
 		add_filter( 'wp_robots', array( $this, 'robots' ) );
+		add_filter( 'document_title_parts', array( $this, 'document_title' ) );
+	}
+
+	/**
+	 * Set the document title for a doctor: the SEO title override when present,
+	 * otherwise the post title (WordPress default).
+	 *
+	 * @param array<string, string> $parts Title parts.
+	 * @return array<string, string>
+	 */
+	public function document_title( array $parts ): array {
+		if ( ! is_singular( DoctorPostType::POST_TYPE ) ) {
+			return $parts;
+		}
+
+		$seo_title = trim( (string) get_post_meta( (int) get_queried_object_id(), FieldRegistry::META_PREFIX . 'seo_title', true ) );
+		if ( '' !== $seo_title ) {
+			$parts['title'] = $seo_title;
+		}
+
+		return $parts;
 	}
 
 	/**
@@ -82,9 +103,17 @@ final class SeoOwner {
 			$canonical = (string) get_permalink( $post_id );
 		}
 
+		// Meta description: the override, else the doctor's post description —
+		// the headline (excerpt) when present, otherwise the biography.
 		$description = (string) get_post_meta( $post_id, FieldRegistry::META_PREFIX . 'seo_description', true );
 		if ( '' === $description ) {
-			$description = wp_trim_words( wp_strip_all_tags( (string) $data['intro'] ), 30 );
+			$intro = trim( wp_strip_all_tags( (string) $data['intro'] ) );
+			if ( '' !== $intro ) {
+				$description = wp_trim_words( $intro, 30, '…' );
+			} else {
+				$content     = trim( wp_strip_all_tags( (string) get_post_field( 'post_content', $post_id ) ) );
+				$description = '' !== $content ? wp_trim_words( $content, 30, '…' ) : '';
+			}
 		}
 
 		echo "\n<!-- DoctorPilot SEO -->\n";

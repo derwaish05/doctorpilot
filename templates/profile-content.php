@@ -56,6 +56,10 @@ $dp_department = isset( $data['primary_department']['name'] ) ? (string) $data['
 				<p class="dp-profile__role"><?php echo esc_html( '' !== $dp_specialty ? $dp_specialty : $dp_department ); ?></p>
 			<?php endif; ?>
 
+			<?php if ( ! empty( $data['is_international'] ) ) : ?>
+				<p class="dp-profile__tags"><span class="dp-tag dp-tag--international"><?php esc_html_e( 'International doctor', 'doctorpilot' ); ?></span></p>
+			<?php endif; ?>
+
 			<?php if ( ! empty( $data['booking'] ) && ! empty( $data['booking']['url'] ) ) : ?>
 				<a
 					class="dp-btn dp-btn--primary"
@@ -105,15 +109,39 @@ $dp_department = isset( $data['primary_department']['name'] ) ? (string) $data['
 		</section>
 	<?php endif; ?>
 
+	<?php if ( array() !== (array) $data['experience'] ) : ?>
+		<section class="dp-profile__section dp-experience">
+			<h2><?php esc_html_e( 'Experience', 'doctorpilot' ); ?></h2>
+			<ul>
+				<?php foreach ( (array) $data['experience'] as $dp_exp ) : ?>
+					<li>
+						<?php echo esc_html( trim( (string) ( $dp_exp['primary'] ?? '' ) . ' — ' . (string) ( $dp_exp['secondary'] ?? '' ), ' —' ) ); ?>
+						<?php
+						$dp_range = trim( implode( '–', array_filter( array( (string) ( $dp_exp['start_year'] ?? '' ), (string) ( $dp_exp['end_year'] ?? '' ) ) ) ) );
+						?>
+						<?php if ( '' !== $dp_range ) : ?>
+							<span>(<?php echo esc_html( $dp_range ); ?>)</span>
+						<?php endif; ?>
+					</li>
+				<?php endforeach; ?>
+			</ul>
+		</section>
+	<?php endif; ?>
+
 	<?php if ( array() !== (array) $data['education'] ) : ?>
 		<section class="dp-profile__section dp-education">
-			<h2><?php esc_html_e( 'Experience & education', 'doctorpilot' ); ?></h2>
+			<h2><?php esc_html_e( 'Education', 'doctorpilot' ); ?></h2>
 			<ul>
 				<?php foreach ( (array) $data['education'] as $dp_edu ) : ?>
 					<li>
-						<?php echo esc_html( trim( (string) ( $dp_edu['qualification_or_position'] ?? '' ) . ' — ' . (string) ( $dp_edu['institution'] ?? '' ), ' —' ) ); ?>
-						<?php if ( ! empty( $dp_edu['end_year'] ) ) : ?>
-							<span>(<?php echo esc_html( (string) $dp_edu['end_year'] ); ?>)</span>
+						<?php echo esc_html( trim( (string) ( $dp_edu['primary'] ?? '' ) . ' — ' . (string) ( $dp_edu['secondary'] ?? '' ), ' —' ) ); ?>
+						<?php
+						$dp_range = trim( implode( '–', array_filter( array( (string) ( $dp_edu['start_year'] ?? '' ), (string) ( $dp_edu['end_year'] ?? '' ) ) ) ) );
+						?>
+						<?php if ( '' !== $dp_range ) : ?>
+							<span>(<?php echo esc_html( $dp_range ); ?>)</span>
+						<?php elseif ( ! empty( $dp_edu['country'] ) ) : ?>
+							<span><?php echo esc_html( (string) $dp_edu['country'] ); ?></span>
 						<?php endif; ?>
 					</li>
 				<?php endforeach; ?>
@@ -172,6 +200,9 @@ $dp_department = isset( $data['primary_department']['name'] ) ? (string) $data['
 					<?php if ( '' !== (string) ( $dp_loc['name'] ?? '' ) ) : ?>
 						<h3><?php echo esc_html( (string) $dp_loc['name'] ); ?></h3>
 					<?php endif; ?>
+					<?php if ( '' !== (string) ( $dp_loc['address'] ?? '' ) ) : ?>
+						<p><?php echo esc_html( (string) $dp_loc['address'] ); ?></p>
+					<?php endif; ?>
 					<?php if ( '' !== (string) ( $dp_loc['room_floor'] ?? '' ) ) : ?>
 						<p><?php echo esc_html( (string) $dp_loc['room_floor'] ); ?></p>
 					<?php endif; ?>
@@ -183,6 +214,9 @@ $dp_department = isset( $data['primary_department']['name'] ) ? (string) $data['
 					<?php endif; ?>
 					<?php if ( '' !== (string) ( $dp_loc['office_hours_text'] ?? '' ) ) : ?>
 						<p><?php echo esc_html( (string) $dp_loc['office_hours_text'] ); ?></p>
+					<?php endif; ?>
+					<?php if ( '' !== (string) ( $dp_loc['map_url'] ?? '' ) ) : ?>
+						<p><a href="<?php echo esc_url( (string) $dp_loc['map_url'] ); ?>" target="_blank" rel="noopener"><?php esc_html_e( 'Get directions', 'doctorpilot' ); ?></a></p>
 					<?php endif; ?>
 				</div>
 			<?php endforeach; ?>

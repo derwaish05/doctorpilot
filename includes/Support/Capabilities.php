@@ -37,6 +37,13 @@ final class Capabilities {
 	public const MANAGE_TERMS = 'manage_doctorpilot_terms';
 
 	/**
+	 * Capability required to manage the global content library records.
+	 *
+	 * @var string
+	 */
+	public const MANAGE_LIBRARY = 'manage_doctorpilot_library';
+
+	/**
 	 * All capability primitives owned by the plugin.
 	 *
 	 * Pro-only primitives are included so a single grant model covers both
@@ -61,6 +68,7 @@ final class Capabilities {
 			// Plugin-level control-plane capabilities.
 			self::MANAGE,
 			self::MANAGE_TERMS,
+			self::MANAGE_LIBRARY,
 			// Pro capabilities (granted to administrators, checked only by Pro).
 			'manage_doctorpilot_migrations',
 			'view_doctorpilot_analytics',

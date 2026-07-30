@@ -14,6 +14,8 @@ use BrainStudioz\DoctorPilot\Domain\Doctor\Completeness;
 use BrainStudioz\DoctorPilot\Domain\Doctor\PrimaryTermValidator;
 use BrainStudioz\DoctorPilot\Fields\FieldRegistry;
 use BrainStudioz\DoctorPilot\Fields\Sanitizer;
+use BrainStudioz\DoctorPilot\Library\DoctorContentResolver;
+use BrainStudioz\DoctorPilot\Library\ReverseIndex;
 use BrainStudioz\DoctorPilot\PostTypes\DoctorPostType;
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -78,6 +80,13 @@ final class SaveDoctor {
 			return $data;
 		}
 
+		// The WordPress title field is authoritative when filled; only compose a
+		// title from First/Last when the title box was left empty.
+		$existing = trim( wp_unslash( (string) ( $data['post_title'] ?? '' ) ) );
+		if ( '' !== $existing ) {
+			return $data;
+		}
+
 		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verified above.
 		$raw   = isset( $_POST['doctorpilot'] ) && is_array( $_POST['doctorpilot'] ) ? wp_unslash( $_POST['doctorpilot'] ) : array();
 		$first = isset( $raw[ FieldRegistry::META_PREFIX . 'first_name' ] ) ? sanitize_text_field( (string) $raw[ FieldRegistry::META_PREFIX . 'first_name' ] ) : '';
@@ -137,6 +146,7 @@ final class SaveDoctor {
 
 		$this->save_terms( $post_id, $raw );
 		$this->save_meta( $post_id, $raw );
+		$this->save_library( $post_id, $raw );
 
 		// Keep primary references valid against the assigned terms.
 		PrimaryTermValidator::reconcile( $post_id );
@@ -152,15 +162,30 @@ final class SaveDoctor {
 	 * @return void
 	 */
 	private function save_terms( int $post_id, array $raw ): void {
+		// The default sidebar taxonomy metaboxes submit under `tax_input`. The
+		// chip UI and the sidebar are kept in sync in the editor, but a term added
+		// from the sidebar's "Add New" control has no chip yet, so merge both
+		// sources here to avoid dropping a sidebar-only selection.
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verified in handle().
+		$tax_input = isset( $_POST['tax_input'] ) && is_array( $_POST['tax_input'] )
+			? wp_unslash( $_POST['tax_input'] )
+			: array();
+
 		foreach ( FieldRegistry::term_fields() as $field ) {
 			$key      = (string) $field['key'];
 			$taxonomy = (string) $field['taxonomy'];
-			$value    = $raw[ $key ] ?? array();
 
-			$ids = Sanitizer::apply( $field, $value );
-			$ids = array_map( 'intval', (array) $ids );
+			$chip_ids = array_map( 'intval', (array) Sanitizer::apply( $field, $raw[ $key ] ?? array() ) );
 
-			// Validate each ID exists in its taxonomy before assigning.
+			// Sidebar metabox IDs for hierarchical taxonomies are integer term IDs.
+			$sidebar_ids = array();
+			if ( isset( $tax_input[ $taxonomy ] ) ) {
+				foreach ( (array) $tax_input[ $taxonomy ] as $candidate ) {
+					$sidebar_ids[] = (int) $candidate;
+				}
+			}
+
+			$ids   = array_unique( array_merge( $chip_ids, $sidebar_ids ) );
 			$valid = array();
 			foreach ( $ids as $id ) {
 				if ( $id > 0 && term_exists( $id, $taxonomy ) ) {
@@ -182,6 +207,12 @@ final class SaveDoctor {
 	private function save_meta( int $post_id, array $raw ): void {
 		foreach ( FieldRegistry::meta_fields() as $field ) {
 			$key = (string) $field['key'];
+
+			// Library assignment fields are written by save_library(), which also
+			// validates the target CPT and maintains the reverse-reference index.
+			if ( 'library' === ( $field['input'] ?? '' ) ) {
+				continue;
+			}
 
 			// Derived and non-editable fields are never written from input.
 			if ( 'none' === ( $field['input'] ?? '' ) && 'review_status' !== ( $field['sanitize'] ?? '' ) ) {
@@ -208,6 +239,52 @@ final class SaveDoctor {
 			}
 
 			update_post_meta( $post_id, $key, $clean );
+		}
+	}
+
+	/**
+	 * Save global content-library assignments (Experience, Education, Procedures,
+	 * Publications, FAQs, Locations).
+	 *
+	 * For each `library` field: keep only IDs that are the correct CPT, de-dupe,
+	 * store the ordered list, then diff against the previous assignment and update
+	 * the reverse-reference index so each shared record knows which doctors use it.
+	 *
+	 * @param int                  $post_id Post ID.
+	 * @param array<string, mixed> $raw     Raw submitted field data.
+	 * @return void
+	 */
+	private function save_library( int $post_id, array $raw ): void {
+		foreach ( FieldRegistry::all() as $field ) {
+			if ( 'library' !== ( $field['input'] ?? '' ) ) {
+				continue;
+			}
+
+			$key = (string) $field['key'];
+			$cpt = DoctorContentResolver::cpt( (string) ( $field['library_type'] ?? '' ) );
+			if ( '' === $cpt ) {
+				continue;
+			}
+
+			$submitted = isset( $raw[ $key ] ) ? (array) $raw[ $key ] : array();
+			$new       = array();
+			foreach ( $submitted as $candidate ) {
+				$id = (int) $candidate;
+				if ( $id > 0 && $cpt === get_post_type( $id ) && ! in_array( $id, $new, true ) ) {
+					$new[] = $id;
+				}
+			}
+
+			$old = get_post_meta( $post_id, $key, true );
+			$old = is_array( $old ) ? array_map( 'intval', $old ) : array();
+
+			update_post_meta( $post_id, $key, $new );
+
+			$added   = array_values( array_diff( $new, $old ) );
+			$removed = array_values( array_diff( $old, $new ) );
+			if ( array() !== $added || array() !== $removed ) {
+				ReverseIndex::apply_diff( $post_id, $added, $removed );
+			}
 		}
 	}
 

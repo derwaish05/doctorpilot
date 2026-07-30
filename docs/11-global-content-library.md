@@ -12,15 +12,40 @@ alongside independent doctor-specific ("local") items.
 ### 1.1 Global records — Free custom post types
 
 Prefixed, `show_in_rest=false`, no public archive/single. Managed under the
-DoctorPilot admin menu. `post_status` is the publication authority (ADR-0013).
-All CPT keys are ≤ 20 characters (WordPress limit).
+DoctorPilot admin menu. The `Menu` owner sorts the submenu late on `admin_menu`
+into a fixed order — All Doctors, Education, Experience, Locations, Procedures,
+Publications, FAQs, Health, Analytics, Migration, Settings — and the individual
+CPTs keep `show_in_menu => 'doctorpilot'` so screen highlighting stays correct.
+`post_status` is the publication authority (ADR-0013). All CPT keys are ≤ 20
+characters (WordPress limit).
 
-| Content | CPT key (len) | `post_title` | `post_content` | Prefixed meta |
+> **Implementation note (2026-07-30, schema-driven).** All five library types
+> are built: `doctorpilot_exp`, `doctorpilot_edu`, `doctorpilot_proc`,
+> `doctorpilot_pub`, `doctorpilot_faq`. `LibraryPostTypes` holds one data-driven
+> `schema()` per type (labels, `title_parts`, `list_subtitle`, and a `fields`
+> map). Every field is stored as prefixed post meta at `_doctorpilot_lib_{key}`
+> **except** exactly one `store => content` field per type, which lives in
+> `post_content` and is edited via the standard editor. The `post_title` is
+> computed read-only from `title_parts`. Experience & Education replaced the
+> originally-proposed single `doctorpilot_edu_exp` (ADR-0017 amendment). The
+> reverse-index for every type is `_doctorpilot_lib_doctors`.
+
+Title column: the editor may type a title; if left blank it is auto-composed from
+the listed parts (see §12). A single-identifier type instead marks that field
+`store => title`, so it *is* the post title with no duplicate field — FAQ
+(`question`), Procedure (`name`), and Publication (`title`). Experience &
+Education keep `primary`/`secondary` fields because their title is composed from
+two distinct parts. A type whose only remaining fields are the title and content
+(FAQ, Procedure) renders no Details meta box.
+
+| Content | CPT key (len) | `post_title` | `post_content` | Prefixed meta (`_doctorpilot_lib_*`) |
 |---|---|---|---|---|
-| Procedure | `doctorpilot_proc` (16) | procedure name (editable) | description | — |
-| Experience & Education | `doctorpilot_edu_exp` (19) | **computed, read-only** (see §12) | description | `_doctorpilot_edu_exp_type`, `_doctorpilot_edu_exp_institution`, `_doctorpilot_edu_exp_qualification`, `_doctorpilot_edu_exp_start_year`, `_doctorpilot_edu_exp_end_year`, `_doctorpilot_edu_exp_country` |
-| Publication | `doctorpilot_pub` (15) | title (editable) | description | `_doctorpilot_pub_journal`, `_doctorpilot_pub_date`, `_doctorpilot_pub_url`, `_doctorpilot_pub_doi` |
-| FAQ | `doctorpilot_faq` (15) | question (editable) | answer | — |
+| Experience | `doctorpilot_exp` (15) | editable; auto from primary + secondary | description | `primary` (position), `secondary` (organization), `start_year`, `end_year`, `country`, `doctors` |
+| Education | `doctorpilot_edu` (15) | editable; auto from primary + secondary | description | `primary` (qualification), `secondary` (institution), `start_year`, `end_year`, `country`, `doctors` |
+| Procedure | `doctorpilot_proc` (16) | **is** the name (typed directly) | description | `doctors` |
+| Publication | `doctorpilot_pub` (15) | **is** the title (typed directly) | summary | `journal`, `published_date`, `url`, `doi`, `doctors` |
+| FAQ | `doctorpilot_faq` (15) | **is** the question (typed directly) | answer | `doctors` |
+| Location | `doctorpilot_loc` (15) | **is** the name (typed directly) | opening hours | `area`, `city`, `phone`, `email`, `map_url`, `doctors` |
 
 Capabilities: a mapped set (`doctorpilot_library_item` /
 `doctorpilot_library_items`) plus a `manage_doctorpilot_library` primitive granted
@@ -35,14 +60,26 @@ Two derived meta values live on each global record, both rebuildable:
 ### 1.2 Doctor references and local items
 
 Per doctor, ordered **unique** reference lists (prefixed meta, arrays of ints):
-`_doctorpilot_proc_ids`, `_doctorpilot_edu_exp_ids`, `_doctorpilot_pub_ids`,
-`_doctorpilot_faq_ids`.
+`_doctorpilot_exp_ids`, `_doctorpilot_edu_ids`, `_doctorpilot_proc_ids`,
+`_doctorpilot_pub_ids`, `_doctorpilot_faq_ids`.
 
-The existing repeater meta is **retained unchanged** for doctor-specific items:
-`_doctorpilot_procedures`, `_doctorpilot_education_experience`,
-`_doctorpilot_publications`, `_doctorpilot_faqs`. Each local repeater row is
+Doctor-specific items live in local repeater meta. Experience & Education use
+dedicated split repeaters `_doctorpilot_exp_local` / `_doctorpilot_edu_local`
+(replacing the legacy combined `_doctorpilot_education_experience`, migrated at
+schema version 2). Procedures, Publications, and FAQs **reuse their existing
+doctor repeaters** as the local store — `_doctorpilot_procedures`,
+`_doctorpilot_publications`,
+`_doctorpilot_faqs`. Each local repeater row is
 assigned a stable `_key` (a short uid) on save so the editor can reorder, edit,
 and remove local items reliably.
+
+**Locations** are a special case of the hybrid model. Shared locations are
+assigned via `_doctorpilot_loc_ids`, but the doctor's own contact details keep
+the pre-existing term-based `_doctorpilot_locations` repeater (room/floor, direct
+phone, consent-gated email, consultation type) — which also feeds the booking
+resolver. Because those two shapes differ, `DoctorView::locations()` maps and
+merges them itself (shared first, then local) rather than using the generic
+resolver's local pass; the resolver's `loc` local key is an unused placeholder.
 
 ### 1.3 One canonical schema
 
@@ -133,7 +170,7 @@ widget, and `GET /doctors/{id}`.
 
 ## 6. Identifiers, security, and publication
 
-- CPTs `doctorpilot_{proc,edu_exp,pub,faq}`; meta `_doctorpilot_*`; option/table
+- CPTs `doctorpilot_{exp,edu}` (built) and `doctorpilot_{proc,pub,faq}` (planned); meta `_doctorpilot_*`; option/table
   prefix `bstdz_doctorpilot_`; capability `manage_doctorpilot_library`; one
   authenticated internal route `GET doctorpilot/v1/library/search` (§7 of the
   tech spec).
@@ -221,12 +258,16 @@ Tasks are specified in `../tasks/milestone-7-global-content-library.md`
 - **AC-034 / AC-L10** Native templates, REST `/doctors/{id}`, the search document, and the Elementor Doctor Profile widget present the same resolved, combined content.
 - **AC-035 / AC-L11** All mutations enforce capability + nonce + sanitization + validation + context-specific escaping; a global edit bumps cache generation and enqueues bounded rebuilds of affected doctors.
 
-## 12. Computed education title
+## 12. Record title (editable, auto-composed fallback)
 
-The `doctorpilot_edu_exp` `post_title` is **computed and read-only**: on save it
-is generated from `qualification` + " — " + `institution` (falling back to
-whichever is present). This prevents the display title and structured fields from
-drifting apart. The editor shows the computed title as a disabled/derived field.
+Every library type supports the standard WordPress title field, which the editor
+may fill in directly. When the title is **left blank on save**, it is composed
+automatically from the type's `title_parts` (joined with " — ", using whichever
+parts are present) — e.g. Experience/Education from `primary` + `secondary`,
+Procedures from `name`, Publications from `title`, FAQs from `question`. A title
+the editor typed is always preserved. This keeps a sensible default while still
+allowing a custom label, and the compose-on-save uses a remove/re-add-action
+guard around `wp_update_post` to avoid save recursion.
 
 ## 13. Verification
 

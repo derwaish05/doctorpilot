@@ -140,6 +140,66 @@
 	margin-bottom: 5px;
 }
 
+/* Multi-column field rows (Prefix · First · Last, Credentials · Gender). */
+.dp-editor .dp-grid {
+	display: grid;
+	gap: 14px;
+	align-items: start;
+	margin: 0 0 22px;
+}
+
+.dp-editor .dp-grid > .dp-field {
+	margin: 0;
+	min-width: 0;
+}
+
+.dp-editor .dp-grid .dp-field input,
+.dp-editor .dp-grid .dp-field select {
+	width: 100%;
+	max-width: none;
+	box-sizing: border-box;
+}
+
+.dp-editor .dp-input--full {
+	width: 100%;
+	max-width: 940px;
+	box-sizing: border-box;
+}
+
+/* Bordered field box (Listing flags). */
+.dp-editor .dp-fieldset {
+	margin: 0 0 22px;
+	padding: 12px 16px 14px;
+	border: 1px solid #dcdcde;
+	border-radius: 4px;
+	background: #f6f7f7;
+}
+
+.dp-editor .dp-fieldset__legend {
+	padding: 0 4px;
+	font-size: 12.5px;
+	font-weight: 600;
+	color: #1d2327;
+}
+
+.dp-editor .dp-fieldset .dp-field {
+	margin: 10px 0 0;
+}
+
+.dp-editor .dp-fieldset .dp-grid {
+	margin: 8px 0 0;
+}
+
+.dp-editor .dp-fieldset__desc {
+	margin-top: 10px;
+}
+
+@media ( max-width: 782px ) {
+	.dp-editor .dp-grid {
+		grid-template-columns: 1fr !important;
+	}
+}
+
 .dp-editor .dp-desc {
 	color: #646970;
 	font-size: 12px;
@@ -397,16 +457,16 @@
 .dp-editor .dp-row__fields {
 	flex: 1;
 	min-width: 0;
-	display: grid;
-	grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-	gap: 12px;
-	align-items: start;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 12px 14px;
+	align-items: flex-start;
 }
 
 .dp-editor .dp-row-field {
 	display: flex;
 	flex-direction: column;
-	gap: 3px;
+	gap: 4px;
 	min-width: 0;
 }
 
@@ -416,14 +476,26 @@
 	color: #1d2327;
 }
 
-.dp-editor .dp-row-field--textarea {
-	grid-column: 1 / -1;
-}
-
 .dp-editor .dp-row-field input[type="text"],
-.dp-editor .dp-row-field textarea {
+.dp-editor .dp-row-field input[type="email"],
+.dp-editor .dp-row-field textarea,
+.dp-editor .dp-row-field select.dp-row-select {
 	width: 100%;
 	box-sizing: border-box;
+}
+
+/* Inline checkbox column (e.g. "Show email publicly"). */
+.dp-editor .dp-row-field--bool {
+	justify-content: flex-end;
+	padding-bottom: 6px;
+}
+
+.dp-editor .dp-row-field__check {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	font-size: 13px;
+	white-space: nowrap;
 }
 
 .dp-editor .dp-remove-row {

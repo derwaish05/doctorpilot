@@ -41,6 +41,9 @@ foreach ( (array) ( $card['languages'] ?? array() ) as $dp_lang ) {
 		<?php if ( ! empty( $card['is_featured'] ) ) : ?>
 			<span class="dp-badge dp-badge--featured"><?php esc_html_e( 'Featured', 'doctorpilot' ); ?></span>
 		<?php endif; ?>
+		<?php if ( ! empty( $card['is_international'] ) ) : ?>
+			<span class="dp-badge dp-badge--international"><?php esc_html_e( 'International', 'doctorpilot' ); ?></span>
+		<?php endif; ?>
 	</div>
 
 	<div class="dp-card__body">

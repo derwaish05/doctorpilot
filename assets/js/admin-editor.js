@@ -76,7 +76,13 @@
 			$count.text( n + ' ' + ( 1 === n ? 'row' : 'rows' ) );
 		} else {
 			n = $field.find( '.dp-chip input:checked' ).length;
-			$count.text( n + ' selected' );
+			var one = $count.data( 'dp-noun-one' );
+			var many = $count.data( 'dp-noun-many' );
+			if ( one ) {
+				$count.text( n + ' ' + ( 1 === n ? one : many ) + ' selected' );
+			} else {
+				$count.text( n + ' selected' );
+			}
 		}
 	}
 
@@ -114,13 +120,67 @@
 	}
 
 	/**
-	 * Chip (pill) term selection: toggle the visual state and refresh counts.
+	 * Extract the taxonomy from a chip input name: doctorpilot[terms_TAX][].
+	 */
+	function taxFromChip( name ) {
+		var m = ( name || '' ).match( /doctorpilot\[terms_([^\]]+)\]/ );
+		return m ? m[ 1 ] : '';
+	}
+
+	/**
+	 * Extract the taxonomy from a sidebar metabox input name: tax_input[TAX][].
+	 */
+	function taxFromSidebar( name ) {
+		var m = ( name || '' ).match( /tax_input\[([^\]]+)\]/ );
+		return m ? m[ 1 ] : '';
+	}
+
+	/**
+	 * Update a chip's selected class and its field count from its checkbox.
+	 */
+	function updateChipVisual( chipInput ) {
+		var $chip = $( chipInput ).closest( '.dp-chip' );
+		$chip.toggleClass( 'is-selected', chipInput.checked );
+		updateFieldCount( $chip.closest( '.dp-field' ) );
+	}
+
+	/**
+	 * Chip (pill) term selection, kept in sync with the default sidebar
+	 * taxonomy metaboxes so either UI updates the doctor's terms.
 	 */
 	function initChips() {
+		// Chip change → update visual + mirror into the sidebar checkboxes.
 		$( '.dp-editor' ).on( 'change', '.dp-chip input', function () {
-			var $chip = $( this ).closest( '.dp-chip' );
-			$chip.toggleClass( 'is-selected', this.checked );
-			updateFieldCount( $chip.closest( '.dp-field' ) );
+			updateChipVisual( this );
+
+			var tax = taxFromChip( this.name );
+			if ( ! tax ) {
+				return;
+			}
+			$( 'input[name="tax_input[' + tax + '][]"][value="' + this.value + '"]' )
+				.prop( 'checked', this.checked );
+		} );
+
+		// Index chips by taxonomy|termId for fast sidebar → chip lookup.
+		var chipByKey = {};
+		$( '.dp-editor .dp-chip input[type="checkbox"]' ).each( function () {
+			var tax = taxFromChip( this.name );
+			if ( tax ) {
+				chipByKey[ tax + '|' + this.value ] = this;
+			}
+		} );
+
+		// Sidebar checkbox change → mirror into the matching chip.
+		$( document ).on( 'change', 'input[name^="tax_input["]', function () {
+			var tax = taxFromSidebar( this.name );
+			if ( ! tax ) {
+				return;
+			}
+			var chip = chipByKey[ tax + '|' + this.value ];
+			if ( chip && chip.checked !== this.checked ) {
+				chip.checked = this.checked;
+				updateChipVisual( chip );
+			}
 		} );
 	}
 
@@ -134,14 +194,15 @@
 		} );
 
 		$( '.dp-editor' ).on( 'input', '[name*="seo_title"]', function () {
+			var $t = $( '[data-dp-serp-title]' );
 			var t = ( this.value || '' ).trim();
-			$( '[data-dp-serp-title]' ).text( t || 'Doctor name' );
+			$t.text( t || $t.data( 'dp-serp-title-default' ) || 'Doctor name' );
 		} );
 
 		$( '.dp-editor' ).on( 'input', '[name*="seo_description"]', function () {
 			var $d = $( '[data-dp-serp-desc]' );
 			var d = ( this.value || '' ).trim();
-			$d.text( d || $d.data( 'dp-serp-placeholder' ) );
+			$d.text( d || $d.data( 'dp-serp-default' ) || $d.data( 'dp-serp-placeholder' ) );
 		} );
 	}
 

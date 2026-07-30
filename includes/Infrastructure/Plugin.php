@@ -22,9 +22,12 @@ use BrainStudioz\DoctorPilot\Frontend\Templates;
 use BrainStudioz\DoctorPilot\Infrastructure\Cache\CacheGeneration;
 use BrainStudioz\DoctorPilot\Infrastructure\Lifecycle\Activator;
 use BrainStudioz\DoctorPilot\Infrastructure\Migrations\Migrator;
+use BrainStudioz\DoctorPilot\Library\LibraryPostTypes;
+use BrainStudioz\DoctorPilot\Library\ReverseIndex;
 use BrainStudioz\DoctorPilot\PostTypes\DoctorPostType;
 use BrainStudioz\DoctorPilot\Rest\DoctorsController;
 use BrainStudioz\DoctorPilot\Rest\FacetsController;
+use BrainStudioz\DoctorPilot\Rest\LibraryController;
 use BrainStudioz\DoctorPilot\Rest\RouteRegistry;
 use BrainStudioz\DoctorPilot\Rest\SuggestController;
 use BrainStudioz\DoctorPilot\Seo\SeoOwner;
@@ -107,6 +110,11 @@ final class Plugin {
 		( new SymptomTermMeta() )->register();
 		( new MetaRegistrar() )->register();
 		( new SaveDoctor() )->register();
+
+		// Global reusable content library: Experience & Education (ADR-0017).
+		( new LibraryPostTypes() )->register();
+		( new ReverseIndex() )->register();
+		( new LibraryController() )->register();
 
 		// Native frontend rendering and SEO (Milestone 2).
 		( new Templates() )->register();

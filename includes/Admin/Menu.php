@@ -9,6 +9,8 @@ declare( strict_types=1 );
 
 namespace BrainStudioz\DoctorPilot\Admin;
 
+use BrainStudioz\DoctorPilot\Library\LibraryPostTypes;
+use BrainStudioz\DoctorPilot\PostTypes\DoctorPostType;
 use BrainStudioz\DoctorPilot\Support\Capabilities;
 use BrainStudioz\DoctorPilot\Support\ExtensionRegistry;
 
@@ -46,6 +48,10 @@ final class Menu {
 	 */
 	public function register(): void {
 		add_action( 'admin_menu', array( $this, 'register_menu' ) );
+
+		// After every submenu exists (including the auto-registered CPT items and
+		// any Pro screens), sort them into the intended display order.
+		add_action( 'admin_menu', array( $this, 'order_submenu' ), 100 );
 	}
 
 	/**
@@ -81,6 +87,67 @@ final class Menu {
 			self::SETTINGS_SLUG,
 			array( $this, 'render_settings' )
 		);
+	}
+
+	/**
+	 * Sort the DoctorPilot submenu into the intended display order.
+	 *
+	 * WordPress appends items to the parent in registration order (CPT lists,
+	 * our own pages, Pro screens), which is inconsistent. This runs late on
+	 * `admin_menu`, after every item exists, and reorders by slug:
+	 * All Doctors, the global content types, Health, Analytics, Migration,
+	 * Settings. Items not in the list keep their relative order at the end.
+	 *
+	 * @return void
+	 */
+	public function order_submenu(): void {
+		global $submenu;
+
+		if ( empty( $submenu[ self::SLUG ] ) || ! is_array( $submenu[ self::SLUG ] ) ) {
+			return;
+		}
+
+		$order = array(
+			'edit.php?post_type=' . DoctorPostType::POST_TYPE,       // All Doctors.
+			'edit.php?post_type=' . LibraryPostTypes::EDUCATION,     // Education.
+			'edit.php?post_type=' . LibraryPostTypes::EXPERIENCE,    // Experience.
+			'edit.php?post_type=' . LibraryPostTypes::LOCATION,      // Locations.
+			'edit.php?post_type=' . LibraryPostTypes::PROCEDURE,     // Procedures.
+			'edit.php?post_type=' . LibraryPostTypes::PUBLICATION,   // Publications.
+			'edit.php?post_type=' . LibraryPostTypes::FAQ,           // FAQs.
+			self::SLUG,               // Health (dashboard).
+			'doctorpilot-analytics',  // Analytics (Pro).
+			'doctorpilot-migration',  // Migration (Pro).
+			self::SETTINGS_SLUG,      // Settings.
+		);
+
+		$rank    = array_flip( $order );
+		$fallback = count( $order );
+
+		// Assign each item a sort key: its rank if known, otherwise a position
+		// after all known items that preserves its original order. Keys are all
+		// distinct, so ordering is deterministic regardless of sort stability.
+		$indexed = array();
+		foreach ( array_values( $submenu[ self::SLUG ] ) as $pos => $item ) {
+			$slug = isset( $item[2] ) ? (string) $item[2] : '';
+			$key  = isset( $rank[ $slug ] ) ? (int) $rank[ $slug ] : ( $fallback + $pos );
+
+			$indexed[] = array( 'key' => $key, 'item' => $item );
+		}
+
+		usort(
+			$indexed,
+			static function ( array $a, array $b ): int {
+				return $a['key'] <=> $b['key'];
+			}
+		);
+
+		$sorted = array();
+		foreach ( $indexed as $entry ) {
+			$sorted[] = $entry['item'];
+		}
+
+		$submenu[ self::SLUG ] = $sorted;
 	}
 
 	/**
@@ -186,6 +253,44 @@ final class Menu {
 			);
 		}
 		echo '</select></td></tr>';
+
+		// Single doctor layout — render a chosen Elementor template/page on every
+		// single-doctor view (works with free Elementor via the Doctor Profile
+		// widget, which auto-fills the current doctor).
+		if ( did_action( 'elementor/loaded' ) || defined( 'ELEMENTOR_VERSION' ) ) {
+			$current_tpl = (int) $settings['general']['single_doctor_template'];
+			$candidates  = get_posts(
+				array(
+					'post_type'        => array( 'elementor_library', 'page' ),
+					'post_status'      => array( 'publish', 'private' ),
+					'posts_per_page'   => 200,
+					'orderby'          => 'title',
+					'order'            => 'ASC',
+					'no_found_rows'    => true,
+					'suppress_filters' => false,
+				)
+			);
+
+			echo '<tr><th scope="row"><label for="dp-single-template">' . esc_html__( 'Single doctor layout', 'doctorpilot' ) . '</label></th><td>';
+			printf( '<select name="%1$s[general][single_doctor_template]" id="dp-single-template">', esc_attr( Settings::OPTION_KEY ) );
+			printf(
+				'<option value="0" %1$s>%2$s</option>',
+				selected( 0, $current_tpl, false ),
+				esc_html__( 'Native template (default)', 'doctorpilot' )
+			);
+			foreach ( $candidates as $candidate ) {
+				$type_label = 'page' === $candidate->post_type ? __( 'Page', 'doctorpilot' ) : __( 'Template', 'doctorpilot' );
+				printf(
+					'<option value="%1$d" %2$s>%3$s</option>',
+					(int) $candidate->ID,
+					selected( (int) $candidate->ID, $current_tpl, false ),
+					esc_html( sprintf( '%1$s (%2$s #%3$d)', '' !== $candidate->post_title ? $candidate->post_title : __( '(untitled)', 'doctorpilot' ), $type_label, (int) $candidate->ID ) )
+				);
+			}
+			echo '</select>';
+			echo '<p class="description">' . esc_html__( 'Design a page or Elementor template using the "Doctor Profile" widget (DoctorPilot category); it renders for every doctor. Choose "Native template" to use the built-in layout.', 'doctorpilot' ) . '</p>';
+			echo '</td></tr>';
+		}
 
 		// Analytics opt-in (Pro feature; disabled by default).
 		echo '<tr><th scope="row">' . esc_html__( 'Search analytics', 'doctorpilot' ) . '</th><td>';

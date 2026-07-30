@@ -79,9 +79,7 @@ final class DoctorPostType {
 				'hierarchical'        => false,
 				'exclude_from_search' => false,
 				'menu_icon'           => 'dashicons-businessperson',
-				// The name is composed from the First/Last name fields in the editor,
-				// so the default title box is intentionally omitted.
-				'supports'            => array( 'editor', 'thumbnail', 'excerpt', 'author', 'revisions' ),
+				'supports'            => array( 'title', 'editor', 'thumbnail', 'excerpt', 'author', 'revisions' ),
 				'rewrite'             => array(
 					'slug'       => $base,
 					'with_front' => false,

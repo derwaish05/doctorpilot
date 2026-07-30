@@ -163,13 +163,23 @@ update_post_meta(
 	array( 'Vascular interventions', 'Interventional oncology', 'Emergency image-guided care', 'Women\'s health interventions' )
 );
 
-// Education / experience (repeater).
+// Education (doctor-specific local repeater; global records may also be assigned
+// via _doctorpilot_edu_ids from the editor's shared-records selector).
 update_post_meta(
 	$dp_id,
-	$dp_prefix . 'education_experience',
+	$dp_prefix . 'edu_local',
 	array(
-		array( 'type' => 'education', 'institution' => 'American University of Beirut', 'qualification_or_position' => 'Doctor of Medicine (MD), with distinction', 'start_year' => '', 'end_year' => '', 'country' => 'Lebanon', 'description' => '' ),
-		array( 'type' => 'fellowship', 'institution' => "St Mary's Hospital, Vascular Unit", 'qualification_or_position' => 'Interventional Radiology Fellowship', 'start_year' => '', 'end_year' => '', 'country' => 'United Kingdom', 'description' => '' ),
+		array( 'primary' => 'Doctor of Medicine (MD), with distinction', 'secondary' => 'American University of Beirut', 'start_year' => '', 'end_year' => '', 'country' => 'Lebanon', 'description' => '' ),
+		array( 'primary' => 'Interventional Radiology Fellowship', 'secondary' => "St Mary's Hospital, Vascular Unit", 'start_year' => '', 'end_year' => '', 'country' => 'United Kingdom', 'description' => '' ),
+	)
+);
+
+// Experience (doctor-specific local repeater).
+update_post_meta(
+	$dp_id,
+	$dp_prefix . 'exp_local',
+	array(
+		array( 'primary' => 'Consultant Interventional Radiologist', 'secondary' => 'Aman Hospital', 'start_year' => '', 'end_year' => '', 'country' => 'Qatar', 'description' => '' ),
 	)
 );
 

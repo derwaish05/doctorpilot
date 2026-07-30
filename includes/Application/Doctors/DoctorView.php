@@ -11,6 +11,7 @@ namespace BrainStudioz\DoctorPilot\Application\Doctors;
 
 use BrainStudioz\DoctorPilot\Booking\BookingResolver;
 use BrainStudioz\DoctorPilot\Fields\FieldRegistry;
+use BrainStudioz\DoctorPilot\Library\DoctorContentResolver;
 use BrainStudioz\DoctorPilot\PostTypes\DoctorPostType;
 use BrainStudioz\DoctorPilot\Taxonomies\Taxonomies;
 
@@ -83,6 +84,7 @@ final class DoctorView {
 			'languages'              => $this->terms( $post_id, Taxonomies::LANGUAGE ),
 			'accepting_new_patients' => (bool) get_post_meta( $post_id, FieldRegistry::META_PREFIX . 'accepting_new_patients', true ),
 			'is_featured'            => (bool) get_post_meta( $post_id, FieldRegistry::META_PREFIX . 'is_featured', true ),
+			'is_international'        => (bool) get_post_meta( $post_id, FieldRegistry::META_PREFIX . 'is_international', true ),
 			'booking'                => $this->booking_array( $post_id ),
 		);
 	}
@@ -112,12 +114,13 @@ final class DoctorView {
 				'conditions'          => $this->terms( $post_id, Taxonomies::CONDITION ),
 				'treatments'          => $this->terms( $post_id, Taxonomies::TREATMENT ),
 				'clinical_interests'  => $this->string_list( $post_id, FieldRegistry::META_PREFIX . 'clinical_interests' ),
-				'procedures'          => $this->repeater( $post_id, FieldRegistry::META_PREFIX . 'procedures' ),
+				'procedures'          => ( new DoctorContentResolver() )->resolve( $post_id, 'proc', 'public' ),
 				'leadership'          => $this->repeater( $post_id, FieldRegistry::META_PREFIX . 'leadership_positions' ),
-				'education'           => $this->repeater( $post_id, FieldRegistry::META_PREFIX . 'education_experience' ),
+				'experience'          => ( new DoctorContentResolver() )->resolve( $post_id, 'exp', 'public' ),
+				'education'           => ( new DoctorContentResolver() )->resolve( $post_id, 'edu', 'public' ),
 				'certifications'      => $this->repeater( $post_id, FieldRegistry::META_PREFIX . 'certifications' ),
-				'publications'        => $this->repeater( $post_id, FieldRegistry::META_PREFIX . 'publications' ),
-				'faqs'                => $this->repeater( $post_id, FieldRegistry::META_PREFIX . 'faqs' ),
+				'publications'        => ( new DoctorContentResolver() )->resolve( $post_id, 'pub', 'public' ),
+				'faqs'                => ( new DoctorContentResolver() )->resolve( $post_id, 'faq', 'public' ),
 				'locations'           => $this->locations( $post_id ),
 				'online_consultation' => (bool) get_post_meta( $post_id, FieldRegistry::META_PREFIX . 'online_consultation', true ),
 			)
@@ -266,9 +269,30 @@ final class DoctorView {
 	 * @return array<int, array<string, mixed>>
 	 */
 	private function locations( int $post_id ): array {
-		$rows = $this->repeater( $post_id, FieldRegistry::META_PREFIX . 'locations' );
-		$out  = array();
+		$out = array();
 
+		// Shared (global) locations assigned to this doctor come first. Each is a
+		// reusable place record; the doctor's own contact overrides live in the
+		// local repeater below.
+		$shared = ( new DoctorContentResolver() )->resolve( $post_id, 'loc', 'public' );
+		foreach ( $shared as $loc ) {
+			$address = trim( implode( ', ', array_filter( array( (string) ( $loc['area'] ?? '' ), (string) ( $loc['city'] ?? '' ) ) ) ) );
+
+			$out[] = array(
+				'name'              => (string) ( $loc['name'] ?? '' ),
+				'address'           => $address,
+				'phone'             => (string) ( $loc['phone'] ?? '' ),
+				'public_email'      => (string) ( $loc['email'] ?? '' ),
+				'room_floor'        => '',
+				'consultation_type' => '',
+				'office_hours_text' => (string) ( $loc['hours'] ?? '' ),
+				'map_url'           => (string) ( $loc['map_url'] ?? '' ),
+				'is_shared'         => true,
+			);
+		}
+
+		// The doctor's own location + contact records.
+		$rows = $this->repeater( $post_id, FieldRegistry::META_PREFIX . 'locations' );
 		foreach ( $rows as $row ) {
 			$location_id = isset( $row['location_term_id'] ) ? (int) $row['location_term_id'] : 0;
 			$term        = $location_id > 0 ? get_term( $location_id, Taxonomies::LOCATION ) : null;
@@ -277,11 +301,14 @@ final class DoctorView {
 
 			$out[] = array(
 				'name'              => $term instanceof \WP_Term ? $term->name : '',
+				'address'           => '',
 				'phone'             => isset( $row['phone'] ) ? (string) $row['phone'] : '',
 				'public_email'      => $email_public && isset( $row['public_email'] ) ? (string) $row['public_email'] : '',
 				'room_floor'        => isset( $row['room_floor'] ) ? (string) $row['room_floor'] : '',
 				'consultation_type' => isset( $row['consultation_type'] ) ? (string) $row['consultation_type'] : '',
 				'office_hours_text' => isset( $row['office_hours_text'] ) ? (string) $row['office_hours_text'] : '',
+				'map_url'           => '',
+				'is_shared'         => false,
 			);
 		}
 

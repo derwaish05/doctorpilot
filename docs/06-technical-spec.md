@@ -166,6 +166,7 @@ The registry powers admin fields, meta registration, validation, public serializ
 | Gender | Post meta | `_doctorpilot_gender` | Free |
 | Featured | Post meta | `_doctorpilot_is_featured` bool | Free |
 | Accepting new patients | Post meta | `_doctorpilot_accepting_new_patients` bool | Free |
+| International doctor | Post meta | `_doctorpilot_is_international` bool | Free |
 | Years of experience | Post meta | `_doctorpilot_years_experience` non-negative int | Free |
 | Manual order | Post meta | `_doctorpilot_manual_order` bounded non-negative int | Free |
 | License number/authority | Post meta | `_doctorpilot_license_*`; private by default | Free |
@@ -173,7 +174,10 @@ The registry powers admin fields, meta registration, validation, public serializ
 | Primary department | Post meta term ID | `_doctorpilot_primary_department_id` | Free |
 | Primary specialty | Post meta term ID | `_doctorpilot_primary_specialty_id` | Free |
 | Leadership | Array meta | `_doctorpilot_leadership_positions` | Free |
-| Education/experience | Array meta | `_doctorpilot_education_experience` | Free |
+| Experience (local rows) | Array meta | `_doctorpilot_exp_local` | Free |
+| Experience (global refs) | Array meta (int IDs) | `_doctorpilot_exp_ids` → `doctorpilot_exp` CPT | Free |
+| Education (local rows) | Array meta | `_doctorpilot_edu_local` | Free |
+| Education (global refs) | Array meta (int IDs) | `_doctorpilot_edu_ids` → `doctorpilot_edu` CPT | Free |
 | Certifications/memberships | Array meta | `_doctorpilot_certifications` | Free |
 | Publications | Array meta | `_doctorpilot_publications` | Free |
 | Procedures | Array meta | `_doctorpilot_procedures` | Free |
@@ -219,16 +223,24 @@ Rich text is allowlisted through an approved `wp_kses` policy. Nested values are
 Procedures, Experience & Education, Publications, and FAQs use a hybrid model,
 specified in full in `11-global-content-library.md`:
 
-- Global records are prefixed Free custom post types — `doctorpilot_proc`,
-  `doctorpilot_edu_exp`, `doctorpilot_pub`, `doctorpilot_faq` (all ≤ 20 chars) —
-  `show_in_rest=false`, no public archive; `post_status` is the publication
-  authority; managed via `manage_doctorpilot_library`.
-- Doctors reference globals through ordered, unique ID lists
-  (`_doctorpilot_{proc|edu_exp|pub|faq}_ids`) registered in the one `FieldRegistry`
-  alongside the retained local repeaters (`_doctorpilot_procedures`,
-  `_doctorpilot_education_experience`, `_doctorpilot_publications`,
-  `_doctorpilot_faqs`). Each global stores a rebuildable reverse-reference index
-  (`_doctorpilot_assigned_doctor_ids`) and a normalized `_doctorpilot_dedupe_key`.
+- Global records are five prefixed Free custom post types: `doctorpilot_exp`,
+  `doctorpilot_edu`, `doctorpilot_proc`, `doctorpilot_pub`, `doctorpilot_faq`
+  (all ≤ 20 chars). Fields are described by `LibraryPostTypes::schema()` — one
+  `store => content` field per type in `post_content`, the rest as prefixed meta
+  `_doctorpilot_lib_{key}`; the title is computed read-only from the type's
+  `title_parts`. All are `show_in_rest=false`, no public archive; `post_status`
+  is the publication authority; managed via `manage_doctorpilot_library`.
+- Doctors reference globals through ordered, unique ID lists registered in the
+  one `FieldRegistry`: `_doctorpilot_{exp|edu|proc|pub|faq}_ids`. Local
+  (doctor-specific) items live in repeaters: Experience/Education use the split
+  `_doctorpilot_exp_local` / `_doctorpilot_edu_local`; Procedures, Publications,
+  and FAQs reuse the existing `_doctorpilot_procedures`,
+  `_doctorpilot_publications`, `_doctorpilot_faqs` (no data migration). Each
+  global stores a rebuildable reverse-reference index in `_doctorpilot_lib_doctors`.
+  Library records are not part of the doctor search document, so a global edit
+  reflects live through `DoctorContentResolver` with no rebuild; only
+  `before_delete_post` cleanup runs. (The originally-planned
+  `_doctorpilot_dedupe_key` normalized-duplicate key is not yet implemented.)
 - A single `DoctorContentResolver` returns the merged, ordered list per type
   (published globals first, then local items in public context), tagging each
   item's origin in admin context only. All consumers (native templates, search
@@ -285,7 +297,7 @@ Used by the doctor editor's assignment UI. Authenticated, never cached.
 
 | Parameter | Type/default | Limits |
 |---|---|---|
-| `type` | enum, required | `proc`, `edu_exp`, `pub`, `faq` |
+| `type` | enum, required | `exp`, `edu`, `proc`, `pub`, `faq` |
 | `search` | string/empty | 0–100 Unicode characters |
 | `doctor_id` | int/optional | If present, the doctor being edited |
 | `page` | int `1` | min 1; reject unreasonable offsets |
@@ -553,7 +565,8 @@ Use one versioned option object, `bstdz_doctorpilot_settings`, with schema:
     "directory_base": "find-a-doctor",
     "per_page": 12,
     "default_sort": "relevance",
-    "placeholder_attachment_id": 0
+    "placeholder_attachment_id": 0,
+    "single_doctor_template": 0
   },
   "search": {
     "minimum_characters": 2,

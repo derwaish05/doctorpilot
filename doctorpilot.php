@@ -39,7 +39,7 @@ define( 'DOCTORPILOT_VERSION', '0.1.0' );
 define( 'DOCTORPILOT_BASE_API_VERSION', 1 );
 
 // Data schema version. Incremented deliberately when migrations are added.
-define( 'DOCTORPILOT_SCHEMA_VERSION', 1 );
+define( 'DOCTORPILOT_SCHEMA_VERSION', 2 );
 
 // Minimum supported runtime (kept in sync with the plugin header and readme).
 define( 'DOCTORPILOT_MIN_WP', '6.4' );

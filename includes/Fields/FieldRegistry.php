@@ -88,7 +88,21 @@ final class FieldRegistry {
 		 *
 		 * @param array<string, array<string, mixed>> $keyed Field definitions.
 		 */
-		self::$cache = (array) apply_filters( 'doctorpilot/fields/register', $keyed );
+		$filtered = (array) apply_filters( 'doctorpilot/fields/register', $keyed );
+
+		// Normalize every field — including any added by extensions via the
+		// filter — through the defaults so downstream consumers (editor layout,
+		// counts, sanitization) can always rely on keys like `box` and `row`.
+		self::$cache = array();
+		foreach ( $filtered as $key => $field ) {
+			if ( ! is_array( $field ) ) {
+				continue;
+			}
+			if ( ! isset( $field['key'] ) ) {
+				$field['key'] = (string) $key;
+			}
+			self::$cache[ $key ] = self::def( $field );
+		}
 
 		return self::$cache;
 	}
@@ -223,6 +237,17 @@ final class FieldRegistry {
 				'elementor' => false,
 				'label'     => '',
 				'description' => '',
+				// Editor layout hints: fields sharing a 'row' render side by side
+				// (with the given grid 'width'); fields sharing a 'box' render in a
+				// bordered fieldset. `placeholder` seeds inputs; `count_noun` is a
+				// [singular, plural] pair for the "N selected" term count.
+				'row'          => '',
+				'width'        => '',
+				'box'          => '',
+				'placeholder'  => '',
+				'count_noun'   => '',
+				// For 'library' inputs: the global content-library type ('exp'|'edu').
+				'library_type' => '',
 			),
 			$field
 		);
@@ -254,6 +279,8 @@ final class FieldRegistry {
 					'group'     => 'profile',
 					'input'     => 'select',
 					'sanitize'  => 'key',
+					'row'       => 'name',
+					'width'     => '150px',
 					'public'    => true,
 					'elementor' => true,
 					'options'   => array(
@@ -269,6 +296,8 @@ final class FieldRegistry {
 					'key'        => self::META_PREFIX . 'first_name',
 					'group'      => 'profile',
 					'sanitize'   => 'text',
+					'row'        => 'name',
+					'width'      => 'minmax(0, 1fr)',
 					'searchable' => true,
 					'elementor'  => true,
 					'label'      => __( 'First name', 'doctorpilot' ),
@@ -279,6 +308,8 @@ final class FieldRegistry {
 					'key'        => self::META_PREFIX . 'last_name',
 					'group'      => 'profile',
 					'sanitize'   => 'text',
+					'row'        => 'name',
+					'width'      => 'minmax(0, 1fr)',
 					'searchable' => true,
 					'elementor'  => true,
 					'label'      => __( 'Last name', 'doctorpilot' ),
@@ -289,11 +320,13 @@ final class FieldRegistry {
 					'key'       => self::META_PREFIX . 'credentials',
 					'group'     => 'profile',
 					'sanitize'  => 'text',
+					'row'       => 'identity',
+					'width'     => 'minmax(0, 1fr)',
 					'public'    => true,
 					'searchable' => true,
 					'elementor' => true,
 					'label'     => __( 'Credentials', 'doctorpilot' ),
-					'description' => __( 'e.g. MD, MRCP, FRCR', 'doctorpilot' ),
+					'description' => __( 'Shown after the name — e.g. MD, MRCP, FRCR.', 'doctorpilot' ),
 				)
 			),
 			self::def(
@@ -302,6 +335,8 @@ final class FieldRegistry {
 					'group'     => 'profile',
 					'input'     => 'select',
 					'sanitize'  => 'key',
+					'row'       => 'identity',
+					'width'     => '200px',
 					'public'    => true,
 					'elementor' => true,
 					'options'   => array(
@@ -318,12 +353,13 @@ final class FieldRegistry {
 					'key'      => 'post_excerpt',
 					'group'    => 'profile',
 					'storage'  => 'post_excerpt',
-					'input'    => 'textarea',
+					'input'    => 'text',
 					'sanitize' => 'textarea',
 					'public'   => true,
 					'searchable' => true,
 					'elementor' => true,
-					'label'    => __( 'Short introduction', 'doctorpilot' ),
+					'label'    => __( 'Headline', 'doctorpilot' ),
+					'description' => __( "One line under the doctor's name on listing cards.", 'doctorpilot' ),
 				)
 			),
 			self::def(
@@ -360,9 +396,11 @@ final class FieldRegistry {
 					'type'      => 'bool',
 					'input'     => 'checkbox',
 					'sanitize'  => 'bool',
+					'box'       => 'listing_flags',
 					'public'    => true,
 					'elementor' => true,
 					'label'     => __( 'Featured doctor', 'doctorpilot' ),
+					'description' => __( 'Pinned above other doctors in department listings.', 'doctorpilot' ),
 				)
 			),
 			self::def(
@@ -372,9 +410,25 @@ final class FieldRegistry {
 					'type'      => 'bool',
 					'input'     => 'checkbox',
 					'sanitize'  => 'bool',
+					'box'       => 'listing_flags',
 					'public'    => true,
 					'elementor' => true,
 					'label'     => __( 'Accepting new patients', 'doctorpilot' ),
+					'description' => __( 'When off, the booking button is replaced with a waitlist note.', 'doctorpilot' ),
+				)
+			),
+			self::def(
+				array(
+					'key'       => self::META_PREFIX . 'is_international',
+					'group'     => 'profile',
+					'type'      => 'bool',
+					'input'     => 'checkbox',
+					'sanitize'  => 'bool',
+					'box'       => 'listing_flags',
+					'public'    => true,
+					'elementor' => true,
+					'label'     => __( 'International doctor', 'doctorpilot' ),
+					'description' => __( 'Shows an "International" tag on the doctor card and profile.', 'doctorpilot' ),
 				)
 			),
 		);
@@ -400,6 +454,7 @@ final class FieldRegistry {
 					'searchable' => true,
 					'elementor' => true,
 					'label'    => __( 'Departments', 'doctorpilot' ),
+					'count_noun' => array( __( 'department', 'doctorpilot' ), __( 'departments', 'doctorpilot' ) ),
 				)
 			),
 			self::def(
@@ -415,6 +470,7 @@ final class FieldRegistry {
 					'searchable' => true,
 					'elementor' => true,
 					'label'    => __( 'Specialties', 'doctorpilot' ),
+					'count_noun' => array( __( 'specialty', 'doctorpilot' ), __( 'specialties', 'doctorpilot' ) ),
 				)
 			),
 			self::def(
@@ -438,9 +494,12 @@ final class FieldRegistry {
 					'type'      => 'int',
 					'input'     => 'select',
 					'sanitize'  => 'int',
+					'row'       => 'primary',
+					'width'     => 'minmax(0, 1fr)',
 					'public'    => true,
 					'elementor' => true,
 					'label'     => __( 'Primary department', 'doctorpilot' ),
+					'description' => __( 'Only assigned departments are listed.', 'doctorpilot' ),
 				)
 			),
 			self::def(
@@ -450,9 +509,12 @@ final class FieldRegistry {
 					'type'      => 'int',
 					'input'     => 'select',
 					'sanitize'  => 'int',
+					'row'       => 'primary',
+					'width'     => 'minmax(0, 1fr)',
 					'public'    => true,
 					'elementor' => true,
 					'label'     => __( 'Primary specialty', 'doctorpilot' ),
+					'description' => __( 'Used as the profile subtitle.', 'doctorpilot' ),
 				)
 			),
 			self::def(
@@ -462,6 +524,8 @@ final class FieldRegistry {
 					'type'      => 'int',
 					'input'     => 'number',
 					'sanitize'  => 'nonneg_int',
+					'row'       => 'metrics',
+					'width'     => '180px',
 					'public'    => true,
 					'searchable' => true,
 					'elementor' => true,
@@ -475,7 +539,10 @@ final class FieldRegistry {
 					'type'     => 'int',
 					'input'    => 'number',
 					'sanitize' => 'nonneg_int',
+					'row'      => 'metrics',
+					'width'    => 'minmax(0, 1fr)',
 					'label'    => __( 'Manual order', 'doctorpilot' ),
+					'placeholder' => '10',
 					'description' => __( 'Lower numbers appear first when sorting is manual.', 'doctorpilot' ),
 				)
 			),
@@ -485,8 +552,11 @@ final class FieldRegistry {
 					'group'    => 'professional',
 					'sanitize' => 'text',
 					'private'  => true,
+					'box'      => 'licensing',
+					'row'      => 'license',
+					'width'    => 'minmax(0, 1fr)',
 					'label'    => __( 'License number', 'doctorpilot' ),
-					'description' => __( 'Private. Never shown publicly.', 'doctorpilot' ),
+					'placeholder' => 'DHA-P-0148832',
 				)
 			),
 			self::def(
@@ -495,7 +565,11 @@ final class FieldRegistry {
 					'group'    => 'professional',
 					'sanitize' => 'text',
 					'private'  => true,
+					'box'      => 'licensing',
+					'row'      => 'license',
+					'width'    => 'minmax(0, 1fr)',
 					'label'    => __( 'License authority', 'doctorpilot' ),
+					'placeholder' => 'Dubai Health Authority',
 				)
 			),
 			self::def(
@@ -508,7 +582,7 @@ final class FieldRegistry {
 					'public'      => true,
 					'elementor'   => true,
 					'label'       => __( 'Leadership positions', 'doctorpilot' ),
-					'description' => __( 'One per line — e.g. Head of Obstetrics, Al Barsha Hospital.', 'doctorpilot' ),
+					'description' => __( 'One per line — e.g. Head of Obstetrics, Aman Hospital.', 'doctorpilot' ),
 				)
 			),
 		);
@@ -534,6 +608,7 @@ final class FieldRegistry {
 					'searchable' => true,
 					'elementor' => true,
 					'label'    => __( 'Symptoms treated', 'doctorpilot' ),
+					'count_noun' => array( __( 'symptom', 'doctorpilot' ), __( 'symptoms', 'doctorpilot' ) ),
 				)
 			),
 			self::def(
@@ -564,6 +639,22 @@ final class FieldRegistry {
 					'searchable' => true,
 					'elementor' => true,
 					'label'    => __( 'Treatments', 'doctorpilot' ),
+					'count_noun' => array( __( 'treatment', 'doctorpilot' ), __( 'treatments', 'doctorpilot' ) ),
+				)
+			),
+			self::def(
+				array(
+					'key'          => self::META_PREFIX . 'proc_ids',
+					'group'        => 'clinical',
+					'type'         => 'array',
+					'input'        => 'library',
+					'sanitize'     => 'term_ids',
+					'library_type' => 'proc',
+					'public'       => true,
+					'elementor'    => true,
+					'label'        => __( 'Shared procedures', 'doctorpilot' ),
+					'description'  => __( 'Reusable procedure records assigned to this doctor.', 'doctorpilot' ),
+					'count_noun'   => array( __( 'record', 'doctorpilot' ), __( 'records', 'doctorpilot' ) ),
 				)
 			),
 			self::def(
@@ -576,10 +667,11 @@ final class FieldRegistry {
 					'public'    => true,
 					'searchable' => true,
 					'elementor' => true,
-					'label'     => __( 'Procedures', 'doctorpilot' ),
+					'label'     => __( 'Procedures (this doctor only)', 'doctorpilot' ),
+					'description' => __( 'Listed in the order shown.', 'doctorpilot' ),
 					'repeater'  => array(
-						'name'        => array( 'label' => __( 'Name', 'doctorpilot' ), 'sanitize' => 'text' ),
-						'description' => array( 'label' => __( 'Description', 'doctorpilot' ), 'sanitize' => 'textarea' ),
+						'name'        => array( 'label' => __( 'Name', 'doctorpilot' ), 'sanitize' => 'text', 'placeholder' => __( 'Hysteroscopic polypectomy', 'doctorpilot' ), 'basis' => '260px', 'grow' => 1 ),
+						'description' => array( 'label' => __( 'Description', 'doctorpilot' ), 'sanitize' => 'textarea', 'placeholder' => __( 'Optional detail for the public profile.', 'doctorpilot' ) ),
 					),
 				)
 			),
@@ -607,24 +699,79 @@ final class FieldRegistry {
 	 */
 	private static function history_fields(): array {
 		return array(
+			// Experience — shared global records + this doctor's own entries.
 			self::def(
 				array(
-					'key'       => self::META_PREFIX . 'education_experience',
-					'group'     => 'history',
-					'type'      => 'array',
-					'input'     => 'repeater',
-					'sanitize'  => 'repeater',
-					'public'    => true,
-					'elementor' => true,
-					'label'     => __( 'Experience & education', 'doctorpilot' ),
-					'repeater'  => array(
-						'type'                     => array( 'label' => __( 'Type', 'doctorpilot' ), 'sanitize' => 'key' ),
-						'institution'              => array( 'label' => __( 'Institution', 'doctorpilot' ), 'sanitize' => 'text' ),
-						'qualification_or_position' => array( 'label' => __( 'Qualification / position', 'doctorpilot' ), 'sanitize' => 'text' ),
-						'start_year'               => array( 'label' => __( 'Start year', 'doctorpilot' ), 'sanitize' => 'year' ),
-						'end_year'                 => array( 'label' => __( 'End year', 'doctorpilot' ), 'sanitize' => 'year' ),
-						'country'                  => array( 'label' => __( 'Country', 'doctorpilot' ), 'sanitize' => 'text' ),
-						'description'              => array( 'label' => __( 'Description', 'doctorpilot' ), 'sanitize' => 'textarea' ),
+					'key'          => self::META_PREFIX . 'exp_ids',
+					'group'        => 'history',
+					'type'         => 'array',
+					'input'        => 'library',
+					'sanitize'     => 'term_ids',
+					'library_type' => 'exp',
+					'box'          => 'experience',
+					'public'       => true,
+					'elementor'    => true,
+					'label'        => __( 'Shared experience records', 'doctorpilot' ),
+					'count_noun'   => array( __( 'record', 'doctorpilot' ), __( 'records', 'doctorpilot' ) ),
+				)
+			),
+			self::def(
+				array(
+					'key'         => self::META_PREFIX . 'exp_local',
+					'group'       => 'history',
+					'type'        => 'array',
+					'input'       => 'repeater',
+					'sanitize'    => 'repeater',
+					'box'         => 'experience',
+					'public'      => true,
+					'elementor'   => true,
+					'label'       => __( "This doctor's own experience", 'doctorpilot' ),
+					'description' => __( 'Entries that apply to this doctor only.', 'doctorpilot' ),
+					'repeater'    => array(
+						'primary'     => array( 'label' => __( 'Position / role', 'doctorpilot' ), 'sanitize' => 'text', 'placeholder' => __( 'Consultant Obstetrician', 'doctorpilot' ), 'basis' => '220px', 'grow' => 2 ),
+						'secondary'   => array( 'label' => __( 'Organization', 'doctorpilot' ), 'sanitize' => 'text', 'placeholder' => __( 'Aman Hospital', 'doctorpilot' ), 'basis' => '200px', 'grow' => 2 ),
+						'start_year'  => array( 'label' => __( 'Start year', 'doctorpilot' ), 'sanitize' => 'year', 'placeholder' => '2016', 'basis' => '90px', 'grow' => 0 ),
+						'end_year'    => array( 'label' => __( 'End year', 'doctorpilot' ), 'sanitize' => 'year', 'placeholder' => __( 'Present', 'doctorpilot' ), 'basis' => '90px', 'grow' => 0 ),
+						'country'     => array( 'label' => __( 'Country', 'doctorpilot' ), 'sanitize' => 'text', 'placeholder' => __( 'UAE', 'doctorpilot' ), 'basis' => '120px', 'grow' => 0 ),
+						'description' => array( 'label' => __( 'Description', 'doctorpilot' ), 'sanitize' => 'textarea', 'placeholder' => __( 'Optional.', 'doctorpilot' ) ),
+					),
+				)
+			),
+			// Education — shared global records + this doctor's own entries.
+			self::def(
+				array(
+					'key'          => self::META_PREFIX . 'edu_ids',
+					'group'        => 'history',
+					'type'         => 'array',
+					'input'        => 'library',
+					'sanitize'     => 'term_ids',
+					'library_type' => 'edu',
+					'box'          => 'education',
+					'public'       => true,
+					'elementor'    => true,
+					'label'        => __( 'Shared education records', 'doctorpilot' ),
+					'count_noun'   => array( __( 'record', 'doctorpilot' ), __( 'records', 'doctorpilot' ) ),
+				)
+			),
+			self::def(
+				array(
+					'key'         => self::META_PREFIX . 'edu_local',
+					'group'       => 'history',
+					'type'        => 'array',
+					'input'       => 'repeater',
+					'sanitize'    => 'repeater',
+					'box'         => 'education',
+					'public'      => true,
+					'elementor'   => true,
+					'label'       => __( "This doctor's own education", 'doctorpilot' ),
+					'description' => __( 'Entries that apply to this doctor only.', 'doctorpilot' ),
+					'repeater'    => array(
+						'primary'     => array( 'label' => __( 'Qualification', 'doctorpilot' ), 'sanitize' => 'text', 'placeholder' => __( 'MBBCh', 'doctorpilot' ), 'basis' => '200px', 'grow' => 2 ),
+						'secondary'   => array( 'label' => __( 'Institution', 'doctorpilot' ), 'sanitize' => 'text', 'placeholder' => __( 'Cairo University', 'doctorpilot' ), 'basis' => '220px', 'grow' => 2 ),
+						'start_year'  => array( 'label' => __( 'Start year', 'doctorpilot' ), 'sanitize' => 'year', 'placeholder' => '2009', 'basis' => '90px', 'grow' => 0 ),
+						'end_year'    => array( 'label' => __( 'End year', 'doctorpilot' ), 'sanitize' => 'year', 'placeholder' => '2014', 'basis' => '90px', 'grow' => 0 ),
+						'country'     => array( 'label' => __( 'Country', 'doctorpilot' ), 'sanitize' => 'text', 'placeholder' => __( 'Egypt', 'doctorpilot' ), 'basis' => '120px', 'grow' => 0 ),
+						'description' => array( 'label' => __( 'Description', 'doctorpilot' ), 'sanitize' => 'textarea', 'placeholder' => __( 'Optional.', 'doctorpilot' ) ),
 					),
 				)
 			),
@@ -638,13 +785,29 @@ final class FieldRegistry {
 					'public'    => true,
 					'elementor' => true,
 					'label'     => __( 'Certifications & memberships', 'doctorpilot' ),
+					'description' => __( 'Credential URLs are linked from the public profile.', 'doctorpilot' ),
 					'repeater'  => array(
-						'name'           => array( 'label' => __( 'Name', 'doctorpilot' ), 'sanitize' => 'text' ),
-						'organization'   => array( 'label' => __( 'Organization', 'doctorpilot' ), 'sanitize' => 'text' ),
-						'issued_date'    => array( 'label' => __( 'Issued date', 'doctorpilot' ), 'sanitize' => 'text' ),
-						'expiry_date'    => array( 'label' => __( 'Expiry date', 'doctorpilot' ), 'sanitize' => 'text' ),
-						'credential_url' => array( 'label' => __( 'Credential URL', 'doctorpilot' ), 'sanitize' => 'url' ),
+						'name'           => array( 'label' => __( 'Name', 'doctorpilot' ), 'sanitize' => 'text', 'placeholder' => __( 'MRCOG Part 3', 'doctorpilot' ), 'basis' => '200px', 'grow' => 2 ),
+						'organization'   => array( 'label' => __( 'Organization', 'doctorpilot' ), 'sanitize' => 'text', 'placeholder' => 'RCOG', 'basis' => '180px', 'grow' => 2 ),
+						'issued_date'    => array( 'label' => __( 'Issued date', 'doctorpilot' ), 'sanitize' => 'text', 'placeholder' => '2016-05', 'basis' => '120px', 'grow' => 0 ),
+						'expiry_date'    => array( 'label' => __( 'Expiry date', 'doctorpilot' ), 'sanitize' => 'text', 'placeholder' => '—', 'basis' => '120px', 'grow' => 0 ),
+						'credential_url' => array( 'label' => __( 'Credential URL', 'doctorpilot' ), 'sanitize' => 'url', 'placeholder' => 'https://', 'basis' => '200px', 'grow' => 2 ),
 					),
+				)
+			),
+			self::def(
+				array(
+					'key'          => self::META_PREFIX . 'pub_ids',
+					'group'        => 'certifications',
+					'type'         => 'array',
+					'input'        => 'library',
+					'sanitize'     => 'term_ids',
+					'library_type' => 'pub',
+					'public'       => true,
+					'elementor'    => true,
+					'label'        => __( 'Shared publications', 'doctorpilot' ),
+					'description'  => __( 'Reusable publication records assigned to this doctor.', 'doctorpilot' ),
+					'count_noun'   => array( __( 'record', 'doctorpilot' ), __( 'records', 'doctorpilot' ) ),
 				)
 			),
 			self::def(
@@ -656,14 +819,15 @@ final class FieldRegistry {
 					'sanitize'  => 'repeater',
 					'public'    => true,
 					'elementor' => true,
-					'label'     => __( 'Publications', 'doctorpilot' ),
+					'label'     => __( 'Publications (this doctor only)', 'doctorpilot' ),
+					'description' => __( 'DOI is preferred over a plain URL when both exist.', 'doctorpilot' ),
 					'repeater'  => array(
-						'title'          => array( 'label' => __( 'Title', 'doctorpilot' ), 'sanitize' => 'text' ),
-						'journal'        => array( 'label' => __( 'Journal', 'doctorpilot' ), 'sanitize' => 'text' ),
-						'published_date' => array( 'label' => __( 'Published date', 'doctorpilot' ), 'sanitize' => 'text' ),
-						'url'            => array( 'label' => __( 'URL', 'doctorpilot' ), 'sanitize' => 'url' ),
-						'doi'            => array( 'label' => __( 'DOI', 'doctorpilot' ), 'sanitize' => 'text' ),
-						'description'    => array( 'label' => __( 'Description', 'doctorpilot' ), 'sanitize' => 'textarea' ),
+						'title'          => array( 'label' => __( 'Title', 'doctorpilot' ), 'sanitize' => 'text', 'placeholder' => __( 'Outcomes in low-risk induction', 'doctorpilot' ), 'basis' => '220px', 'grow' => 2 ),
+						'journal'        => array( 'label' => __( 'Journal', 'doctorpilot' ), 'sanitize' => 'text', 'placeholder' => 'BJOG', 'basis' => '160px', 'grow' => 1 ),
+						'published_date' => array( 'label' => __( 'Published date', 'doctorpilot' ), 'sanitize' => 'text', 'placeholder' => '2021-08', 'basis' => '120px', 'grow' => 0 ),
+						'url'            => array( 'label' => __( 'URL', 'doctorpilot' ), 'sanitize' => 'url', 'placeholder' => 'https://', 'basis' => '160px', 'grow' => 1 ),
+						'doi'            => array( 'label' => __( 'DOI', 'doctorpilot' ), 'sanitize' => 'text', 'placeholder' => '10.1111/…', 'basis' => '140px', 'grow' => 1 ),
+						'description'    => array( 'label' => __( 'Description', 'doctorpilot' ), 'sanitize' => 'textarea', 'placeholder' => __( 'Optional.', 'doctorpilot' ) ),
 					),
 				)
 			),
@@ -679,6 +843,21 @@ final class FieldRegistry {
 		return array(
 			self::def(
 				array(
+					'key'          => self::META_PREFIX . 'loc_ids',
+					'group'        => 'location',
+					'type'         => 'array',
+					'input'        => 'library',
+					'sanitize'     => 'term_ids',
+					'library_type' => 'loc',
+					'public'       => true,
+					'elementor'    => true,
+					'label'        => __( 'Shared locations', 'doctorpilot' ),
+					'description'  => __( 'Reusable hospital locations assigned to this doctor.', 'doctorpilot' ),
+					'count_noun'   => array( __( 'location', 'doctorpilot' ), __( 'locations', 'doctorpilot' ) ),
+				)
+			),
+			self::def(
+				array(
 					'key'       => self::META_PREFIX . 'locations',
 					'group'     => 'location',
 					'type'      => 'array',
@@ -686,17 +865,17 @@ final class FieldRegistry {
 					'sanitize'  => 'repeater',
 					'public'    => true,
 					'elementor' => true,
-					'label'     => __( 'Location & contact', 'doctorpilot' ),
+					'label'     => __( 'Location & contact (this doctor only)', 'doctorpilot' ),
 					'description' => __( 'The Free plugin stores one location. DoctorPilot Pro supports multiple.', 'doctorpilot' ),
 					'repeater'  => array(
-						'location_term_id'   => array( 'label' => __( 'Location', 'doctorpilot' ), 'sanitize' => 'int' ),
-						'department_term_id' => array( 'label' => __( 'Department at location', 'doctorpilot' ), 'sanitize' => 'int' ),
-						'phone'              => array( 'label' => __( 'Phone', 'doctorpilot' ), 'sanitize' => 'phone' ),
-						'public_email'       => array( 'label' => __( 'Public email', 'doctorpilot' ), 'sanitize' => 'email' ),
+						'location_term_id'   => array( 'label' => __( 'Location', 'doctorpilot' ), 'sanitize' => 'int', 'taxonomy' => Taxonomies::LOCATION, 'basis' => '160px', 'grow' => 1 ),
+						'department_term_id' => array( 'label' => __( 'Department at location', 'doctorpilot' ), 'sanitize' => 'int', 'taxonomy' => Taxonomies::DEPARTMENT, 'basis' => '180px', 'grow' => 1 ),
+						'phone'              => array( 'label' => __( 'Phone', 'doctorpilot' ), 'sanitize' => 'phone', 'placeholder' => '+971 4 000 0000', 'basis' => '150px', 'grow' => 1 ),
+						'public_email'       => array( 'label' => __( 'Public email', 'doctorpilot' ), 'sanitize' => 'email', 'placeholder' => 'name@hospital.ae', 'basis' => '170px', 'grow' => 1 ),
 						'email_is_public'    => array( 'label' => __( 'Show email publicly', 'doctorpilot' ), 'sanitize' => 'bool' ),
-						'room_floor'         => array( 'label' => __( 'Room / floor', 'doctorpilot' ), 'sanitize' => 'text' ),
-						'consultation_type'  => array( 'label' => __( 'Consultation type', 'doctorpilot' ), 'sanitize' => 'key' ),
-						'office_hours_text'  => array( 'label' => __( 'Office hours', 'doctorpilot' ), 'sanitize' => 'textarea' ),
+						'room_floor'         => array( 'label' => __( 'Room / floor', 'doctorpilot' ), 'sanitize' => 'text', 'placeholder' => '3-118', 'basis' => '120px', 'grow' => 0 ),
+						'consultation_type'  => array( 'label' => __( 'Consultation type', 'doctorpilot' ), 'sanitize' => 'key', 'placeholder' => __( 'In-person, Video', 'doctorpilot' ), 'basis' => '150px', 'grow' => 1 ),
+						'office_hours_text'  => array( 'label' => __( 'Office hours', 'doctorpilot' ), 'sanitize' => 'textarea', 'placeholder' => __( 'Sun–Thu, 9:00–17:00', 'doctorpilot' ) ),
 					),
 				)
 			),
@@ -792,6 +971,7 @@ final class FieldRegistry {
 					'group'    => 'seo',
 					'sanitize' => 'text',
 					'label'    => __( 'SEO title', 'doctorpilot' ),
+					'placeholder' => __( 'Dr. Layla Haddad — Obstetrics & Gynaecology', 'doctorpilot' ),
 				)
 			),
 			self::def(
@@ -801,6 +981,7 @@ final class FieldRegistry {
 					'input'    => 'textarea',
 					'sanitize' => 'textarea',
 					'label'    => __( 'Meta description', 'doctorpilot' ),
+					'placeholder' => __( 'One or two sentences shown in search results.', 'doctorpilot' ),
 				)
 			),
 			self::def(
@@ -808,7 +989,10 @@ final class FieldRegistry {
 					'key'      => self::META_PREFIX . 'seo_canonical_url',
 					'group'    => 'seo',
 					'sanitize' => 'url',
+					'row'      => 'urls',
+					'width'    => 'minmax(0, 1fr)',
 					'label'    => __( 'Canonical URL', 'doctorpilot' ),
+					'placeholder' => 'https://',
 				)
 			),
 			self::def(
@@ -816,7 +1000,10 @@ final class FieldRegistry {
 					'key'      => self::META_PREFIX . 'legacy_url',
 					'group'    => 'seo',
 					'sanitize' => 'url',
+					'row'      => 'urls',
+					'width'    => 'minmax(0, 1fr)',
 					'label'    => __( 'Legacy URL', 'doctorpilot' ),
+					'placeholder' => '/team/dr-layla-haddad',
 					'description' => __( 'Old profile URL, retained for migration redirects.', 'doctorpilot' ),
 				)
 			),
@@ -846,6 +1033,21 @@ final class FieldRegistry {
 		return array(
 			self::def(
 				array(
+					'key'          => self::META_PREFIX . 'faq_ids',
+					'group'        => 'faqs',
+					'type'         => 'array',
+					'input'        => 'library',
+					'sanitize'     => 'term_ids',
+					'library_type' => 'faq',
+					'public'       => true,
+					'elementor'    => true,
+					'label'        => __( 'Shared FAQs', 'doctorpilot' ),
+					'description'  => __( 'Reusable FAQ records assigned to this doctor.', 'doctorpilot' ),
+					'count_noun'   => array( __( 'record', 'doctorpilot' ), __( 'records', 'doctorpilot' ) ),
+				)
+			),
+			self::def(
+				array(
 					'key'       => self::META_PREFIX . 'faqs',
 					'group'     => 'faqs',
 					'type'      => 'array',
@@ -853,10 +1055,11 @@ final class FieldRegistry {
 					'sanitize'  => 'repeater',
 					'public'    => true,
 					'elementor' => true,
-					'label'     => __( 'Frequently asked questions', 'doctorpilot' ),
+					'label'     => __( 'Frequently asked questions (this doctor only)', 'doctorpilot' ),
+					'description' => __( 'Rendered as an accordion, and as FAQ schema for search engines.', 'doctorpilot' ),
 					'repeater'  => array(
-						'question' => array( 'label' => __( 'Question', 'doctorpilot' ), 'sanitize' => 'text' ),
-						'answer'   => array( 'label' => __( 'Answer', 'doctorpilot' ), 'sanitize' => 'textarea' ),
+						'question' => array( 'label' => __( 'Question', 'doctorpilot' ), 'sanitize' => 'text', 'placeholder' => __( 'Do I need a referral?', 'doctorpilot' ), 'basis' => '280px', 'grow' => 1 ),
+						'answer'   => array( 'label' => __( 'Answer', 'doctorpilot' ), 'sanitize' => 'textarea', 'placeholder' => __( 'Keep it to two or three sentences.', 'doctorpilot' ) ),
 					),
 				)
 			),
