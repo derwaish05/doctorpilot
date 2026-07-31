@@ -185,6 +185,60 @@
 	}
 
 	/**
+	 * Rebuild a primary department/specialty <select> from the currently checked
+	 * chips of its taxonomy, preserving the current selection when still valid.
+	 */
+	function rebuildPrimaryForTax( tax ) {
+		$( 'select[data-dp-primary-tax="' + tax + '"]' ).each( function () {
+			var $sel = $( this );
+			var current = $sel.val();
+			var placeholder = $sel.find( 'option[value=""]' ).first().text() || '';
+
+			var html = '<option value="">' + placeholder + '</option>';
+			var hasCurrent = false;
+
+			$( '.dp-editor .dp-chip input[type="checkbox"]:checked' ).each( function () {
+				if ( taxFromChip( this.name ) !== tax ) {
+					return;
+				}
+				var label = $( this ).closest( '.dp-chip' ).find( '.dp-chip__label' ).text().replace( /\s+/g, ' ' ).trim();
+				var safe = $( '<div>' ).text( label ).html();
+				html += '<option value="' + this.value + '">' + safe + '</option>';
+				if ( this.value === current ) {
+					hasCurrent = true;
+				}
+			} );
+
+			$sel.html( html );
+			if ( hasCurrent ) {
+				$sel.val( current );
+			}
+		} );
+	}
+
+	/**
+	 * Keep the primary department/specialty selects in step with chip selection,
+	 * so a newly assigned term is immediately choosable as the primary.
+	 */
+	function initPrimarySelects() {
+		$( '.dp-editor' ).on( 'change', '.dp-chip input', function () {
+			var tax = taxFromChip( this.name );
+			if ( tax ) {
+				rebuildPrimaryForTax( tax );
+			}
+		} );
+
+		// Sidebar metabox changes mirror into chips first (see initChips), so
+		// rebuild from the updated chip state afterwards.
+		$( document ).on( 'change', 'input[name^="tax_input["]', function () {
+			var tax = taxFromSidebar( this.name );
+			if ( tax ) {
+				rebuildPrimaryForTax( tax );
+			}
+		} );
+	}
+
+	/**
 	 * SEO character counters and the live Google-style search preview.
 	 */
 	function initSeo() {
@@ -240,6 +294,7 @@
 		initTabs();
 		initRepeaters();
 		initChips();
+		initPrimarySelects();
 		initSeo();
 		initMedia();
 	} );

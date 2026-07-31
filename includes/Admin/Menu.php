@@ -111,7 +111,6 @@ final class Menu {
 			'edit.php?post_type=' . DoctorPostType::POST_TYPE,       // All Doctors.
 			'edit.php?post_type=' . LibraryPostTypes::EDUCATION,     // Education.
 			'edit.php?post_type=' . LibraryPostTypes::EXPERIENCE,    // Experience.
-			'edit.php?post_type=' . LibraryPostTypes::LOCATION,      // Locations.
 			'edit.php?post_type=' . LibraryPostTypes::PROCEDURE,     // Procedures.
 			'edit.php?post_type=' . LibraryPostTypes::PUBLICATION,   // Publications.
 			'edit.php?post_type=' . LibraryPostTypes::FAQ,           // FAQs.

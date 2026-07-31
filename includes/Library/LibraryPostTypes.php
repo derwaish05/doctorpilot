@@ -34,7 +34,6 @@ final class LibraryPostTypes {
 	public const PROCEDURE   = 'doctorpilot_proc';
 	public const PUBLICATION = 'doctorpilot_pub';
 	public const FAQ         = 'doctorpilot_faq';
-	public const LOCATION    = 'doctorpilot_loc';
 
 	/**
 	 * Prefix for every per-field meta key.
@@ -65,7 +64,6 @@ final class LibraryPostTypes {
 			self::PROCEDURE,
 			self::PUBLICATION,
 			self::FAQ,
-			self::LOCATION,
 		);
 	}
 
@@ -160,25 +158,6 @@ final class LibraryPostTypes {
 				'fields'        => array(
 					'question' => array( 'label' => __( 'Question', 'doctorpilot' ), 'type' => 'text', 'store' => 'title' ),
 					'answer'   => array( 'label' => __( 'Answer', 'doctorpilot' ), 'type' => 'textarea', 'store' => 'content' ),
-				),
-			),
-			self::LOCATION    => array(
-				'labels'        => array(
-					'singular' => __( 'Location', 'doctorpilot' ),
-					'plural'   => __( 'Locations', 'doctorpilot' ),
-					'menu'     => __( 'Locations', 'doctorpilot' ),
-				),
-				// The location name IS the post title; opening hours are the content.
-				'title_parts'   => array(),
-				'list_subtitle' => 'city',
-				'fields'        => array(
-					'name'    => array( 'label' => __( 'Location name', 'doctorpilot' ), 'type' => 'text', 'store' => 'title' ),
-					'area'    => array( 'label' => __( 'Address / area', 'doctorpilot' ), 'type' => 'text' ),
-					'city'    => array( 'label' => __( 'City', 'doctorpilot' ), 'type' => 'text' ),
-					'phone'   => array( 'label' => __( 'Phone', 'doctorpilot' ), 'type' => 'text' ),
-					'email'   => array( 'label' => __( 'Email', 'doctorpilot' ), 'type' => 'email' ),
-					'map_url' => array( 'label' => __( 'Map link', 'doctorpilot' ), 'type' => 'url' ),
-					'hours'   => array( 'label' => __( 'Opening hours', 'doctorpilot' ), 'type' => 'textarea', 'store' => 'content' ),
 				),
 			),
 		);

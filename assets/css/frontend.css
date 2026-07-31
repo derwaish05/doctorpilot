@@ -354,15 +354,29 @@
    Colors are themeable via CSS variables set by the widget's style controls.
 --------------------------------------------------------------------------- */
 .dp-hero {
-	--dp-hero-bg-1: #0c2a34;
-	--dp-hero-bg-2: #1c6b74;
 	--dp-accent: #16b47f;
-	background: linear-gradient(120deg, var(--dp-hero-bg-1), var(--dp-hero-bg-2));
+	position: relative;
+	overflow: hidden;
+	/* Solid fallback only; the Elementor Background control owns the visible
+	   background (defaults to the teal gradient) and must not be fought by a
+	   base background-image, or a Classic color choice couldn't show through. */
+	background-color: #0c2a34;
 	color: #fff;
 	padding: 40px 24px 52px;
 }
 
+/* Optional overlay layer, tinted by the widget's "Overlay color" control. */
+.dp-hero::before {
+	content: "";
+	position: absolute;
+	inset: 0;
+	pointer-events: none;
+	opacity: 0;
+}
+
 .dp-hero__inner {
+	position: relative;
+	z-index: 1;
 	max-width: 1200px;
 	margin: 0 auto;
 }
@@ -393,7 +407,9 @@
 	position: relative;
 	border-radius: 16px;
 	overflow: hidden;
-	box-shadow: 0 0 0 3px rgba(22, 180, 127, 0.4), 0 18px 40px rgba(0, 0, 0, 0.35);
+	/* Soft drop shadow only. The green ring was removed so the widget's Border /
+	   Box Shadow controls don't produce a doubled border. */
+	box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
 	margin-top: 12px;
 }
 
@@ -407,9 +423,8 @@
 }
 
 .dp-hero__badge {
+	--dp-badge-offset: 16px;
 	position: absolute;
-	left: 16px;
-	bottom: 16px;
 	background: var(--dp-accent);
 	color: #fff;
 	font-size: 11px;
@@ -419,6 +434,12 @@
 	padding: 7px 14px;
 	border-radius: 8px;
 }
+
+/* Badge corner placement (widget "Position" control). Default: bottom-left. */
+.dp-hero__badge--top-left { top: var(--dp-badge-offset); left: var(--dp-badge-offset); }
+.dp-hero__badge--top-right { top: var(--dp-badge-offset); right: var(--dp-badge-offset); }
+.dp-hero__badge--bottom-left { bottom: var(--dp-badge-offset); left: var(--dp-badge-offset); }
+.dp-hero__badge--bottom-right { bottom: var(--dp-badge-offset); right: var(--dp-badge-offset); }
 
 .dp-hero__name {
 	margin: 0 0 8px;
@@ -508,4 +529,23 @@
 	.dp-hero__grid { grid-template-columns: 1fr; gap: 28px; }
 	.dp-hero__photo { max-width: 260px; margin-top: 0; }
 	.dp-hero__row { grid-template-columns: 130px 1fr; }
+}
+
+/* International badge on the hero photo (top-left; specialty badge sits bottom). */
+.dp-hero__intl {
+	position: absolute;
+	top: 12px;
+	left: 12px;
+	display: inline-flex;
+	align-items: center;
+	gap: 5px;
+	background: rgba(255, 255, 255, 0.95);
+	color: var(--dp-accent);
+	font-size: 11px;
+	font-weight: 700;
+	letter-spacing: 0.05em;
+	text-transform: uppercase;
+	padding: 6px 11px;
+	border-radius: 8px;
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }

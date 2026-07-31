@@ -969,10 +969,15 @@ final class DoctorEditor {
 	private function render_select_field( int $post_id, array $field, string $name, string $id ): void {
 		$key = (string) $field['key'];
 
-		// Primary term selects derive their options from the taxonomy terms.
-		$options = $field['options'];
+		// Primary term selects list ONLY the terms assigned to this doctor, so the
+		// choice is always valid (the primary must be one of the doctor's terms).
+		$options     = $field['options'];
+		$primary_tax = '';
 		if ( '' === $options || array() === $options ) {
-			$options = $this->primary_term_options( $key );
+			$primary_tax = false !== strpos( $key, 'primary_department' )
+				? \BrainStudioz\DoctorPilot\Taxonomies\Taxonomies::DEPARTMENT
+				: \BrainStudioz\DoctorPilot\Taxonomies\Taxonomies::SPECIALTY;
+			$options = $this->primary_term_options( $post_id, $primary_tax );
 		}
 
 		$current = (string) get_post_meta( $post_id, $key, true );
@@ -980,7 +985,10 @@ final class DoctorEditor {
 			$current = (string) $field['default'];
 		}
 
-		printf( '<select id="%1$s" name="%2$s">', esc_attr( $id ), esc_attr( $name ) );
+		$data_tax = '' !== $primary_tax ? ' data-dp-primary-tax="' . esc_attr( $primary_tax ) . '"' : '';
+
+		// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Values escaped inline.
+		echo '<select id="' . esc_attr( $id ) . '" name="' . esc_attr( $name ) . '"' . $data_tax . '>';
 		foreach ( (array) $options as $value => $option_label ) {
 			printf(
 				'<option value="%1$s" %2$s>%3$s</option>',
@@ -993,27 +1001,22 @@ final class DoctorEditor {
 	}
 
 	/**
-	 * Options for a primary department/specialty select.
+	 * Options for a primary department/specialty select — only the terms already
+	 * assigned to this doctor, so a primary can never point outside the set.
 	 *
-	 * @param string $key Meta key.
+	 * @param int    $post_id  Doctor post ID.
+	 * @param string $taxonomy Taxonomy key.
 	 * @return array<string, string>
 	 */
-	private function primary_term_options( string $key ): array {
-		$taxonomy = false !== strpos( $key, 'primary_department' )
-			? \BrainStudioz\DoctorPilot\Taxonomies\Taxonomies::DEPARTMENT
-			: \BrainStudioz\DoctorPilot\Taxonomies\Taxonomies::SPECIALTY;
+	private function primary_term_options( int $post_id, string $taxonomy ): array {
+		$options  = array( '' => __( '— Select —', 'doctorpilot' ) );
+		$assigned = wp_get_object_terms( $post_id, $taxonomy );
 
-		$options = array( '' => __( '— Select —', 'doctorpilot' ) );
-		$terms   = get_terms(
-			array(
-				'taxonomy'   => $taxonomy,
-				'hide_empty' => false,
-				'number'     => 300,
-			)
-		);
-		if ( ! is_wp_error( $terms ) ) {
-			foreach ( $terms as $term ) {
-				$options[ (string) $term->term_id ] = $term->name;
+		if ( ! is_wp_error( $assigned ) ) {
+			foreach ( $assigned as $term ) {
+				if ( $term instanceof \WP_Term ) {
+					$options[ (string) $term->term_id ] = $term->name;
+				}
 			}
 		}
 

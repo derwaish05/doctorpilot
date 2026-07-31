@@ -45,7 +45,6 @@ two distinct parts. A type whose only remaining fields are the title and content
 | Procedure | `doctorpilot_proc` (16) | **is** the name (typed directly) | description | `doctors` |
 | Publication | `doctorpilot_pub` (15) | **is** the title (typed directly) | summary | `journal`, `published_date`, `url`, `doi`, `doctors` |
 | FAQ | `doctorpilot_faq` (15) | **is** the question (typed directly) | answer | `doctors` |
-| Location | `doctorpilot_loc` (15) | **is** the name (typed directly) | opening hours | `area`, `city`, `phone`, `email`, `map_url`, `doctors` |
 
 Capabilities: a mapped set (`doctorpilot_library_item` /
 `doctorpilot_library_items`) plus a `manage_doctorpilot_library` primitive granted
@@ -72,14 +71,6 @@ doctor repeaters** as the local store — `_doctorpilot_procedures`,
 `_doctorpilot_faqs`. Each local repeater row is
 assigned a stable `_key` (a short uid) on save so the editor can reorder, edit,
 and remove local items reliably.
-
-**Locations** are a special case of the hybrid model. Shared locations are
-assigned via `_doctorpilot_loc_ids`, but the doctor's own contact details keep
-the pre-existing term-based `_doctorpilot_locations` repeater (room/floor, direct
-phone, consent-gated email, consultation type) — which also feeds the booking
-resolver. Because those two shapes differ, `DoctorView::locations()` maps and
-merges them itself (shared first, then local) rather than using the generic
-resolver's local pass; the resolver's `loc` local key is an unused placeholder.
 
 ### 1.3 One canonical schema
 

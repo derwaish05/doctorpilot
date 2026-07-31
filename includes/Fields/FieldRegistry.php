@@ -569,7 +569,7 @@ final class FieldRegistry {
 					'row'      => 'license',
 					'width'    => 'minmax(0, 1fr)',
 					'label'    => __( 'License authority', 'doctorpilot' ),
-					'placeholder' => 'Dubai Health Authority',
+					'placeholder' => 'Qatar Health Authority',
 				)
 			),
 			self::def(
@@ -843,21 +843,6 @@ final class FieldRegistry {
 		return array(
 			self::def(
 				array(
-					'key'          => self::META_PREFIX . 'loc_ids',
-					'group'        => 'location',
-					'type'         => 'array',
-					'input'        => 'library',
-					'sanitize'     => 'term_ids',
-					'library_type' => 'loc',
-					'public'       => true,
-					'elementor'    => true,
-					'label'        => __( 'Shared locations', 'doctorpilot' ),
-					'description'  => __( 'Reusable hospital locations assigned to this doctor.', 'doctorpilot' ),
-					'count_noun'   => array( __( 'location', 'doctorpilot' ), __( 'locations', 'doctorpilot' ) ),
-				)
-			),
-			self::def(
-				array(
 					'key'       => self::META_PREFIX . 'locations',
 					'group'     => 'location',
 					'type'      => 'array',
@@ -865,7 +850,7 @@ final class FieldRegistry {
 					'sanitize'  => 'repeater',
 					'public'    => true,
 					'elementor' => true,
-					'label'     => __( 'Location & contact (this doctor only)', 'doctorpilot' ),
+					'label'     => __( 'Location & contact', 'doctorpilot' ),
 					'description' => __( 'The Free plugin stores one location. DoctorPilot Pro supports multiple.', 'doctorpilot' ),
 					'repeater'  => array(
 						'location_term_id'   => array( 'label' => __( 'Location', 'doctorpilot' ), 'sanitize' => 'int', 'taxonomy' => Taxonomies::LOCATION, 'basis' => '160px', 'grow' => 1 ),

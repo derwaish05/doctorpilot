@@ -115,7 +115,6 @@ $dp_created = array(
 	'proc' => array(),
 	'pub'  => array(),
 	'faq'  => array(),
-	'loc'  => array(),
 );
 
 // Experience.
@@ -240,22 +239,6 @@ $dp_created['faq'][] = dp_seed_library_record(
 	array()
 );
 
-// Locations — the name is the post title; opening hours are the content.
-$dp_created['loc'][] = dp_seed_library_record(
-	LibraryPostTypes::LOCATION,
-	'loc-aman-main',
-	'Aman Hospital — Main Campus',
-	"Sun–Thu: 8:00 – 20:00\nSat: 9:00 – 14:00",
-	array( 'area' => 'Al Rayyan Road', 'city' => 'Doha', 'phone' => '+974 4000 0000', 'map_url' => '' )
-);
-$dp_created['loc'][] = dp_seed_library_record(
-	LibraryPostTypes::LOCATION,
-	'loc-aman-clinic',
-	'Aman Outpatient Clinic',
-	'Sun–Thu: 9:00 – 17:00',
-	array( 'area' => 'West Bay', 'city' => 'Doha', 'phone' => '+974 4000 0001', 'map_url' => '' )
-);
-
 // -----------------------------------------------------------------------------
 // Assign the new records to the demo doctor, if present.
 // -----------------------------------------------------------------------------
@@ -310,14 +293,13 @@ foreach ( $dp_created as $ids ) {
 if ( defined( 'WP_CLI' ) && WP_CLI ) {
 	WP_CLI::success(
 		sprintf(
-			'Seeded %d global content records (exp %d, edu %d, proc %d, pub %d, faq %d, loc %d). Assigned %d to the demo doctor.',
+			'Seeded %d global content records (exp %d, edu %d, proc %d, pub %d, faq %d). Assigned %d to the demo doctor.',
 			$dp_total,
 			count( array_filter( $dp_created['exp'] ) ),
 			count( array_filter( $dp_created['edu'] ) ),
 			count( array_filter( $dp_created['proc'] ) ),
 			count( array_filter( $dp_created['pub'] ) ),
 			count( array_filter( $dp_created['faq'] ) ),
-			count( array_filter( $dp_created['loc'] ) ),
 			$dp_assigned
 		)
 	);

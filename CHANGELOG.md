@@ -11,21 +11,21 @@ versioning.
   dynamic data** widget. It renders a single-doctor hero from canonical data —
   breadcrumb, name, role, primary specialty/department/languages/email/phone,
   credential chips, photo with a specialty badge, and Book / Call actions — for
-  the selected or currently viewed doctor. Background and accent colors are
-  themeable via the widget's style controls; an optional Availability text field
-  is provided.
+  the selected or currently viewed doctor. Style controls include Elementor's full
+  **Background** group (Classic color/image with position, repeat, size,
+  attachment; Gradient; and Video/Slideshow when Pro is active), an overlay color,
+  and text/name/accent colors. An **Image** section provides width, aspect ratio,
+  object-fit, border radius, border, box shadow, opacity, CSS filters (normal +
+  hover), a hover animation, and transition. A **Photo badge** section styles the
+  badge (typography, colors, padding, radius, border). An optional Availability
+  text field is provided; Availability otherwise falls back to the doctor's
+  location office hours.
 - New **Single doctor layout** setting (DoctorPilot → Settings). Pick an Elementor
   template or page to render on every single-doctor view. Because the Doctor
   Profile widget resolves the currently viewed doctor, you can design the layout
   once with **free** Elementor — no Elementor Pro / Theme Builder needed. Defaults
   to the built-in native template, and falls back to it if the chosen template is
   empty or Elementor is inactive.
-- **Locations** are now a global content type too (`doctorpilot_loc`). Create a
-  reusable hospital location once (name, address/area, city, phone, email, map
-  link, opening hours) and assign it to many doctors via the new "Shared locations"
-  selector. Shared locations render first in the profile's Locations section,
-  followed by the doctor's own location & contact records (which are unchanged and
-  still drive booking). A "Get directions" link shows when a map URL is set.
 - New **International doctor** listing flag (checkbox in the doctor editor's
   Listing flags box). When enabled, an "International" tag shows on the doctor's
   card (top-right badge) and profile header.
@@ -76,6 +76,12 @@ versioning.
   removed.)
 
 ### Fixed
+- Doctor editor: **Primary specialty** (and Primary department) would silently
+  revert on save when the chosen term wasn't one of the doctor's assigned terms —
+  the dropdown listed every term, but a primary must be an assigned term, so it
+  was cleared. The dropdowns now list only the doctor's assigned specialties /
+  departments, and update live as you check/uncheck the term chips, so the
+  selection always saves.
 - Doctor editor: the location repeater's **Location** and **Department at
   location** fields are now taxonomy dropdowns instead of text boxes. They store
   term IDs, so a typed name was previously coerced to `0` on save; you now pick a

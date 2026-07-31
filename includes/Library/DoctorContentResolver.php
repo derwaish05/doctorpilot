@@ -33,7 +33,6 @@ final class DoctorContentResolver {
 		'proc' => '_doctorpilot_proc_ids',
 		'pub'  => '_doctorpilot_pub_ids',
 		'faq'  => '_doctorpilot_faq_ids',
-		'loc'  => '_doctorpilot_loc_ids',
 	);
 
 	/**
@@ -50,10 +49,6 @@ final class DoctorContentResolver {
 		'proc' => '_doctorpilot_procedures',
 		'pub'  => '_doctorpilot_publications',
 		'faq'  => '_doctorpilot_faqs',
-		// Locations keep their own per-doctor repeater (`_doctorpilot_locations`),
-		// merged separately in DoctorView; this placeholder key is never populated
-		// so resolve('loc') returns only the assigned shared locations.
-		'loc'  => '_doctorpilot_loc_local',
 	);
 
 	/**
@@ -65,7 +60,6 @@ final class DoctorContentResolver {
 		'proc' => LibraryPostTypes::PROCEDURE,
 		'pub'  => LibraryPostTypes::PUBLICATION,
 		'faq'  => LibraryPostTypes::FAQ,
-		'loc'  => LibraryPostTypes::LOCATION,
 	);
 
 	/**
@@ -74,7 +68,7 @@ final class DoctorContentResolver {
 	 * @return array<int, string>
 	 */
 	public static function types(): array {
-		return array( 'exp', 'edu', 'proc', 'pub', 'faq', 'loc' );
+		return array( 'exp', 'edu', 'proc', 'pub', 'faq' );
 	}
 
 	/**

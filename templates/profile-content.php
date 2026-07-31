@@ -200,9 +200,6 @@ $dp_department = isset( $data['primary_department']['name'] ) ? (string) $data['
 					<?php if ( '' !== (string) ( $dp_loc['name'] ?? '' ) ) : ?>
 						<h3><?php echo esc_html( (string) $dp_loc['name'] ); ?></h3>
 					<?php endif; ?>
-					<?php if ( '' !== (string) ( $dp_loc['address'] ?? '' ) ) : ?>
-						<p><?php echo esc_html( (string) $dp_loc['address'] ); ?></p>
-					<?php endif; ?>
 					<?php if ( '' !== (string) ( $dp_loc['room_floor'] ?? '' ) ) : ?>
 						<p><?php echo esc_html( (string) $dp_loc['room_floor'] ); ?></p>
 					<?php endif; ?>
@@ -214,9 +211,6 @@ $dp_department = isset( $data['primary_department']['name'] ) ? (string) $data['
 					<?php endif; ?>
 					<?php if ( '' !== (string) ( $dp_loc['office_hours_text'] ?? '' ) ) : ?>
 						<p><?php echo esc_html( (string) $dp_loc['office_hours_text'] ); ?></p>
-					<?php endif; ?>
-					<?php if ( '' !== (string) ( $dp_loc['map_url'] ?? '' ) ) : ?>
-						<p><a href="<?php echo esc_url( (string) $dp_loc['map_url'] ); ?>" target="_blank" rel="noopener"><?php esc_html_e( 'Get directions', 'doctorpilot' ); ?></a></p>
 					<?php endif; ?>
 				</div>
 			<?php endforeach; ?>
