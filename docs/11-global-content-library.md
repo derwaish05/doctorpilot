@@ -4,8 +4,8 @@
 **Related:** ADR-0017 (`04-decisions.md`); requirements FR-058–FR-063 and AC-025–AC-035; tech-spec §5.4/§7/§10–11.
 
 Reusable, centrally-managed records for **Procedures**, **Experience & Education**,
-**Publications**, and **Frequently Asked Questions**, assignable to many doctors,
-alongside independent doctor-specific ("local") items.
+**Publications**, **Certifications**, and **Frequently Asked Questions**, assignable
+to many doctors, alongside independent doctor-specific ("local") items.
 
 ## 1. Data model and storage
 
@@ -14,14 +14,15 @@ alongside independent doctor-specific ("local") items.
 Prefixed, `show_in_rest=false`, no public archive/single. Managed under the
 DoctorPilot admin menu. The `Menu` owner sorts the submenu late on `admin_menu`
 into a fixed order — All Doctors, Education, Experience, Locations, Procedures,
-Publications, FAQs, Health, Analytics, Migration, Settings — and the individual
+Publications, Certifications, FAQs, Health, Analytics, Migration, Settings — and the individual
 CPTs keep `show_in_menu => 'doctorpilot'` so screen highlighting stays correct.
 `post_status` is the publication authority (ADR-0013). All CPT keys are ≤ 20
 characters (WordPress limit).
 
-> **Implementation note (2026-07-30, schema-driven).** All five library types
-> are built: `doctorpilot_exp`, `doctorpilot_edu`, `doctorpilot_proc`,
-> `doctorpilot_pub`, `doctorpilot_faq`. `LibraryPostTypes` holds one data-driven
+> **Implementation note (2026-07-30, schema-driven; certifications added
+> 2026-08-04).** All six library types are built: `doctorpilot_exp`,
+> `doctorpilot_edu`, `doctorpilot_proc`, `doctorpilot_pub`, `doctorpilot_cert`,
+> `doctorpilot_faq`. `LibraryPostTypes` holds one data-driven
 > `schema()` per type (labels, `title_parts`, `list_subtitle`, and a `fields`
 > map). Every field is stored as prefixed post meta at `_doctorpilot_lib_{key}`
 > **except** exactly one `store => content` field per type, which lives in
@@ -33,7 +34,8 @@ characters (WordPress limit).
 Title column: the editor may type a title; if left blank it is auto-composed from
 the listed parts (see §12). A single-identifier type instead marks that field
 `store => title`, so it *is* the post title with no duplicate field — FAQ
-(`question`), Procedure (`name`), and Publication (`title`). Experience &
+(`question`), Procedure (`name`), Publication (`title`), and Certification
+(`name`). Experience &
 Education keep `primary`/`secondary` fields because their title is composed from
 two distinct parts. A type whose only remaining fields are the title and content
 (FAQ, Procedure) renders no Details meta box.
@@ -43,7 +45,8 @@ two distinct parts. A type whose only remaining fields are the title and content
 | Experience | `doctorpilot_exp` (15) | editable; auto from primary + secondary | description | `primary` (position), `secondary` (organization), `start_year`, `end_year`, `country`, `doctors` |
 | Education | `doctorpilot_edu` (15) | editable; auto from primary + secondary | description | `primary` (qualification), `secondary` (institution), `start_year`, `end_year`, `country`, `doctors` |
 | Procedure | `doctorpilot_proc` (16) | **is** the name (typed directly) | description | `doctors` |
-| Publication | `doctorpilot_pub` (15) | **is** the title (typed directly) | summary | `journal`, `published_date`, `url`, `doi`, `doctors` |
+| Publication | `doctorpilot_pub` (15) | **is** the title (typed directly) | description | `journal`, `published_date`, `url`, `doi`, `doctors` |
+| Certification | `doctorpilot_cert` (16) | **is** the name (typed directly) | — (no content field) | `organization`, `issued_date`, `expiry_date`, `credential_url`, `doctors` |
 | FAQ | `doctorpilot_faq` (15) | **is** the question (typed directly) | answer | `doctors` |
 
 Capabilities: a mapped set (`doctorpilot_library_item` /
@@ -60,14 +63,14 @@ Two derived meta values live on each global record, both rebuildable:
 
 Per doctor, ordered **unique** reference lists (prefixed meta, arrays of ints):
 `_doctorpilot_exp_ids`, `_doctorpilot_edu_ids`, `_doctorpilot_proc_ids`,
-`_doctorpilot_pub_ids`, `_doctorpilot_faq_ids`.
+`_doctorpilot_pub_ids`, `_doctorpilot_cert_ids`, `_doctorpilot_faq_ids`.
 
 Doctor-specific items live in local repeater meta. Experience & Education use
 dedicated split repeaters `_doctorpilot_exp_local` / `_doctorpilot_edu_local`
 (replacing the legacy combined `_doctorpilot_education_experience`, migrated at
 schema version 2). Procedures, Publications, and FAQs **reuse their existing
 doctor repeaters** as the local store — `_doctorpilot_procedures`,
-`_doctorpilot_publications`,
+`_doctorpilot_publications`, `_doctorpilot_certifications`,
 `_doctorpilot_faqs`. Each local repeater row is
 assigned a stable `_key` (a short uid) on save so the editor can reorder, edit,
 and remove local items reliably.

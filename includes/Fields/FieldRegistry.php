@@ -585,6 +585,23 @@ final class FieldRegistry {
 					'description' => __( 'One per line — e.g. Head of Obstetrics, Aman Hospital.', 'doctorpilot' ),
 				)
 			),
+			self::def(
+				array(
+					'key'         => self::META_PREFIX . 'academic_highlights',
+					'group'       => 'professional',
+					'type'        => 'array',
+					'input'       => 'repeater',
+					'sanitize'    => 'repeater',
+					'public'      => true,
+					'elementor'   => true,
+					'label'       => __( 'Academic highlights', 'doctorpilot' ),
+					'description' => __( 'Key figures shown in the sidebar, e.g. “90+ Peer-Reviewed Publications”.', 'doctorpilot' ),
+					'repeater'    => array(
+						'value' => array( 'label' => __( 'Value', 'doctorpilot' ), 'sanitize' => 'text', 'placeholder' => '90+', 'basis' => '90px', 'grow' => 0 ),
+						'label' => array( 'label' => __( 'Label', 'doctorpilot' ), 'sanitize' => 'text', 'placeholder' => __( 'Peer-Reviewed Publications', 'doctorpilot' ), 'basis' => '200px', 'grow' => 2 ),
+					),
+				)
+			),
 		);
 	}
 
@@ -777,6 +794,21 @@ final class FieldRegistry {
 			),
 			self::def(
 				array(
+					'key'          => self::META_PREFIX . 'cert_ids',
+					'group'        => 'certifications',
+					'type'         => 'array',
+					'input'        => 'library',
+					'sanitize'     => 'term_ids',
+					'library_type' => 'cert',
+					'public'       => true,
+					'elementor'    => true,
+					'label'        => __( 'Shared certifications', 'doctorpilot' ),
+					'description'  => __( 'Reusable certification records assigned to this doctor.', 'doctorpilot' ),
+					'count_noun'   => array( __( 'record', 'doctorpilot' ), __( 'records', 'doctorpilot' ) ),
+				)
+			),
+			self::def(
+				array(
 					'key'       => self::META_PREFIX . 'certifications',
 					'group'     => 'certifications',
 					'type'      => 'array',
@@ -784,7 +816,7 @@ final class FieldRegistry {
 					'sanitize'  => 'repeater',
 					'public'    => true,
 					'elementor' => true,
-					'label'     => __( 'Certifications & memberships', 'doctorpilot' ),
+					'label'     => __( 'Certifications (this doctor only)', 'doctorpilot' ),
 					'description' => __( 'Credential URLs are linked from the public profile.', 'doctorpilot' ),
 					'repeater'  => array(
 						'name'           => array( 'label' => __( 'Name', 'doctorpilot' ), 'sanitize' => 'text', 'placeholder' => __( 'MRCOG Part 3', 'doctorpilot' ), 'basis' => '200px', 'grow' => 2 ),

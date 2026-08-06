@@ -1,0 +1,137 @@
+{
+	"version": "0.4",
+	"title": "DoctorPilot – Single Doctor",
+	"type": "page",
+	"content": [
+		{
+			"id": "dphdr01",
+			"elType": "section",
+			"settings": {
+				"layout": "full_width",
+				"gap": "no",
+				"padding": { "unit": "px", "top": "0", "right": "0", "bottom": "0", "left": "0", "isLinked": true }
+			},
+			"elements": [
+				{
+					"id": "dphdrc1",
+					"elType": "column",
+					"settings": { "_column_size": 100, "_inline_size": null },
+					"elements": [
+						{
+							"id": "dphdrw1",
+							"elType": "widget",
+							"widgetType": "doctorpilot-page-header",
+							"settings": {}
+						}
+					]
+				}
+			]
+		},
+		{
+			"id": "dpbody1",
+			"elType": "section",
+			"settings": {
+				"structure": "66",
+				"gap": "wide",
+				"padding": { "unit": "px", "top": "48", "right": "0", "bottom": "56", "left": "0", "isLinked": false }
+			},
+			"elements": [
+				{
+					"id": "dpmain1",
+					"elType": "column",
+					"settings": { "_column_size": 66, "_inline_size": 66, "content_position": "top" },
+					"elements": [
+						{
+							"id": "dpmh1a1",
+							"elType": "widget",
+							"widgetType": "doctorpilot-heading-block",
+							"settings": {
+								"subheading_text": "Overview",
+								"heading_text": "About the Doctor",
+								"description_show": "",
+								"line_show": "yes"
+							}
+						},
+						{
+							"id": "dpabt01",
+							"elType": "widget",
+							"widgetType": "doctorpilot-about-doctor",
+							"settings": {}
+						},
+						{
+							"id": "dpmh2b2",
+							"elType": "widget",
+							"widgetType": "doctorpilot-heading-block",
+							"settings": {
+								"subheading_text": "Specialization",
+								"heading_text": "Scope of Practice",
+								"description_show": "",
+								"line_show": ""
+							}
+						},
+						{
+							"id": "dpspc01",
+							"elType": "widget",
+							"widgetType": "doctorpilot-specialties",
+							"settings": { "source": "procedures", "columns": "2" }
+						},
+						{
+							"id": "dpmh3c3",
+							"elType": "widget",
+							"widgetType": "doctorpilot-heading-block",
+							"settings": {
+								"subheading_text": "Training",
+								"heading_text": "Experience & Education",
+								"description_show": "",
+								"line_show": ""
+							}
+						},
+						{
+							"id": "dptml01",
+							"elType": "widget",
+							"widgetType": "doctorpilot-timeline",
+							"settings": { "source": "both" }
+						}
+					]
+				},
+				{
+					"id": "dpside1",
+					"elType": "column",
+					"settings": {
+						"_column_size": 34,
+						"_inline_size": 34,
+						"content_position": "top",
+						"_css_classes": "dp-sticky"
+					},
+					"elements": [
+						{
+							"id": "dpbcd01",
+							"elType": "widget",
+							"widgetType": "doctorpilot-booking-card",
+							"settings": {}
+						},
+						{
+							"id": "dpfct01",
+							"elType": "widget",
+							"widgetType": "doctorpilot-doctor-facts",
+							"settings": {}
+						},
+						{
+							"id": "dpahl01",
+							"elType": "widget",
+							"widgetType": "doctorpilot-academic-highlights",
+							"settings": { "data_source": "doctor" }
+						},
+						{
+							"id": "dpcrt01",
+							"elType": "widget",
+							"widgetType": "doctorpilot-certifications",
+							"settings": {}
+						}
+					]
+				}
+			]
+		}
+	],
+	"page_settings": []
+}

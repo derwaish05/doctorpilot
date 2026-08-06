@@ -7,6 +7,94 @@ versioning.
 ## [Unreleased]
 
 ### Added
+- The **Doctor Grid / List** Elementor widget now has a built-in **search
+  option**. Alongside the existing card grid it can render a search bar with
+  search-mode tabs (**By Doctor Name / By Department / By Specialty / By
+  Symptom**), a collapsible **More Filters** row (**Sort By**, **Gender**,
+  **Languages Spoken**, plus Department, Specialty, Symptom, Accepting new
+  patients, and Online consultation), an active-filter badge, a **Clear**
+  button, a live result count, and pagination. Everything is toggleable per
+  widget, and taxonomy filters only appear when the site has matching terms and
+  the filter is enabled in DoctorPilot settings.
+- The widget's **Compact list** layout renders name + specialty rows in
+  responsive columns and gains an optional **A–Z index**: results are grouped by
+  first letter (honorifics ignored), unavailable letters are dimmed, and picking
+  a letter narrows the view. The A–Z view lists every match rather than a single
+  page, bounded to 10 pages of results with an honest notice when a larger
+  directory is truncated.
+- New style sections for the widget: **Search bar** (bar background, padding,
+  radius, input colors/border, mode-tab typography and active colors, filter
+  label and button colors), **A–Z index**, and **List row** (name and specialty
+  typography/color, row gap). The Columns control now drives the list rows as
+  well as the card grid.
+- New theme-overridable templates `doctorpilot/directory.php` and
+  `doctorpilot/row-doctor.php`, and a new `doctorpilot-directory` script that is
+  enqueued only on pages where the widget is present.
+- New **`name_desc` (Z → A)** sort value, available to the widget, the
+  `[doctorpilot_search]` shortcode, and `GET /doctors`.
+- **Booking Card** buttons gained the full button style treatment (matching the
+  Page header): shared Typography, Icon size, Icon spacing, Padding, and Border
+  radius, plus per-button (Book / Call) **Normal + Hover** tabs with Text color,
+  Background color, and Icon color, and Border and Box Shadow group controls.
+- New **shared/global Certifications** library type (`doctorpilot_cert`), mirroring
+  Publications: a central, reusable Certifications post type (Name, Organization,
+  Issued date, Expiry date, Credential URL) managed under the DoctorPilot menu and
+  assignable to many doctors via a new **Shared certifications** field on the doctor
+  editor. The doctor's certifications now merge assigned shared records first, then
+  the doctor-only repeater (renamed **Certifications (this doctor only)**). Wired
+  through the content resolver, REST assignment picker, and reverse index.
+- Certification widgets now surface **all fields** on the frontend: the standalone
+  **Certifications** widget and the **Certifications & Publications** widget can
+  show the **issued / expiry dates** (behind a toggle) in addition to name,
+  organization, and the credential link.
+- **Page header** credential chips now have a configurable **Certification icon**
+  (content tab, defaults to the award icon) and a **Certifications** style section
+  with icon color (default `#136888`), icon size, chip text/background color,
+  typography, gap, padding, and radius — plus a Show/Hide toggle. The icons render
+  from the doctor's dynamic certification data. Icon color scopes `fill` to Font
+  Awesome SVGs so the built-in line icon isn't filled solid.
+- New per-doctor **Academic highlights** field (repeater of value + label) in the
+  doctor editor; the Academic Highlights widget gains a **Data source** option
+  (doctor field / manual) so the numbers can be dynamic per doctor.
+- Importable Elementor page template (`tools/single-doctor.elementor.json`)
+  assembling the header plus a two-column layout with a `dp-sticky` sidebar.
+- New sidebar Elementor widgets (Single DoctorPilot category): **Booking Card**
+  (dark CTA with title, `{name}` subtitle, Book + Call), **Doctor Facts**
+  (icon-led Languages/Availability/Department/Email/Phone), **Academic Highlights**
+  (manual stat grid via a repeater), and **Certifications** (from the doctor's
+  certifications, optionally linked to the credential URL). All dynamic and fully
+  styleable. Added a **`dp-sticky`** utility CSS class (with `dp-sticky--scroll`)
+  so any Elementor column can be made sticky without Elementor Pro.
+- New **Heading Block** Elementor widget (DoctorPilot category): a main heading
+  (optionally linked), subheading, and description, each with its own HTML tag,
+  show/hide toggle, and display order. Full Style controls per element —
+  typography, text color (normal/hover), gradient text, text shadow, spacing,
+  padding — plus a Box section (background/gradient/image, overlay, padding,
+  radius, border and box-shadow with normal/hover tabs, transition) and an
+  optional decorative line (above/below/left/right). Uses core Elementor control
+  APIs, so it works with or without Pro; all output escaped and translation-ready.
+- New **Experience & Education** timeline Elementor widget (Single DoctorPilot
+  category): a vertical timeline of the doctor's experience and/or education
+  entries — icon nodes on a connecting rail with a card per entry (role/
+  qualification + organization/institution, optional year range). Configurable
+  node/meta icons and full rail, card, and text style controls.
+- New **Certifications & Publications** Elementor widget (Single DoctorPilot
+  category): renders both the doctor's certifications (name, organization,
+  credential link) and publications (title, journal · date, URL/DOI link) as two
+  titled, icon-led lists in one widget. Each group toggles independently and hides
+  when empty; full layout, icon (with box options), and text style controls.
+  Publications can now show the **description/summary** and certifications the
+  **issued/expiry dates** (each behind its own toggle), with a Description text
+  style control — so every stored field can be surfaced on the frontend.
+- New **Specialties** Elementor widget (Single DoctorPilot category): a
+  check-marked, multi-column "scope of practice" list built from the doctor's
+  procedures, treatments, specialties, conditions, symptoms, or clinical
+  interests. Selectable icon and columns, with item/label/icon style controls
+  (background, border, radius, hover, typography, colors).
+- New **About Doctor** Elementor widget (Single DoctorPilot category): outputs the
+  doctor's biography (or headline) for the selected/current doctor, with body-text
+  typography/color/link/spacing and box style controls. Pair it with a Heading
+  Block for the eyebrow/heading above it.
 - New Elementor widget category **Single DoctorPilot** with a **Page header with
   dynamic data** widget. It renders a single-doctor hero from canonical data —
   breadcrumb, name, role, primary specialty/department/languages/email/phone,
@@ -52,6 +140,34 @@ versioning.
   `manage_doctorpilot_library` capability (granted to administrators).
 
 ### Changed
+- **Doctor Grid / List** now defaults to showing its search bar and the Sort By /
+  Gender / Languages Spoken filters. Existing placements of the widget will start
+  showing the search toolbar; switch **Show search bar** off and clear the
+  **Filters** control to restore the previous plain-grid output.
+- The widget's **List** layout now renders compact name + specialty rows instead
+  of one-column cards. Use the **Card grid** layout with Columns set to 1 for the
+  previous appearance.
+- `GET /doctors` now honours the documented `per_page` parameter instead of
+  always using the site's per-page setting. The value is still clamped to 1–48
+  and is part of the cache key, so cached responses stay correct.
+- Shared (global) **Publications** now use the same field set and labels as the
+  doctor-only Publications repeater — the last field is labelled **Description**
+  (was "Summary") so both forms match. Fields: Title, Journal, Published date,
+  URL, DOI, Description.
+- Icon style sections in **Doctor Facts**, **Specialties**, **Certifications**, and
+  the **Experience & Education** timeline node now include full box controls:
+  padding, border radius, transition, and Background / Border / Box-shadow groups
+  with Normal + Hover tabs.
+- Content widgets (**About Doctor**, **Specialties**, **Experience & Education**)
+  gained an optional built-in **eyebrow + heading** that renders only when the
+  widget has data — so empty sections (and their headings) disappear for doctors
+  without that content, instead of leaving a stray heading. Use it in place of a
+  separate Heading Block.
+- **Page Header** now has a **Placeholder image** control shown when a doctor has
+  no featured photo (defaults to the Elementor placeholder).
+- Frontend theme primary color set to `#136888` (via a `--dp-primary` CSS
+  variable), applied to primary buttons, the single-doctor hero background/accent,
+  profile headings (h1–h6), and links.
 - SEO defaults now derive from the doctor's own post: the **SEO title** defaults to
   the post title (previously name + specialty), and the **meta description**
   defaults to the doctor's description — the headline (excerpt) when present,
@@ -76,6 +192,30 @@ versioning.
   removed.)
 
 ### Fixed
+- The **Book** call-to-action on doctor cards was invisible: `.dp-directory a`
+  out-specified `.dp-btn--primary`, painting the label the same colour as the
+  button's own background. Link colouring now skips `.dp-btn`.
+- **Elementor single-doctor templates now load Elementor's base frontend CSS** on
+  the doctor page. Because the queried object is a doctor (not an Elementor
+  document), Elementor previously skipped its own asset loading, so flexbox
+  container styles (`.e-con`) never loaded and multi-column template layouts
+  collapsed/overlapped on the frontend while looking correct in the editor. The
+  plugin now registers (early, priority 1) and enqueues Elementor's frontend
+  styles/scripts and the template's generated CSS on single-doctor pages that use
+  a template. Registering the `elementor-frontend` handles early also resolves the
+  WordPress 6.9 "dependencies that are not registered: elementor-frontend" notices
+  raised by the theme's Elementor mega-menu templates on doctor pages.
+- Doctor-specific ("this doctor only") **publications now display** alongside
+  shared library publications. Library types whose title is a dedicated field
+  (publications) have no composed `title_parts`, so the local-entry resolver was
+  overwriting each row's real title with an empty string — blanking it and causing
+  the item to be filtered out. The composed title is now only applied when it is
+  non-empty, otherwise the field-derived title is kept. Affects any library type
+  without `title_parts`.
+- Single-doctor Elementor widgets no longer show the same doctor on every doctor
+  page. The **current queried doctor now takes precedence** over a widget's
+  Doctor ID, so one template renders each doctor correctly. The Doctor ID is now
+  a fallback only — for editor preview or placing a widget off a doctor page.
 - Doctor editor: **Primary specialty** (and Primary department) would silently
   revert on save when the chosen term wasn't one of the doctor's assigned terms —
   the dropdown listed every term, but a primary must be an assigned term, so it

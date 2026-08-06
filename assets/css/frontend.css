@@ -1,5 +1,33 @@
 /* DoctorPilot frontend styles. Scoped to dp- classes to avoid theme conflicts. */
 
+/* Theme primary color, used for buttons, backgrounds, headings, and links. */
+.dp-profile,
+.dp-directory,
+.dp-results,
+.dp-search,
+.dp-hero {
+	--dp-primary: #136888;
+}
+
+.dp-profile h1,
+.dp-profile h2,
+.dp-profile h3,
+.dp-profile h4,
+.dp-profile h5,
+.dp-profile h6,
+.dp-profile__name {
+	color: var(--dp-primary);
+}
+
+/* Buttons are excluded: `.dp-directory a` would otherwise out-specify
+   `.dp-btn--primary`, painting the CTA label the same colour as its own
+   background. */
+.dp-profile a:not(.dp-btn),
+.dp-directory a:not(.dp-btn),
+.dp-card__name a {
+	color: var(--dp-primary);
+}
+
 .dp-directory {
 	display: grid;
 	gap: 20px;
@@ -122,7 +150,7 @@
 }
 
 .dp-btn--primary {
-	background: #1d4ed8;
+	background: var(--dp-primary, #136888);
 	color: #fff;
 }
 
@@ -132,7 +160,7 @@
 }
 
 .dp-btn:focus {
-	outline: 2px solid #1d4ed8;
+	outline: 2px solid var(--dp-primary, #136888);
 	outline-offset: 2px;
 }
 
@@ -354,13 +382,13 @@
    Colors are themeable via CSS variables set by the widget's style controls.
 --------------------------------------------------------------------------- */
 .dp-hero {
-	--dp-accent: #16b47f;
+	--dp-accent: var(--dp-primary, #136888);
 	position: relative;
 	overflow: hidden;
 	/* Solid fallback only; the Elementor Background control owns the visible
-	   background (defaults to the teal gradient) and must not be fought by a
+	   background (defaults to the primary color) and must not be fought by a
 	   base background-image, or a Classic color choice couldn't show through. */
-	background-color: #0c2a34;
+	background-color: var(--dp-primary, #136888);
 	color: #fff;
 	padding: 40px 24px 52px;
 }
@@ -425,8 +453,8 @@
 .dp-hero__badge {
 	--dp-badge-offset: 16px;
 	position: absolute;
-	background: var(--dp-accent);
-	color: #fff;
+	background: #fffabf;
+	color: #136888;
 	font-size: 11px;
 	font-weight: 700;
 	letter-spacing: 0.07em;
@@ -512,18 +540,19 @@
 }
 
 .dp-hero__btn--primary {
-	background: var(--dp-accent);
-	color: #fff;
+	background: #fffabf;
+	color: #136888;
 }
 
-.dp-hero__btn--primary:hover { filter: brightness(1.05); }
+.dp-hero__btn--primary:hover { filter: brightness(0.96); }
 
 .dp-hero__btn--ghost {
-	border: 1px solid rgba(255, 255, 255, 0.4);
-	color: #fff;
+	border: 1px solid #136888;
+	background: #fffabf;
+	color: #136888;
 }
 
-.dp-hero__btn--ghost:hover { background: rgba(255, 255, 255, 0.08); }
+.dp-hero__btn--ghost:hover { filter: brightness(0.96); }
 
 @media (max-width: 782px) {
 	.dp-hero__grid { grid-template-columns: 1fr; gap: 28px; }
@@ -548,4 +577,966 @@
 	padding: 6px 11px;
 	border-radius: 8px;
 	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+/* ---------------------------------------------------------------------------
+   Heading Block widget (HeadingBlock).
+--------------------------------------------------------------------------- */
+.dp-ah {
+	position: relative;
+}
+
+.dp-ah > * {
+	position: relative;
+	z-index: 1;
+}
+
+.dp-ah::before {
+	content: "";
+	position: absolute;
+	inset: 0;
+	pointer-events: none;
+	opacity: 0;
+	z-index: 0;
+	border-radius: inherit;
+}
+
+/* Default styling (overridable per widget via the Style controls). */
+.dp-ah__subheading {
+	margin: 0 0 8px;
+	color: #fffabf;
+	font-size: 13px;
+	font-weight: 700;
+	letter-spacing: 0.12em;
+	text-transform: uppercase;
+	line-height: 1.4;
+}
+
+.dp-ah__heading {
+	margin: 0 0 14px;
+	color: #136888;
+	font-size: 28px;
+	font-weight: 800;
+	line-height: 1.2;
+}
+
+.dp-ah__description {
+	margin: 16px 0 0;
+	color: #5a6b7a;
+	font-size: 16px;
+	line-height: 1.7;
+}
+
+.dp-ah__link {
+	color: inherit;
+	text-decoration: none;
+}
+
+/* Gradient text fill. */
+.dp-ah .is-gradient {
+	-webkit-background-clip: text;
+	background-clip: text;
+	-webkit-text-fill-color: transparent;
+	color: transparent;
+}
+
+/* Decorative line. */
+.dp-ah__line {
+	display: inline-block;
+	background: var(--dp-ah-line-color, currentColor);
+	border-radius: 999px;
+}
+
+.dp-ah__line--top,
+.dp-ah__line--bottom {
+	width: var(--dp-ah-line-length, 60px);
+	height: var(--dp-ah-line-thickness, 3px);
+}
+
+.dp-ah__line--top { margin-bottom: 14px; }
+.dp-ah__line--bottom { margin-top: 14px; }
+
+.dp-ah__line--left,
+.dp-ah__line--right {
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	width: var(--dp-ah-line-thickness, 3px);
+	height: auto;
+}
+
+.dp-ah__line--left { left: 0; }
+.dp-ah__line--right { right: 0; }
+
+/* About Doctor widget: eyebrow, heading, divider, then the biography. */
+.dp-about .dp-ah__heading { margin-bottom: 14px; }
+.dp-about .dp-ah__line--bottom { margin-top: 0; margin-bottom: 20px; }
+.dp-about .dp-ah__description { margin-top: 0; }
+.dp-about .dp-ah__description p { margin: 0 0 1em; }
+.dp-about .dp-ah__description p:last-child { margin-bottom: 0; }
+
+/* ---------------------------------------------------------------------------
+   Specialties / Scope of practice widget.
+--------------------------------------------------------------------------- */
+.dp-scope {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 16px 20px;
+}
+
+.dp-scope__item {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	padding: 16px 18px;
+	border: 1px solid #e6e9ee;
+	border-radius: 12px;
+	background: #fff;
+}
+
+.dp-scope__icon {
+	display: inline-flex;
+	align-items: center;
+	color: #16b47f;
+	font-size: 18px;
+	flex: 0 0 auto;
+}
+
+.dp-scope__icon svg,
+.dp-scope__icon i {
+	width: 1em;
+	height: 1em;
+	display: inline-block;
+}
+
+.dp-scope__label {
+	color: #136888;
+	font-weight: 700;
+	font-size: 15px;
+	line-height: 1.35;
+}
+
+@media (max-width: 767px) {
+	.dp-scope {
+		grid-template-columns: 1fr;
+	}
+}
+
+/* ---------------------------------------------------------------------------
+   Experience & Education timeline widget.
+--------------------------------------------------------------------------- */
+.dp-timeline {
+	--dp-tl-node-size: 38px;
+	--dp-tl-node-bg: #e6f4ee;
+	--dp-tl-node-color: #16b47f;
+	--dp-tl-line: #bfe3d5;
+	--dp-tl-item-gap: 22px;
+	list-style: none;
+	margin: 0;
+	padding: 0;
+}
+
+.dp-timeline__item {
+	position: relative;
+	display: grid;
+	grid-template-columns: var(--dp-tl-node-size) 1fr;
+	column-gap: 22px;
+	padding-bottom: var(--dp-tl-item-gap);
+}
+
+.dp-timeline__item:last-child {
+	padding-bottom: 0;
+}
+
+/* Connecting line runs from below one node to the next. */
+.dp-timeline__item::before {
+	content: "";
+	position: absolute;
+	left: calc(var(--dp-tl-node-size) / 2 - 1px);
+	top: var(--dp-tl-node-size);
+	bottom: calc(-1 * var(--dp-tl-item-gap) + 4px);
+	width: 2px;
+	background: var(--dp-tl-line);
+}
+
+.dp-timeline__item:last-child::before {
+	display: none;
+}
+
+.dp-timeline__node {
+	position: relative;
+	z-index: 1;
+	width: var(--dp-tl-node-size);
+	height: var(--dp-tl-node-size);
+	border-radius: 50%;
+	background: var(--dp-tl-node-bg);
+	color: var(--dp-tl-node-color);
+	border: 2px solid var(--dp-tl-node-color);
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	font-size: calc(var(--dp-tl-node-size) * 0.42);
+}
+
+.dp-timeline__node svg,
+.dp-timeline__node i {
+	width: 1em;
+	height: 1em;
+	display: inline-block;
+}
+
+.dp-timeline__card {
+	border: 1px solid #e6e9ee;
+	border-radius: 12px;
+	padding: 16px 22px;
+	background: #fff;
+}
+
+.dp-timeline__title {
+	color: #136888;
+	font-weight: 800;
+	font-size: 17px;
+	line-height: 1.35;
+	margin: 0 0 5px;
+}
+
+.dp-timeline__meta {
+	display: flex;
+	align-items: center;
+	gap: 7px;
+	color: #6b7a88;
+	font-size: 14px;
+}
+
+.dp-timeline__meta svg,
+.dp-timeline__meta i {
+	width: 1em;
+	height: 1em;
+	color: currentColor;
+	flex: 0 0 auto;
+}
+
+/* ---------------------------------------------------------------------------
+   Sticky sidebar utility. Add the class "dp-sticky" to any Elementor column /
+   container inside a flex row whose parent Align Items is Start.
+--------------------------------------------------------------------------- */
+.dp-sticky {
+	position: -webkit-sticky;
+	position: sticky;
+	top: var(--dp-sticky-top, 96px);
+	align-self: flex-start;
+}
+
+.dp-sticky--scroll {
+	max-height: calc(100vh - var(--dp-sticky-top, 96px) - 16px);
+	overflow: auto;
+}
+
+@media (max-width: 1024px) {
+	.dp-sticky {
+		position: static;
+		max-height: none;
+	}
+}
+
+/* ---------------------------------------------------------------------------
+   Booking Card widget.
+--------------------------------------------------------------------------- */
+.dp-bcard {
+	position: relative;
+	overflow: hidden;
+	background: linear-gradient(160deg, #0e2a33, #123f4a);
+	color: #fff;
+	border-radius: 18px;
+	padding: 26px 24px;
+}
+
+.dp-bcard__mark {
+	display: inline-flex;
+	color: #16b47f;
+	font-size: 20px;
+	margin-bottom: 14px;
+}
+
+.dp-bcard__mark svg,
+.dp-bcard__mark i { width: 1em; height: 1em; }
+
+.dp-bcard__title {
+	margin: 0 0 6px;
+	font-size: 22px;
+	font-weight: 800;
+	color: #fff;
+	line-height: 1.2;
+}
+
+.dp-bcard__subtitle {
+	margin: 0 0 18px;
+	font-size: 14px;
+	color: rgba(255, 255, 255, 0.7);
+}
+
+.dp-bcard__btn {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 9px;
+	width: 100%;
+	padding: 14px 18px;
+	border-radius: 999px;
+	font-size: 15px;
+	font-weight: 700;
+	text-decoration: none;
+	line-height: 1;
+	border: 1px solid transparent;
+}
+
+.dp-bcard__btn + .dp-bcard__btn { margin-top: 12px; }
+.dp-bcard__btn--primary { background: #16b47f; color: #fff; }
+.dp-bcard__btn--primary:hover { filter: brightness(1.05); }
+.dp-bcard__btn--ghost { border-color: rgba(255, 255, 255, 0.35); color: #fff; }
+.dp-bcard__btn--ghost:hover { background: rgba(255, 255, 255, 0.08); }
+.dp-bcard__btn svg,
+.dp-bcard__btn i { width: 1em; height: 1em; }
+
+/* ---------------------------------------------------------------------------
+   Doctor Facts widget.
+--------------------------------------------------------------------------- */
+.dp-facts {
+	list-style: none;
+	margin: 0;
+	padding: 20px 22px;
+	border: 1px solid #e6e9ee;
+	border-radius: 16px;
+	background: #fff;
+	display: flex;
+	flex-direction: column;
+	gap: 18px;
+}
+
+.dp-facts__row {
+	display: flex;
+	align-items: flex-start;
+	gap: 12px;
+}
+
+.dp-facts__icon {
+	flex: 0 0 auto;
+	width: 34px;
+	height: 34px;
+	border-radius: 10px;
+	background: #e9f6f0;
+	color: #16b47f;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	font-size: 15px;
+}
+
+.dp-facts__icon svg,
+.dp-facts__icon i { width: 1em; height: 1em; }
+
+.dp-facts__label {
+	display: block;
+	font-size: 11px;
+	font-weight: 700;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+	color: #8a97a3;
+	margin-bottom: 2px;
+}
+
+.dp-facts__value {
+	color: #136888;
+	font-weight: 700;
+	font-size: 15px;
+	word-break: break-word;
+}
+
+.dp-facts__value a { color: inherit; text-decoration: none; }
+
+/* ---------------------------------------------------------------------------
+   Academic Highlights widget.
+--------------------------------------------------------------------------- */
+.dp-stats__title {
+	font-size: 12px;
+	font-weight: 700;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+	color: #8a97a3;
+	margin: 0 0 16px;
+}
+
+.dp-stats__grid {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 18px 20px;
+}
+
+/* Each stat is its own box, fully styleable via the widget's Item controls. */
+.dp-stats__item {
+	background: #f6f8fb;
+	border: 1px solid #eceff3;
+	border-radius: 14px;
+	padding: 20px 14px;
+	text-align: center;
+}
+
+.dp-stats__value {
+	color: #16b47f;
+	font-size: 26px;
+	font-weight: 800;
+	line-height: 1.1;
+}
+
+.dp-stats__label {
+	color: #6b7a88;
+	font-size: 13px;
+	line-height: 1.4;
+	margin-top: 2px;
+}
+
+/* ---------------------------------------------------------------------------
+   Certifications widget.
+--------------------------------------------------------------------------- */
+.dp-certs {
+	border: 1px solid #e6e9ee;
+	border-radius: 16px;
+	background: #fff;
+	padding: 22px 24px;
+}
+
+.dp-certs__title {
+	font-size: 12px;
+	font-weight: 700;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+	color: #8a97a3;
+	margin: 0 0 16px;
+}
+
+.dp-certs__list {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 14px;
+}
+
+.dp-certs__item {
+	display: flex;
+	align-items: flex-start;
+	gap: 10px;
+}
+
+.dp-certs__icon {
+	flex: 0 0 auto;
+	color: #16b47f;
+	font-size: 15px;
+	line-height: 1.5;
+	display: inline-flex;
+}
+
+.dp-certs__icon svg,
+.dp-certs__icon i { width: 1em; height: 1em; }
+
+.dp-certs__text { display: block; }
+
+.dp-certs__name {
+	display: block;
+	color: #136888;
+	font-weight: 700;
+	font-size: 14px;
+	line-height: 1.4;
+}
+
+.dp-certs__name a { color: inherit; text-decoration: none; }
+
+.dp-certs__org {
+	display: block;
+	color: #8a97a3;
+	font-size: 12px;
+	margin-top: 2px;
+}
+
+.dp-certs__dates {
+	display: block;
+	color: #8a97a3;
+	font-size: 12px;
+	margin-top: 1px;
+}
+
+/* Built-in widget heading (eyebrow + title), used by content widgets. */
+.dp-wh { margin-bottom: 18px; }
+
+.dp-wh__eyebrow {
+	font-size: 12px;
+	font-weight: 700;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+	color: #16b47f;
+	margin: 0 0 6px;
+	line-height: 1.4;
+}
+
+.dp-wh__title {
+	margin: 0;
+	font-size: 24px;
+	font-weight: 800;
+	color: #136888;
+	line-height: 1.2;
+}
+
+/* ---------------------------------------------------------------------------
+   Certifications & Publications widget.
+--------------------------------------------------------------------------- */
+.dp-cp {
+	display: flex;
+	flex-direction: column;
+	gap: 28px;
+}
+
+.dp-cp__title {
+	font-size: 12px;
+	font-weight: 700;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+	color: #8a97a3;
+	margin: 0 0 14px;
+}
+
+.dp-cp__list {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 14px;
+}
+
+.dp-cp__item {
+	display: flex;
+	align-items: flex-start;
+	gap: 12px;
+}
+
+.dp-cp__icon {
+	flex: 0 0 auto;
+	color: #16b47f;
+	font-size: 15px;
+	line-height: 1.5;
+	display: inline-flex;
+	align-items: center;
+}
+
+.dp-cp__icon svg,
+.dp-cp__icon i { width: 1em; height: 1em; }
+
+.dp-cp__text { display: block; }
+
+.dp-cp__name {
+	display: block;
+	color: #136888;
+	font-weight: 700;
+	font-size: 15px;
+	line-height: 1.4;
+}
+
+.dp-cp__name a { color: inherit; text-decoration: none; }
+
+.dp-cp__meta {
+	display: block;
+	color: #8a97a3;
+	font-size: 13px;
+	margin-top: 2px;
+}
+
+.dp-cp__desc {
+	display: block;
+	color: #55606a;
+	font-size: 13px;
+	line-height: 1.55;
+	margin-top: 4px;
+}
+
+/* Icon SVGs (Font Awesome, etc.) inherit their wrapper's color for fill/stroke,
+   so the widgets' "Icon color" controls (which set `color`) actually recolor
+   the glyph. */
+.dp-certs__icon svg,
+.dp-cp__icon svg,
+.dp-facts__icon svg,
+.dp-scope__icon svg,
+.dp-timeline__node svg,
+.dp-bcard__mark svg {
+	fill: currentColor;
+}
+
+/* ---------------------------------------------------------------------------
+   Doctor directory widget (grid / list + search)
+   -------------------------------------------------------------------------*/
+
+.dp-dir {
+	--dp-dir-navy: #0d3b5c;
+	--dp-dir-accent: #136888;
+	--dp-dir-bar-bg: #e3f1fb;
+	--dp-dir-bar-border: #c7e2f5;
+	--dp-dir-muted: #6b7c8a;
+}
+
+/* The widget toggles chrome with the `hidden` attribute, and the flex/grid
+   `display` rules below would otherwise out-specify the UA `[hidden]` rule. */
+.dp-dir [hidden] {
+	display: none;
+}
+
+/* Scoped fallback: most themes define `.screen-reader-text`, but the mode tabs
+   depend on it to hide their radio inputs, so the widget cannot assume it. */
+.dp-dir .screen-reader-text {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	margin: -1px;
+	padding: 0;
+	overflow: hidden;
+	clip: rect(0, 0, 0, 0);
+	white-space: nowrap;
+	border: 0;
+}
+
+.dp-dir__form {
+	background: var(--dp-dir-bar-bg);
+	border-radius: 12px;
+	padding: 10px 14px;
+	margin: 0 0 18px;
+}
+
+.dp-dir__bar {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 10px 18px;
+}
+
+/* Search field */
+
+.dp-dir__search {
+	display: flex;
+	align-items: center;
+	flex: 1 1 240px;
+	max-width: 320px;
+	background: #fff;
+	border: 1px solid var(--dp-dir-bar-border);
+	border-radius: 999px;
+	padding: 0 6px 0 16px;
+}
+
+.dp-dir__input {
+	flex: 1;
+	min-width: 0;
+	border: 0;
+	background: transparent;
+	padding: 10px 0;
+	font-size: 15px;
+	color: var(--dp-dir-navy);
+}
+
+.dp-dir__input:focus {
+	outline: 0;
+}
+
+.dp-dir__search:focus-within {
+	outline: 2px solid var(--dp-dir-accent);
+	outline-offset: 2px;
+}
+
+.dp-dir__submit {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 32px;
+	height: 32px;
+	border: 0;
+	border-radius: 50%;
+	background: transparent;
+	color: var(--dp-dir-muted);
+	cursor: pointer;
+}
+
+/* Mode tabs */
+
+.dp-dir__modes {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 6px;
+}
+
+.dp-dir__mode {
+	display: inline-block;
+	padding: 8px 16px;
+	border-radius: 999px;
+	font-size: 14px;
+	font-weight: 600;
+	line-height: 1.2;
+	color: var(--dp-dir-navy);
+	cursor: pointer;
+}
+
+.dp-dir__mode:hover {
+	background: rgba(13, 59, 92, 0.08);
+}
+
+.dp-dir__mode-input:checked + .dp-dir__mode {
+	background: var(--dp-dir-navy);
+	color: #fff;
+}
+
+.dp-dir__mode-input:focus-visible + .dp-dir__mode {
+	outline: 2px solid var(--dp-dir-accent);
+	outline-offset: 2px;
+}
+
+/* Toolbar actions */
+
+.dp-dir__bar-actions {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	margin-inline-start: auto;
+}
+
+.dp-dir__more,
+.dp-dir__clear {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	border: 0;
+	border-radius: 999px;
+	padding: 10px 18px;
+	font-size: 14px;
+	font-weight: 600;
+	cursor: pointer;
+}
+
+.dp-dir__more {
+	background: var(--dp-dir-navy);
+	color: #fff;
+}
+
+.dp-dir__clear {
+	background: transparent;
+	color: var(--dp-dir-muted);
+}
+
+.dp-dir__clear:hover {
+	color: var(--dp-dir-navy);
+}
+
+.dp-dir__more-count {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 20px;
+	height: 20px;
+	padding: 0 5px;
+	border-radius: 999px;
+	background: #2fb39c;
+	color: #fff;
+	font-size: 12px;
+}
+
+.dp-dir__chevron {
+	width: 8px;
+	height: 8px;
+	border-right: 2px solid currentColor;
+	border-bottom: 2px solid currentColor;
+	transform: rotate(-135deg);
+	transition: transform 0.2s ease;
+}
+
+.dp-dir--filters-open .dp-dir__chevron {
+	transform: rotate(45deg);
+}
+
+/* Filter row */
+
+.dp-dir__filters {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 12px 24px;
+	padding-top: 12px;
+	margin-top: 10px;
+	border-top: 1px solid var(--dp-dir-bar-border);
+}
+
+.dp-dir__field {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+}
+
+.dp-dir__field-label {
+	font-size: 14px;
+	font-weight: 600;
+	color: var(--dp-dir-navy);
+	white-space: nowrap;
+}
+
+.dp-dir__select {
+	border: 1px solid var(--dp-dir-bar-border);
+	border-radius: 999px;
+	background: #fff;
+	padding: 7px 14px;
+	font-size: 14px;
+	color: var(--dp-dir-navy);
+	max-width: 220px;
+}
+
+.dp-dir__toggle {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	font-size: 14px;
+	color: var(--dp-dir-navy);
+	cursor: pointer;
+}
+
+.dp-dir__notice {
+	flex-basis: 100%;
+	margin: 0;
+	font-size: 13px;
+	color: var(--dp-dir-muted);
+}
+
+/* A–Z index */
+
+.dp-dir__az {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	margin: 0 0 20px;
+}
+
+.dp-dir__az-item {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 34px;
+	padding: 6px 8px;
+	border: 1px solid var(--dp-dir-bar-border);
+	border-radius: 6px;
+	font-size: 14px;
+	font-weight: 600;
+	text-decoration: none;
+	color: var(--dp-dir-navy);
+}
+
+.dp-dir__az-item.is-active {
+	background: var(--dp-dir-navy);
+	border-color: var(--dp-dir-navy);
+	color: #fff;
+}
+
+.dp-dir__az-item.is-empty {
+	opacity: 0.4;
+	pointer-events: none;
+}
+
+/* Results */
+
+.dp-dir__count {
+	margin: 0 0 14px;
+	font-weight: 600;
+	color: var(--dp-dir-navy);
+}
+
+.dp-dir--loading .dp-dir__results {
+	opacity: 0.55;
+	transition: opacity 0.15s ease;
+}
+
+.dp-dir__group {
+	margin-bottom: 26px;
+}
+
+.dp-dir__group-letter {
+	margin: 0 0 10px;
+	padding-bottom: 6px;
+	border-bottom: 2px solid var(--dp-dir-bar-border);
+	color: var(--dp-dir-navy);
+	font-size: 18px;
+}
+
+.dp-dir__rows {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+	gap: 18px 24px;
+}
+
+.dp-dir__row-name {
+	display: block;
+	color: var(--dp-dir-navy);
+	font-weight: 600;
+	font-size: 15px;
+	line-height: 1.4;
+	text-decoration: none;
+}
+
+.dp-dir__row-name:hover {
+	text-decoration: underline;
+}
+
+.dp-dir__row-meta {
+	margin: 2px 0 0;
+	color: var(--dp-dir-muted);
+	font-size: 13px;
+}
+
+.dp-dir__pagination {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+	margin-top: 24px;
+}
+
+.dp-dir__pagination .page-numbers {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 34px;
+	padding: 6px 10px;
+	border: 1px solid var(--dp-dir-bar-border);
+	border-radius: 6px;
+	text-decoration: none;
+	color: var(--dp-dir-navy);
+}
+
+.dp-dir__pagination .page-numbers.current {
+	background: var(--dp-dir-navy);
+	border-color: var(--dp-dir-navy);
+	color: #fff;
+}
+
+@media (max-width: 782px) {
+	.dp-dir__bar-actions {
+		margin-inline-start: 0;
+	}
+
+	.dp-dir__search {
+		max-width: none;
+	}
+
+	.dp-dir__field {
+		flex: 1 1 100%;
+		justify-content: space-between;
+	}
+
+	.dp-dir__select {
+		max-width: none;
+		flex: 1;
+	}
 }

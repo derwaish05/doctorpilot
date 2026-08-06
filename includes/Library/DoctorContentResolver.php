@@ -32,6 +32,7 @@ final class DoctorContentResolver {
 		'edu'  => '_doctorpilot_edu_ids',
 		'proc' => '_doctorpilot_proc_ids',
 		'pub'  => '_doctorpilot_pub_ids',
+		'cert' => '_doctorpilot_cert_ids',
 		'faq'  => '_doctorpilot_faq_ids',
 	);
 
@@ -48,6 +49,7 @@ final class DoctorContentResolver {
 		'edu'  => '_doctorpilot_edu_local',
 		'proc' => '_doctorpilot_procedures',
 		'pub'  => '_doctorpilot_publications',
+		'cert' => '_doctorpilot_certifications',
 		'faq'  => '_doctorpilot_faqs',
 	);
 
@@ -59,6 +61,7 @@ final class DoctorContentResolver {
 		'edu'  => LibraryPostTypes::EDUCATION,
 		'proc' => LibraryPostTypes::PROCEDURE,
 		'pub'  => LibraryPostTypes::PUBLICATION,
+		'cert' => LibraryPostTypes::CERTIFICATION,
 		'faq'  => LibraryPostTypes::FAQ,
 	);
 
@@ -68,7 +71,7 @@ final class DoctorContentResolver {
 	 * @return array<int, string>
 	 */
 	public static function types(): array {
-		return array( 'exp', 'edu', 'proc', 'pub', 'faq' );
+		return array( 'exp', 'edu', 'proc', 'pub', 'cert', 'faq' );
 	}
 
 	/**
@@ -203,7 +206,24 @@ final class DoctorContentResolver {
 			$values[ $key ] = $item[ $key ];
 		}
 
-		$item['title'] = LibraryPostTypes::compose_title_from( $cpt, $values );
+		// Types with title_parts (e.g. experience/education) compose their title
+		// from several fields. Types whose title IS a dedicated field (e.g.
+		// publications use `title`, certifications use `name`) have no title_parts,
+		// so composition yields an empty string — in that case fall back to that
+		// field's value instead of blanking the title.
+		$composed = LibraryPostTypes::compose_title_from( $cpt, $values );
+		if ( '' !== $composed ) {
+			$item['title'] = $composed;
+		} elseif ( ! isset( $item['title'] ) || '' === $item['title'] ) {
+			$title_key = '';
+			foreach ( $fields as $key => $field ) {
+				if ( 'title' === ( $field['store'] ?? 'meta' ) ) {
+					$title_key = $key;
+					break;
+				}
+			}
+			$item['title'] = '' !== $title_key ? (string) ( $item[ $title_key ] ?? '' ) : '';
+		}
 
 		if ( 'admin' === $context ) {
 			$item['origin'] = 'local';

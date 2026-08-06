@@ -342,10 +342,16 @@ publicly cached. Bounded `per_page` and `exclude[]` prevent abuse.
 | Boolean filters | `0\|1` | accepting-new, online |
 | `gender` | allowed enum | registry-defined |
 | `date` | ISO `YYYY-MM-DD` | Pro; valid site-local date |
-| `sort` | enum `relevance` | `relevance`, `name`, `featured`, `experience`, `recent`, `availability` (Pro) |
+| `sort` | enum `relevance` | `relevance`, `name` (A→Z), `name_desc` (Z→A), `featured`, `experience`, `recent`, `availability` (Pro) |
 | `view` | enum `grid` | `grid`, `list` |
 | `page` | int `1` | min 1; reject unreasonable offsets |
-| `per_page` | int `12` | min 1, max 48 |
+| `per_page` | int `12` | min 1, max 48; falls back to the site's General → per-page setting when omitted |
+
+`per_page` is honoured on `GET /doctors` so a caller with its own page size (for
+example an Elementor Doctor Grid/List widget) returns the same number of results
+from its server-rendered first paint and its later no-reload requests. The value
+is clamped by the request factory and forms part of the request signature, so the
+response cache stays correct per page size.
 
 Unknown parameters are ignored or rejected consistently according to controller policy. The frontend serializer orders filter names and values so equivalent states produce one canonical URL/cache key.
 
@@ -493,7 +499,13 @@ No-result content cannot infer diagnosis, urgency, or treatment.
 Free core widgets:
 
 - Doctor Search
-- Doctor Grid/List
+- Doctor Grid/List — card grid or compact list, with an optional search bar,
+  search-mode tabs, collapsible filter row (sort / gender / language /
+  department / specialty / symptom / accepting-new / online), A–Z index, result
+  count, and pagination. Server-renders from the query string (so the no-JS GET
+  form and shareable URLs work) and progressively enhances to the public
+  `/doctors` route. Templates: `directory.php`, `row-doctor.php`,
+  `card-doctor.php`.
 - Doctor Profile
 - Department Grid
 - Symptom Directory

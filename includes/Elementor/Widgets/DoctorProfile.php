@@ -98,15 +98,8 @@ final class DoctorProfile extends AbstractWidget {
 	 * @return void
 	 */
 	protected function render(): void {
-		$settings = $this->get_settings_for_display();
-		$doctor_id = isset( $settings['doctor_id'] ) ? (int) $settings['doctor_id'] : 0;
-
-		if ( $doctor_id <= 0 ) {
-			$queried = get_queried_object();
-			if ( $queried instanceof \WP_Post && DoctorPostType::POST_TYPE === $queried->post_type ) {
-				$doctor_id = (int) $queried->ID;
-			}
-		}
+		$settings  = $this->get_settings_for_display();
+		$doctor_id = $this->resolve_doctor_id( $settings );
 
 		if ( $doctor_id <= 0 ) {
 			if ( \Elementor\Plugin::instance()->editor->is_edit_mode() ) {

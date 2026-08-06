@@ -91,10 +91,17 @@ final class DoctorsController {
 			);
 		}
 
-		$settings      = Settings::get();
-		$default_pp    = (int) ( $settings['general']['per_page'] ?? 12 );
-		$ttl           = (int) ( $settings['search']['cache_ttl_seconds'] ?? 300 );
-		$search_request = SearchRequestFactory::from_array( $request->get_params(), $default_pp );
+		$settings   = Settings::get();
+		$default_pp = (int) ( $settings['general']['per_page'] ?? 12 );
+		$ttl        = (int) ( $settings['search']['cache_ttl_seconds'] ?? 300 );
+
+		// An explicit per_page wins so a caller (e.g. an Elementor directory with
+		// its own page size) stays consistent between its server-rendered first
+		// paint and later no-reload requests. The factory clamps the value, and
+		// it is part of the request signature, so the cache stays correct.
+		$requested_pp   = (int) $request->get_param( 'per_page' );
+		$per_page       = $requested_pp > 0 ? $requested_pp : $default_pp;
+		$search_request = SearchRequestFactory::from_array( $request->get_params(), $per_page );
 
 		$cache_key = SearchCache::key( $search_request, 'doctors' );
 		$cached    = SearchCache::get( $cache_key );

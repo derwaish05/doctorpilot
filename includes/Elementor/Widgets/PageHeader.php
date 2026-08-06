@@ -70,8 +70,18 @@ final class PageHeader extends AbstractWidget {
 			array(
 				'label'       => __( 'Doctor ID', 'doctorpilot' ),
 				'type'        => \Elementor\Controls_Manager::NUMBER,
-				'description' => __( 'Leave empty to use the current doctor (for single-doctor templates).', 'doctorpilot' ),
+				'description' => __( 'Optional — for editor preview or placing off a doctor page. On a doctor page the current doctor is always used.', 'doctorpilot' ),
 				'min'         => 0,
+			)
+		);
+
+		$this->add_control(
+			'placeholder_image',
+			array(
+				'label'       => __( 'Placeholder image', 'doctorpilot' ),
+				'type'        => \Elementor\Controls_Manager::MEDIA,
+				'default'     => array( 'url' => \Elementor\Utils::get_placeholder_image_src() ),
+				'description' => __( 'Shown when the doctor has no photo.', 'doctorpilot' ),
 			)
 		);
 
@@ -182,6 +192,37 @@ final class PageHeader extends AbstractWidget {
 			)
 		);
 
+		$this->add_control(
+			'heading_certs',
+			array(
+				'label'     => __( 'Certifications', 'doctorpilot' ),
+				'type'      => \Elementor\Controls_Manager::HEADING,
+				'separator' => 'before',
+			)
+		);
+
+		$this->add_control(
+			'show_certs',
+			array(
+				'label'        => __( 'Show credential chips', 'doctorpilot' ),
+				'type'         => \Elementor\Controls_Manager::SWITCHER,
+				'label_on'     => __( 'Show', 'doctorpilot' ),
+				'label_off'    => __( 'Hide', 'doctorpilot' ),
+				'return_value' => 'yes',
+				'default'      => 'yes',
+			)
+		);
+
+		$this->add_control(
+			'cert_icon',
+			array(
+				'label'     => __( 'Certification icon', 'doctorpilot' ),
+				'type'      => \Elementor\Controls_Manager::ICONS,
+				'default'   => array( 'value' => 'fas fa-award', 'library' => 'fa-solid' ),
+				'condition' => array( 'show_certs' => 'yes' ),
+			)
+		);
+
 		$this->end_controls_section();
 
 		$this->start_controls_section(
@@ -203,8 +244,8 @@ final class PageHeader extends AbstractWidget {
 				'selector'       => '{{WRAPPER}} .dp-hero',
 				'fields_options' => array(
 					'background'     => array( 'default' => 'gradient' ),
-					'color'          => array( 'default' => '#0C2A34' ),
-					'color_b'        => array( 'default' => '#1C6B74' ),
+					'color'          => array( 'default' => '#136888' ),
+					'color_b'        => array( 'default' => '#0E4E63' ),
 					'gradient_angle' => array( 'default' => array( 'unit' => 'deg', 'size' => 120 ) ),
 				),
 			)
@@ -237,6 +278,112 @@ final class PageHeader extends AbstractWidget {
 		$this->register_image_controls();
 		$this->register_badge_controls();
 		$this->register_button_controls();
+		$this->register_certs_controls();
+	}
+
+	/**
+	 * Certification chip style controls — icon color/size plus chip text color,
+	 * background, spacing, and radius. The icon selectors set `fill`/`stroke` to
+	 * `currentColor` so the color applies to both the built-in inline SVG and any
+	 * Font Awesome icon chosen in the content tab.
+	 *
+	 * @return void
+	 */
+	private function register_certs_controls(): void {
+		$icon = '{{WRAPPER}} .dp-hero__chip .dp-hero__ico, {{WRAPPER}} .dp-hero__chip i, {{WRAPPER}} .dp-hero__chip svg';
+
+		$this->start_controls_section(
+			'section_certs',
+			array(
+				'label'     => __( 'Certifications', 'doctorpilot' ),
+				'tab'       => \Elementor\Controls_Manager::TAB_STYLE,
+				'condition' => array( 'show_certs' => 'yes' ),
+			)
+		);
+
+		$this->add_control(
+			'cert_icon_color',
+			array(
+				'label'     => __( 'Icon color', 'doctorpilot' ),
+				'type'      => \Elementor\Controls_Manager::COLOR,
+				'default'   => '#136888',
+				'selectors' => array(
+					// Line SVG (built-in award) + FA webfont follow `color`; the
+					// award icon strokes with currentColor, so no fill is forced.
+					'{{WRAPPER}} .dp-hero__chip .dp-hero__ico, {{WRAPPER}} .dp-hero__chip i' => 'color: {{VALUE}};',
+					// Font Awesome inline SVG needs an explicit fill.
+					'{{WRAPPER}} .dp-hero__chip svg.e-font-icon-svg' => 'color: {{VALUE}}; fill: {{VALUE}};',
+				),
+			)
+		);
+
+		$this->add_responsive_control(
+			'cert_icon_size',
+			array(
+				'label'      => __( 'Icon size', 'doctorpilot' ),
+				'type'       => \Elementor\Controls_Manager::SLIDER,
+				'size_units' => array( 'px' ),
+				'range'      => array( 'px' => array( 'min' => 8, 'max' => 32 ) ),
+				'default'    => array( 'unit' => 'px', 'size' => 16 ),
+				'selectors'  => array( $icon => 'width: {{SIZE}}{{UNIT}}; height: {{SIZE}}{{UNIT}}; font-size: {{SIZE}}{{UNIT}};' ),
+			)
+		);
+
+		$this->add_control(
+			'cert_text_color',
+			array(
+				'label'     => __( 'Text color', 'doctorpilot' ),
+				'type'      => \Elementor\Controls_Manager::COLOR,
+				'selectors' => array( '{{WRAPPER}} .dp-hero__chip' => 'color: {{VALUE}};' ),
+			)
+		);
+
+		$this->add_control(
+			'cert_bg',
+			array(
+				'label'     => __( 'Chip background', 'doctorpilot' ),
+				'type'      => \Elementor\Controls_Manager::COLOR,
+				'selectors' => array( '{{WRAPPER}} .dp-hero__chip' => 'background: {{VALUE}};' ),
+			)
+		);
+
+		$this->add_group_control(
+			\Elementor\Group_Control_Typography::get_type(),
+			array( 'name' => 'cert_typography', 'selector' => '{{WRAPPER}} .dp-hero__chip' )
+		);
+
+		$this->add_responsive_control(
+			'cert_gap',
+			array(
+				'label'      => __( 'Gap between chips', 'doctorpilot' ),
+				'type'       => \Elementor\Controls_Manager::SLIDER,
+				'size_units' => array( 'px' ),
+				'range'      => array( 'px' => array( 'min' => 0, 'max' => 30 ) ),
+				'selectors'  => array( '{{WRAPPER}} .dp-hero__tags' => 'gap: {{SIZE}}{{UNIT}};' ),
+			)
+		);
+
+		$this->add_responsive_control(
+			'cert_padding',
+			array(
+				'label'      => __( 'Chip padding', 'doctorpilot' ),
+				'type'       => \Elementor\Controls_Manager::DIMENSIONS,
+				'size_units' => array( 'px', 'em' ),
+				'selectors'  => array( '{{WRAPPER}} .dp-hero__chip' => 'padding: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};' ),
+			)
+		);
+
+		$this->add_responsive_control(
+			'cert_radius',
+			array(
+				'label'      => __( 'Chip radius', 'doctorpilot' ),
+				'type'       => \Elementor\Controls_Manager::DIMENSIONS,
+				'size_units' => array( 'px', '%' ),
+				'selectors'  => array( '{{WRAPPER}} .dp-hero__chip' => 'border-radius: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};' ),
+			)
+		);
+
+		$this->end_controls_section();
 	}
 
 	/**
@@ -269,6 +416,7 @@ final class PageHeader extends AbstractWidget {
 				'type'       => \Elementor\Controls_Manager::SLIDER,
 				'size_units' => array( 'px' ),
 				'range'      => array( 'px' => array( 'min' => 8, 'max' => 40 ) ),
+				'default'    => array( 'unit' => 'px', 'size' => 20 ),
 				'selectors'  => array( '{{WRAPPER}} .dp-hero__btn .dp-hero__ico, {{WRAPPER}} .dp-hero__btn i, {{WRAPPER}} .dp-hero__btn svg' => 'width: {{SIZE}}{{UNIT}}; height: {{SIZE}}{{UNIT}}; font-size: {{SIZE}}{{UNIT}};' ),
 			)
 		);
@@ -323,6 +471,10 @@ final class PageHeader extends AbstractWidget {
 		$base  = '{{WRAPPER}} ' . $selector;
 		$hover = '{{WRAPPER}} ' . $selector . ':hover';
 
+		// Icon targets: inline SVG (uses currentColor), Elementor <i>, and <svg>.
+		$icon       = $base . ' .dp-hero__ico, ' . $base . ' i, ' . $base . ' svg';
+		$icon_hover = $hover . ' .dp-hero__ico, ' . $hover . ' i, ' . $hover . ' svg';
+
 		$this->add_control(
 			$prefix . '_heading',
 			array(
@@ -351,6 +503,15 @@ final class PageHeader extends AbstractWidget {
 				'selectors' => array( $base => 'background: {{VALUE}};' ),
 			)
 		);
+		$this->add_control(
+			$prefix . '_icon_color',
+			array(
+				'label'     => __( 'Icon color', 'doctorpilot' ),
+				'type'      => \Elementor\Controls_Manager::COLOR,
+				'default'   => '#136888',
+				'selectors' => array( $icon => 'color: {{VALUE}}; fill: currentColor; stroke: currentColor;' ),
+			)
+		);
 		$this->end_controls_tab();
 
 		$this->start_controls_tab( $prefix . '_tab_hover', array( 'label' => __( 'Hover', 'doctorpilot' ) ) );
@@ -368,6 +529,14 @@ final class PageHeader extends AbstractWidget {
 				'label'     => __( 'Background color', 'doctorpilot' ),
 				'type'      => \Elementor\Controls_Manager::COLOR,
 				'selectors' => array( $hover => 'background: {{VALUE}};' ),
+			)
+		);
+		$this->add_control(
+			$prefix . '_icon_color_hover',
+			array(
+				'label'     => __( 'Icon color', 'doctorpilot' ),
+				'type'      => \Elementor\Controls_Manager::COLOR,
+				'selectors' => array( $icon_hover => 'color: {{VALUE}}; fill: currentColor; stroke: currentColor;' ),
 			)
 		);
 		$this->end_controls_tab();
@@ -855,14 +1024,7 @@ final class PageHeader extends AbstractWidget {
 	 */
 	protected function render(): void {
 		$settings  = $this->get_settings_for_display();
-		$doctor_id = isset( $settings['doctor_id'] ) ? (int) $settings['doctor_id'] : 0;
-
-		if ( $doctor_id <= 0 ) {
-			$queried = get_queried_object();
-			if ( $queried instanceof \WP_Post && DoctorPostType::POST_TYPE === $queried->post_type ) {
-				$doctor_id = (int) $queried->ID;
-			}
-		}
+		$doctor_id = $this->resolve_doctor_id( $settings );
 
 		if ( $doctor_id <= 0 ) {
 			if ( \Elementor\Plugin::instance()->editor->is_edit_mode() ) {
@@ -899,7 +1061,8 @@ final class PageHeader extends AbstractWidget {
 		// Media column.
 		echo '<div class="dp-hero__media">';
 		echo '<div class="dp-hero__photo">';
-		if ( '' !== $view['photo_url'] ) {
+		$photo_url = '' !== $view['photo_url'] ? $view['photo_url'] : (string) ( $settings['placeholder_image']['url'] ?? '' );
+		if ( '' !== $photo_url ) {
 			$img_class = 'dp-hero__img';
 			$anim      = (string) ( $settings['image_hover_animation'] ?? '' );
 			if ( '' !== $anim ) {
@@ -908,7 +1071,7 @@ final class PageHeader extends AbstractWidget {
 			printf(
 				'<img class="%1$s" src="%2$s" alt="%3$s" loading="lazy" />',
 				esc_attr( $img_class ),
-				esc_url( $view['photo_url'] ),
+				esc_url( $photo_url ),
 				esc_attr( $view['photo_alt'] )
 			);
 		} else {
@@ -952,11 +1115,11 @@ final class PageHeader extends AbstractWidget {
 		$this->meta_row( __( 'Phone', 'doctorpilot' ), $view['phone'] );
 		echo '</div>';
 
-		if ( array() !== $view['certs'] ) {
+		if ( 'yes' === (string) ( $settings['show_certs'] ?? 'yes' ) && array() !== $view['certs'] ) {
 			echo '<ul class="dp-hero__tags">';
 			foreach ( $view['certs'] as $cert ) {
 				echo '<li class="dp-hero__chip">';
-				$this->icon_award();
+				$this->render_cert_icon( $settings['cert_icon'] ?? array() );
 				echo '<span>' . esc_html( $cert ) . '</span>';
 				echo '</li>';
 			}
@@ -1103,6 +1266,22 @@ final class PageHeader extends AbstractWidget {
 		echo '<span class="dp-hero__k">' . esc_html( $label ) . '</span>';
 		echo '<span class="dp-hero__v">: ' . esc_html( $value ) . '</span>';
 		echo '</div>';
+	}
+
+	/**
+	 * Render a certification chip icon: the editor-chosen Elementor icon when set,
+	 * otherwise the built-in inline award SVG.
+	 *
+	 * @param mixed $icon The ICONS control value.
+	 * @return void
+	 */
+	private function render_cert_icon( $icon ): void {
+		if ( is_array( $icon ) && '' !== (string) ( $icon['value'] ?? '' ) ) {
+			\Elementor\Icons_Manager::render_icon( $icon, array( 'aria-hidden' => 'true', 'class' => 'dp-hero__ico' ) );
+			return;
+		}
+
+		$this->icon_award();
 	}
 
 	/**

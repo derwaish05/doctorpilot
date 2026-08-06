@@ -207,6 +207,9 @@ final class Ranker {
 			case 'name':
 				$primary = strcmp( (string) $a['name'], (string) $b['name'] );
 				break;
+			case 'name_desc':
+				$primary = strcmp( (string) $b['name'], (string) $a['name'] );
+				break;
 			case 'experience':
 				$primary = (int) $b['exp'] <=> (int) $a['exp'];
 				break;

@@ -32,7 +32,8 @@ foreach ( $dp_request->taxonomy_filters() as $dp_tax => $dp_slugs ) {
 
 $dp_sorts = array(
 	'relevance'  => __( 'Relevance', 'doctorpilot' ),
-	'name'       => __( 'Name', 'doctorpilot' ),
+	'name'       => __( 'A → Z', 'doctorpilot' ),
+	'name_desc'  => __( 'Z → A', 'doctorpilot' ),
 	'featured'   => __( 'Featured', 'doctorpilot' ),
 	'experience' => __( 'Most experienced', 'doctorpilot' ),
 	'recent'     => __( 'Recently added', 'doctorpilot' ),

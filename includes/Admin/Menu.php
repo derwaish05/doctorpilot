@@ -113,6 +113,7 @@ final class Menu {
 			'edit.php?post_type=' . LibraryPostTypes::EXPERIENCE,    // Experience.
 			'edit.php?post_type=' . LibraryPostTypes::PROCEDURE,     // Procedures.
 			'edit.php?post_type=' . LibraryPostTypes::PUBLICATION,   // Publications.
+			'edit.php?post_type=' . LibraryPostTypes::CERTIFICATION, // Certifications.
 			'edit.php?post_type=' . LibraryPostTypes::FAQ,           // FAQs.
 			self::SLUG,               // Health (dashboard).
 			'doctorpilot-analytics',  // Analytics (Pro).

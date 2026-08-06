@@ -33,7 +33,7 @@ final class SearchRequest {
 	 *
 	 * @var array<int, string>
 	 */
-	public const SORTS = array( 'relevance', 'name', 'featured', 'experience', 'recent' );
+	public const SORTS = array( 'relevance', 'name', 'name_desc', 'featured', 'experience', 'recent' );
 
 	/**
 	 * Allowed view values.

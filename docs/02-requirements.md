@@ -105,6 +105,7 @@ Authorization must be enforced server-side. Nonces verify request intent for aut
 ### 4.5 Elementor compatibility
 
 - **FR-031 [Free]** Core widgets: Doctor Search, Doctor Grid/List, Doctor Profile, Department Grid, Symptom Directory, and Booking Button.
+- **FR-031a [Free]** The Doctor Grid/List widget renders either a card grid or a compact list and can expose search in place: a query field, search-mode tabs (name / department / specialty / symptom), a collapsible filter row, an A–Z index for the list layout, a result count, and pagination. Filters, sort, and query are encoded in the URL per FR-020, the widget works as a plain GET form without JavaScript, and every filter it offers is limited to those enabled in DoctorPilot settings and backed by existing terms.
 - **FR-032 [Pro]** Advanced widgets: Advanced Search, Carousel, Doctor Information sections, Locations, Schedule, Related Doctors, Results Count, Active Filters, and pagination controls.
 - **FR-033 [Free/Pro]** Widgets expose controls appropriate to their output, including typography, color, spacing, border/radius, image ratio, columns, responsive behavior, focus/hover states, empty state, and loading state. Irrelevant controls must not be added merely to inflate feature count.
 - **FR-034 [Free/Pro]** Assets load only for widgets present on the page and use Elementor's dependency APIs.

@@ -50,6 +50,11 @@ final class Integration {
 		add_action( 'wp_enqueue_scripts', array( $this, 'register_style' ), 1 );
 		add_action( 'elementor/editor/after_enqueue_styles', array( $this, 'register_style' ) );
 
+		// Widget scripts are registered (not enqueued); Elementor enqueues them
+		// only on pages where the depending widget is actually rendered.
+		add_action( 'wp_enqueue_scripts', array( $this, 'register_scripts' ), 1 );
+		add_action( 'elementor/preview/enqueue_scripts', array( $this, 'register_scripts' ) );
+
 		add_action( 'elementor/elements/categories_registered', array( $this, 'register_category' ) );
 		add_action( 'elementor/widgets/register', array( $this, 'register_widgets' ) );
 	}
@@ -61,13 +66,66 @@ final class Integration {
 	 */
 	public function register_style(): void {
 		if ( ! wp_style_is( self::STYLE_HANDLE, 'registered' ) ) {
+			$path = DOCTORPILOT_PLUGIN_DIR . 'assets/css/frontend.css';
+			$ver  = is_readable( $path ) ? (string) filemtime( $path ) : DOCTORPILOT_VERSION;
+
 			wp_register_style(
 				self::STYLE_HANDLE,
 				DOCTORPILOT_PLUGIN_URL . 'assets/css/frontend.css',
 				array(),
-				DOCTORPILOT_VERSION
+				$ver
 			);
 		}
+	}
+
+	/**
+	 * Register widget scripts and their localized strings.
+	 *
+	 * @return void
+	 */
+	public function register_scripts(): void {
+		$handle = Widgets\DoctorGridList::SCRIPT_HANDLE;
+
+		if ( wp_script_is( $handle, 'registered' ) ) {
+			return;
+		}
+
+		$path = DOCTORPILOT_PLUGIN_DIR . 'assets/js/directory.js';
+		$ver  = is_readable( $path ) ? (string) filemtime( $path ) : DOCTORPILOT_VERSION;
+
+		wp_register_script(
+			$handle,
+			DOCTORPILOT_PLUGIN_URL . 'assets/js/directory.js',
+			array(),
+			$ver,
+			true
+		);
+
+		wp_localize_script(
+			$handle,
+			'doctorPilotDirectory',
+			array(
+				'strings' => array(
+					/* translators: %d: number of matching doctors. */
+					'countSingular' => __( '%d doctor found', 'doctorpilot' ),
+					/* translators: %d: number of matching doctors. */
+					'countPlural'   => __( '%d doctors found', 'doctorpilot' ),
+					'empty'         => __( 'No doctors matched your search.', 'doctorpilot' ),
+					'error'         => __( 'Something went wrong. Please try again.', 'doctorpilot' ),
+					'viewProfile'   => __( 'View Profile', 'doctorpilot' ),
+					'featured'      => __( 'Featured', 'doctorpilot' ),
+					'international' => __( 'International', 'doctorpilot' ),
+					'acceptingNew'  => __( 'Accepting new patients', 'doctorpilot' ),
+					/* translators: %d: years of experience. */
+					'yearSingular'  => __( '%d year experience', 'doctorpilot' ),
+					/* translators: %d: years of experience. */
+					'yearPlural'    => __( '%d years experience', 'doctorpilot' ),
+					'pagination'    => __( 'Doctor results pages', 'doctorpilot' ),
+					/* translators: %d: total number of matches. */
+					'truncated'     => __( 'Showing the first results of %d doctors. Narrow the search to see the rest.', 'doctorpilot' ),
+				),
+			)
+		);
 	}
 
 	/**
@@ -108,6 +166,15 @@ final class Integration {
 			Widgets\SymptomDirectory::class,
 			Widgets\DoctorProfile::class,
 			Widgets\PageHeader::class,
+			Widgets\HeadingBlock::class,
+			Widgets\AboutDoctor::class,
+			Widgets\Specialties::class,
+			Widgets\ExperienceTimeline::class,
+			Widgets\BookingCard::class,
+			Widgets\DoctorFacts::class,
+			Widgets\AcademicHighlights::class,
+			Widgets\Certifications::class,
+			Widgets\CertsPublications::class,
 			Widgets\BookingButton::class,
 		);
 

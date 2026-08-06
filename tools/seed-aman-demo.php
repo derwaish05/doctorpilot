@@ -163,6 +163,18 @@ update_post_meta(
 	array( 'Vascular interventions', 'Interventional oncology', 'Emergency image-guided care', 'Women\'s health interventions' )
 );
 
+// Academic highlights (repeater) — shown in the sidebar Academic Highlights widget.
+update_post_meta(
+	$dp_id,
+	$dp_prefix . 'academic_highlights',
+	array(
+		array( 'value' => '90+', 'label' => 'Peer-Reviewed Publications' ),
+		array( 'value' => '20+', 'label' => 'Conference Posters & Presentations' ),
+		array( 'value' => '12+', 'label' => 'Prizes & Awards' ),
+		array( 'value' => '25+', 'label' => 'Professional Courses' ),
+	)
+);
+
 // Education (doctor-specific local repeater; global records may also be assigned
 // via _doctorpilot_edu_ids from the editor's shared-records selector).
 update_post_meta(

@@ -29,11 +29,12 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 final class LibraryPostTypes {
 
-	public const EXPERIENCE  = 'doctorpilot_exp';
-	public const EDUCATION   = 'doctorpilot_edu';
-	public const PROCEDURE   = 'doctorpilot_proc';
-	public const PUBLICATION = 'doctorpilot_pub';
-	public const FAQ         = 'doctorpilot_faq';
+	public const EXPERIENCE   = 'doctorpilot_exp';
+	public const EDUCATION    = 'doctorpilot_edu';
+	public const PROCEDURE    = 'doctorpilot_proc';
+	public const PUBLICATION  = 'doctorpilot_pub';
+	public const CERTIFICATION = 'doctorpilot_cert';
+	public const FAQ          = 'doctorpilot_faq';
 
 	/**
 	 * Prefix for every per-field meta key.
@@ -63,6 +64,7 @@ final class LibraryPostTypes {
 			self::EDUCATION,
 			self::PROCEDURE,
 			self::PUBLICATION,
+			self::CERTIFICATION,
 			self::FAQ,
 		);
 	}
@@ -133,7 +135,9 @@ final class LibraryPostTypes {
 					'plural'   => __( 'Publications', 'doctorpilot' ),
 					'menu'     => __( 'Publications', 'doctorpilot' ),
 				),
-				// The publication title IS the post title; summary is the content.
+				// The publication title IS the post title; the description is the
+				// content. Field set/labels mirror the doctor's local Publications
+				// repeater so the shared and doctor-only forms match.
 				'title_parts'   => array(),
 				'list_subtitle' => 'journal',
 				'fields'        => array(
@@ -142,7 +146,26 @@ final class LibraryPostTypes {
 					'published_date' => array( 'label' => __( 'Published date', 'doctorpilot' ), 'type' => 'text' ),
 					'url'            => array( 'label' => __( 'URL', 'doctorpilot' ), 'type' => 'url' ),
 					'doi'            => array( 'label' => __( 'DOI', 'doctorpilot' ), 'type' => 'text' ),
-					'description'    => array( 'label' => __( 'Summary', 'doctorpilot' ), 'type' => 'textarea', 'store' => 'content' ),
+					'description'    => array( 'label' => __( 'Description', 'doctorpilot' ), 'type' => 'textarea', 'store' => 'content' ),
+				),
+			),
+			self::CERTIFICATION => array(
+				'labels'        => array(
+					'singular' => __( 'Certification', 'doctorpilot' ),
+					'plural'   => __( 'Certifications', 'doctorpilot' ),
+					'menu'     => __( 'Certifications', 'doctorpilot' ),
+				),
+				// The certification name IS the post title; other fields are meta.
+				// Field set/labels mirror the doctor's local Certifications repeater
+				// so the shared and doctor-only forms match.
+				'title_parts'   => array(),
+				'list_subtitle' => 'organization',
+				'fields'        => array(
+					'name'           => array( 'label' => __( 'Name', 'doctorpilot' ), 'type' => 'text', 'store' => 'title' ),
+					'organization'   => array( 'label' => __( 'Organization', 'doctorpilot' ), 'type' => 'text' ),
+					'issued_date'    => array( 'label' => __( 'Issued date', 'doctorpilot' ), 'type' => 'text' ),
+					'expiry_date'    => array( 'label' => __( 'Expiry date', 'doctorpilot' ), 'type' => 'text' ),
+					'credential_url' => array( 'label' => __( 'Credential URL', 'doctorpilot' ), 'type' => 'url' ),
 				),
 			),
 			self::FAQ         => array(
