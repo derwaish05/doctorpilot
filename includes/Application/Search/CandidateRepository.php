@@ -52,6 +52,13 @@ final class CandidateRepository {
 			'order'                  => 'ASC',
 		);
 
+		// A doctor picked from the "By Doctor Name" index narrows the candidate
+		// set at the query level, before scoring, like any other filter.
+		$doctors = $request->doctors();
+		if ( array() !== $doctors ) {
+			$args['post_name__in'] = $doctors;
+		}
+
 		$tax_query = $this->tax_query( $request );
 		if ( array() !== $tax_query ) {
 			$args['tax_query'] = $tax_query; // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query -- Bounded, indexed.
@@ -116,7 +123,7 @@ final class CandidateRepository {
 	}
 
 	/**
-	 * Build the meta_query from gender/accepting/online filters.
+	 * Build the meta_query from gender/accepting/online/international filters.
 	 *
 	 * @param SearchRequest $request Search request.
 	 * @return array<int|string, mixed>
@@ -142,6 +149,35 @@ final class CandidateRepository {
 			$clauses[] = array(
 				'key'   => FieldRegistry::META_PREFIX . 'online_consultation',
 				'value' => '1',
+			);
+		}
+
+		/*
+		 * International is tri-state, so `false` filters rather than clears.
+		 *
+		 * The editor writes 0 for an unchecked boolean, but a doctor created by
+		 * import or by code may carry no row at all. Matching only `= '0'` would
+		 * silently drop those doctors from the "National" result, so the
+		 * national branch also accepts a missing key.
+		 */
+		$international = $request->international();
+		if ( true === $international ) {
+			$clauses[] = array(
+				'key'   => FieldRegistry::META_PREFIX . 'is_international',
+				'value' => '1',
+			);
+		} elseif ( false === $international ) {
+			$clauses[] = array(
+				'relation' => 'OR',
+				array(
+					'key'   => FieldRegistry::META_PREFIX . 'is_international',
+					'value' => '1',
+					'compare' => '!=',
+				),
+				array(
+					'key'     => FieldRegistry::META_PREFIX . 'is_international',
+					'compare' => 'NOT EXISTS',
+				),
 			);
 		}
 

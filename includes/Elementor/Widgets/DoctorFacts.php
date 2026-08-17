@@ -129,7 +129,11 @@ final class DoctorFacts extends AbstractWidget {
 			}
 		}
 
+		$this->register_heading_controls();
+
 		$this->end_controls_section();
+
+		$this->register_heading_style();
 
 		$this->register_card_style();
 		$this->register_icon_style();
@@ -362,6 +366,10 @@ final class DoctorFacts extends AbstractWidget {
 		if ( '' === $html ) {
 			return;
 		}
+
+		// The rows are built before this point precisely so an all-empty widget
+		// can return above without having printed a heading.
+		$this->render_heading( $settings );
 
 		// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- All dynamic parts escaped above; icons from Icons_Manager.
 		echo '<ul class="dp-facts">' . $html . '</ul>';

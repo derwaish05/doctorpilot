@@ -82,8 +82,8 @@ flowchart TB
 | Completeness score | Prefixed post meta | Completeness service | Yes |
 | Normalized search document/sort values | Prefixed post meta | Search indexer | Yes |
 | Public search responses | Object cache/transients | Search service | Yes |
-| Redirect map (Pro) | Dedicated table | Redirect service | No |
-| Import jobs/items (Pro) | Dedicated tables | Import service | Partly |
+| Redirect map (Migration tier) | Dedicated table | Redirect service | No |
+| Import jobs/items (Migration tier) | Dedicated tables | Import service | Partly |
 | Search aggregates (Pro) | Dedicated table | Analytics service | No, but disposable by policy |
 
 Canonical clinical data must never be stored only in Elementor document JSON, cache, analytics, or an external provider.
@@ -121,7 +121,33 @@ Partial failure must return a specific error and must not report success. Multi-
 7. A cacheable response is returned. Analytics are recorded only if opted in.
 8. Frontend updates results and URL state; without JavaScript, the same parameters render server-side.
 
-### 6.3 Import and migration (Pro)
+### 6.2.1 Browse indexes and results
+
+The Doctor Grid/List widget owns two regions that are on screen together: a
+**browse index** and the **doctor results**.
+
+- The index is a catalogue, not a result set. It answers "what exists" — doctor
+  names, departments, specialties, symptoms — and is built independently of the
+  active filters, so it does not shrink as the visitor narrows the results and
+  strand them with nothing left to click.
+- The results are the ordinary search output of §6.2. They are never replaced by
+  the index.
+- Selecting an index entry is **not** a separate mechanism: it writes that
+  index's search parameter (`doctor`, `department`, `specialty`, `symptom`) into
+  the same request the filter row and query field write. One contract therefore
+  drives the URL, the REST route, the cache key, the active-filter chips, and
+  the no-JavaScript GET fallback. Nothing about browsing bypasses ranking,
+  visibility, or caching.
+- All enabled indexes are rendered server-side at once (bounded per index) and
+  hidden except the active one. This is a deliberate trade: it costs one bounded
+  query per index and a larger first payload, and it buys instant tab switching,
+  instant letter and text filtering with no request, and identical markup with
+  and without JavaScript.
+- The client filters the index locally and refetches only the results. The index
+  is never re-fetched, so its bound is also the limit of what can be browsed;
+  the visitor is told when that bound is reached.
+
+### 6.3 Import and migration (Migration tier)
 
 ```mermaid
 stateDiagram-v2
@@ -207,7 +233,7 @@ Providers implement a versioned interface and return a `BookingCta` value object
 - Free is independently useful and contains no remotely unlocked Pro implementation.
 - Pro declares compatible minimum/maximum base API versions and refuses activation gracefully when incompatible.
 - Free owns CPTs (including the library CPTs), taxonomies, canonical fields, the `DoctorContentResolver`, public routes, primary menus, and core rendering.
-- Pro registers extensions through interfaces/hooks and database migrations with its own version guard, including library bulk assignment/promotion, duplicate merge/repoint, impact reporting, and library CSV import/export — reusing the Free resolver and reference storage, never a second data source.
+- Pro registers extensions through interfaces/hooks and database migrations with its own version guard. Where it extends the content library, it must reuse the Free resolver and reference storage, never a second data source. *Library bulk assignment/promotion, duplicate merge/repoint, impact reporting, and library CSV import/export are specified under this rule but are not implemented — see `02-requirements.md` §3.1.*
 - Disabling Pro leaves canonical Free data readable; Pro-only data is preserved but ignored safely. Global library records, assignments, and local items are all Free-owned, so they remain fully functional without Pro.
 - Removing Free while Pro remains active produces an admin notice, not a fatal error.
 

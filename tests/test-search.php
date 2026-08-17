@@ -81,6 +81,45 @@ final class Test_DoctorPilot_Search extends WP_UnitTestCase {
 		$this->assertSame( array( 'cardiology', 'neurology' ), $filters[ Taxonomies::SPECIALTY ] );
 	}
 
+	public function test_factory_parses_doctor_slugs(): void {
+		$request = SearchRequestFactory::from_array( array( 'doctor' => 'dr-beta,dr-alpha,dr-beta' ), 12 );
+
+		$this->assertSame( array( 'dr-alpha', 'dr-beta' ), $request->doctors() );
+	}
+
+	public function test_doctor_filter_narrows_results_to_that_doctor(): void {
+		$alpha = $this->make_doctor( 'Dr. Alpha', 'Cardiology' );
+		$this->make_doctor( 'Dr. Beta', 'Dermatology' );
+
+		$slug    = (string) get_post_field( 'post_name', $alpha );
+		$request = SearchRequestFactory::from_array( array( 'doctor' => $slug ), 12 );
+		$result  = ( new SearchService() )->search( $request );
+
+		$this->assertSame( 1, $result['total'] );
+		$this->assertSame( array( $alpha ), $result['ids'] );
+	}
+
+	public function test_doctor_filter_appears_as_an_active_filter_chip(): void {
+		$alpha = $this->make_doctor( 'Dr. Alpha' );
+		$slug  = (string) get_post_field( 'post_name', $alpha );
+
+		$result = ( new SearchService() )->search( SearchRequestFactory::from_array( array( 'doctor' => $slug ), 12 ) );
+		$types  = wp_list_pluck( $result['active_filters'], 'type' );
+
+		$this->assertContains( 'doctor', $types );
+	}
+
+	public function test_doctor_filter_changes_the_request_signature(): void {
+		$plain    = SearchRequestFactory::from_array( array(), 12 );
+		$narrowed = SearchRequestFactory::from_array( array( 'doctor' => 'dr-alpha' ), 12 );
+
+		$this->assertNotSame(
+			$plain->signature(),
+			$narrowed->signature(),
+			'A doctor selection must produce its own cache key.'
+		);
+	}
+
 	public function test_normalizer_strips_prefix_and_accents(): void {
 		$this->assertSame( 'ali haydar', Normalizer::normalize_name( 'Dr. Ali Häydar' ) );
 	}

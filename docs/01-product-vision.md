@@ -102,13 +102,25 @@ The initial wedge is **doctor discovery + structured profiles + flexible present
 
 ### DoctorPilot Pro v1
 
+Intended to be sold as an annual subscription. Scope is the *ongoing* directory surface — the capability a hospital keeps using after launch (ADR-0019). **Neither paid tier is saleable yet**: the licence layer does not exist, and much of the Pro scope below is specified but not built. See `02-requirements.md` §3.1 for the per-feature build status and `12-packaging-and-tiers.md` for the route to first sale.
+
 - Multiple locations and location-specific contact/booking configuration
 - Insurance, structured schedules, availability filters, and BookPilot integration
 - Advanced search controls, additional Elementor widgets, and complete dynamic-tag coverage
-- CSV import/export, migration jobs, explicit redirect management, and bulk operations
-- Bulk library assignment/promotion, duplicate merge with reference repointing, library CSV import/export, and impact reporting
+- Bulk operations, plus bulk library assignment/promotion, duplicate merge with reference repointing, library CSV import/export, and impact reporting
 - Opt-in aggregate search analytics with configurable retention
 - Department-scoped workflow controls and advanced permission UI
+
+### DoctorPilot Migration v1
+
+Intended as a separately priced, one-time entitlement shipped inside the Pro artifact and sold as a launch fee or a done-for-you engagement. It is launch tooling, used once and then dormant, so it is deliberately not part of the subscription (ADR-0019). The tooling below is substantially built and was proven on the Aman deployment; the entitlement gating that would make it saleable is not.
+
+- CSV import with dry run, resumable chunked jobs, idempotency, and rollback
+- Legacy field mapping and review-flag heuristics for suspect legacy content
+- Explicit legacy-URL redirect management with loop, chain, and destination validation
+- Reconciliation reporting for launch sign-off, and formula-safe CSV export
+
+**Constraint on the future licence layer (both paid tiers).** When licensing is built, an expired or absent licence must never unpublish a doctor, break a public URL, or disable an active redirect. Paid tiers degrade read-only; they never destroy (ADR-0019).
 
 ### Later, subject to separate architecture decisions
 
@@ -150,6 +162,16 @@ Targets may be revised only through an ADR and corresponding updates to requirem
 ## 11. Business model
 
 DoctorPilot Free is a complete, useful directory product distributed through WordPress.org. DoctorPilot Pro is a separate add-on that extends the base plugin; Pro code is not hidden or remotely unlocked inside the directory build. Accessibility, privacy, security, and safe data handling are never paywalled.
+
+Three tiers ship across two artifacts (ADR-0019, detailed in `12-packaging-and-tiers.md`):
+
+| Tier | Artifact | Channel | Pricing model |
+|---|---|---|---|
+| Free | `doctorpilot` | WordPress.org | Free — the acquisition channel |
+| Migration | `doctorpilot-pro` (entitlement) | brainstudioz.com | One-time launch fee or service engagement |
+| Pro | `doctorpilot-pro` (entitlement) | brainstudioz.com | Annual subscription |
+
+Free acquires, Migration monetises the launch, Pro monetises the ongoing directory. Migration is priced once because it is used once; charging a renewal for finished work is what the tier split exists to avoid. Licence gating applies only inside the paid artifact, never in the WordPress.org build. Both paid tiers require a licence/activation layer that is **not yet built** — nothing is saleable until it exists.
 
 ## 12. Product risks and mitigations
 

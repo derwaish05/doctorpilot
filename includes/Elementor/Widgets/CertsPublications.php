@@ -129,7 +129,11 @@ final class CertsPublications extends AbstractWidget {
 			array( 'label' => __( 'Link to URL / DOI', 'doctorpilot' ), 'type' => \Elementor\Controls_Manager::SWITCHER, 'return_value' => 'yes', 'default' => 'yes', 'condition' => array( 'pubs_show' => 'yes' ) )
 		);
 
+		$this->register_heading_controls();
+
 		$this->end_controls_section();
+
+		$this->register_heading_style();
 
 		$this->register_layout_style();
 		$this->register_icon_style();
@@ -353,6 +357,11 @@ final class CertsPublications extends AbstractWidget {
 			}
 			return;
 		}
+
+		// The groups are built before this point precisely so a doctor with
+		// neither certifications nor publications returns above without having
+		// printed a heading.
+		$this->render_heading( $settings );
 
 		// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Group HTML is fully escaped in the builders below.
 		echo '<div class="dp-cp">' . $groups . '</div>';

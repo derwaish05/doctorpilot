@@ -123,7 +123,11 @@ final class Certifications extends AbstractWidget {
 			)
 		);
 
+		$this->register_heading_controls();
+
 		$this->end_controls_section();
+
+		$this->register_heading_style();
 
 		$this->register_card_style();
 		$this->register_item_style();
@@ -298,6 +302,10 @@ final class Certifications extends AbstractWidget {
 			\Elementor\Icons_Manager::render_icon( $settings['icon'], array( 'aria-hidden' => 'true' ) );
 			$icon = (string) ob_get_clean();
 		}
+
+		// After both early returns, so an unassigned doctor or a doctor with no
+		// certifications renders nothing rather than a bare heading.
+		$this->render_heading( $settings );
 
 		echo '<div class="dp-certs">';
 

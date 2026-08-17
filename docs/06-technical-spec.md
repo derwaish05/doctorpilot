@@ -94,7 +94,7 @@ Notes:
 - Default URL: `/find-a-doctor/{post_name}/`.
 - The plugin does not force `dr-`. Imports may preserve an explicit `dr-...` post slug.
 - Directory-base changes validate reserved slugs and flush rewrites once after saving.
-- Changing an existing doctor slug must offer an explicit old-path redirect in Pro; Free must at least warn about URL impact.
+- Changing an existing doctor slug must offer an explicit old-path redirect (Migration tier); Free must at least warn about URL impact.
 - WordPress `post_status=publish` is the public-visibility authority.
 
 ## 4. Taxonomy contract
@@ -190,7 +190,7 @@ The registry powers admin fields, meta registration, validation, public serializ
 | SEO overrides | Post meta | `_doctorpilot_seo_*` | Free |
 | Review state | Post meta | `_doctorpilot_review_status` | Free |
 | Completeness | Derived post meta | `_doctorpilot_completeness_score` | Free |
-| External source ID | Private post meta | `_doctorpilot_external_source_id` | Pro |
+| External source ID | Private post meta | `_doctorpilot_external_source_id` | Migration tier |
 | Search document | Derived private post meta | `_doctorpilot_search_document` | Free |
 | Normalized sort name | Derived private post meta | `_doctorpilot_sort_name` | Free |
 
@@ -269,7 +269,7 @@ Object capabilities use the post type’s mapped capability model. Required prim
 - `manage_doctorpilot`
 - `manage_doctorpilot_terms`
 - `manage_doctorpilot_library`
-- `manage_doctorpilot_migrations` (Pro)
+- `manage_doctorpilot_migrations` (Migration tier)
 - `view_doctorpilot_analytics` (Pro)
 
 Installation grants appropriate capabilities to administrators idempotently. Optional role presets are separate from authorization. Department/self-edit scope is checked after meta-cap mapping and cannot be bypassed by sending a different department in the request.
@@ -339,7 +339,9 @@ publicly cached. Bounded `per_page` and `exclude[]` prevent abuse.
 | `q` | string/empty | 0–100 Unicode characters |
 | `mode` | enum `universal` | `name`, `department`, `specialty`, `symptom`, `universal` |
 | `department`, `specialty`, `symptom`, `condition`, `treatment`, `language`, `location`, `insurance` | comma-separated slugs | max 10 values per filter; normalized/sorted; tier rules apply |
+| `doctor` | comma-separated doctor post slugs | max 10; normalized/sorted; restricts candidates to those doctors before scoring |
 | Boolean filters | `0\|1` | accepting-new, online |
+| `international` | `0\|1` | Tri-state: `1` international only, `0` national only, absent for either. Unlike the other booleans, `0` is a filter rather than a clear, and matches a stored `0` **or** a missing meta row |
 | `gender` | allowed enum | registry-defined |
 | `date` | ISO `YYYY-MM-DD` | Pro; valid site-local date |
 | `sort` | enum `relevance` | `relevance`, `name` (A→Z), `name_desc` (Z→A), `featured`, `experience`, `recent`, `availability` (Pro) |
@@ -494,18 +496,160 @@ No-result content cannot infer diagnosis, urgency, or treatment.
 - Template lookup order: theme `doctorpilot/{template}.php` → child-theme equivalent as resolved by WordPress → plugin default.
 - Server-rendered GET forms use the same canonical parameter names as REST.
 
+### 10.1a Packaging
+
+One artifact, `doctorpilot`, contains everything. The former `doctorpilot-pro`
+add-on was merged in at 0.2.0 (ADR-0020): its 34 runtime classes moved to the
+base namespace at their existing relative paths, and its modules are booted
+directly from `Infrastructure\\Plugin::boot()` rather than through the
+`doctorpilot/registered` handshake.
+
+`ExtensionRegistry`, the `doctorpilot/registered` action and
+`DOCTORPILOT_BASE_API_VERSION` are retained as a published contract for
+third-party add-ons; nothing in this repository consumes them.
+
+Identifiers kept from the add-on, unchanged because they name live rows:
+
+| Kind | Name |
+| --- | --- |
+| Tables | `{prefix}bstdz_doctorpilot_redirects`, `_import_jobs`, `_import_items`, `_analytics` |
+| Options | `bstdz_doctorpilot_pro_version`, `bstdz_doctorpilot_pro_db_version` |
+| Cron | `bstdz_doctorpilot_pro_retention`, `bstdz_doctorpilot_pro_run_import` |
+| Roles | `doctorpilot_department_manager`, `doctorpilot_doctor` |
+| Capabilities | `manage_doctorpilot_migrations`, `view_doctorpilot_analytics` |
+
+`Infrastructure\\LegacyAddon` retires a leftover `doctorpilot-pro` on
+`admin_init`: it deactivates it through the silent form of
+`deactivate_plugins()`, so the add-on's deactivation handler — which clears both
+cron hooks above — never runs. The same class re-creates any missing recurring
+schedule on every admin request, so a cleared schedule repairs itself rather
+than waiting for a reactivation.
+
+Schema version 3 adopts all of the above on upgrade, since merging code does not
+re-run an activation hook. Every step is idempotent: `Tables::create()` goes
+through `dbDelta`, `Roles::install()` and `Capabilities::grant_default_roles()`
+are additive grants, and the retention schedule is only created when nothing is
+scheduled. The result is a no-op on a site that ran both plugins and a first
+install on one that never did.
+
 ### 10.2 Elementor contracts
 
-Free core widgets:
+**Built-in widget heading.** `AbstractWidget` provides an optional eyebrow +
+heading block through three methods: `register_heading_controls()` (call inside
+an open content section), `register_heading_style()` (call at the top level of
+`register_controls()`; it opens its own section) and `render_heading( $settings )`
+(call in `render()` *after* the widget has confirmed it has content, so an empty
+widget never leaves an orphan heading). Control IDs: `heading_show`,
+`eyebrow_text`, `heading_text`, `heading_tag`, plus the `section_heading_style`
+section. `heading_show` defaults to off, so adding the set to a widget changes
+nothing until an editor enables it. Markup is `.dp-wh` > `.dp-wh__eyebrow` +
+`.dp-wh__title`; the tag is validated against `heading_tags()` and falls back to
+`h2`.
+
+Every widget registers it except `HeadingBlock`, which is the heading widget and
+already owns `heading_show` / `heading_text`.
+
+Widgets:
 
 - Doctor Search
+- Doctor Carousel / Grid — a curated set of doctors as a scroll-snap carousel or
+  a static grid. Same card, presets, style panel and Card elements switches as
+  Doctor Grid / List via `Concerns\CardDesignControls` + `Concerns\
+  CardElementControls`; no search, filters, A–Z or pagination. Template:
+  `carousel-doctor.php` (which includes `card-doctor.php`). Assets:
+  `assets/css/carousel.css` (depends on the premium card layer),
+  `assets/js/carousel.js` (no dependencies).
+
+  Selection: one `tax_{param}` SELECT2 per entry in
+  `SearchRequestFactory::filter_taxonomies()`, storing **term slugs** — the same
+  vocabulary the search request, the REST route and a shareable directory URL
+  use. Values are handed to `SearchRequestFactory::from_array()` and
+  `SearchService::search()`; there is no separate query path. `use_current_term`
+  replaces the panel's picks for whichever taxonomy the current term archive
+  belongs to, and only that one. `SearchRequestFactory` caps each taxonomy at 10
+  slugs and the request at `MAX_PER_PAGE` (48).
+
+  Term lists are fetched only for the editor panel (`is_admin()` or edit mode)
+  and memoised per request; the control itself is registered in both contexts, so
+  the control set never differs between panel and page.
+
+  Carousel mechanics live in the browser: the viewport is
+  `overflow-x: auto` + `scroll-snap-type: x mandatory`, and the script moves it
+  with `scrollTo`. A "page" is one viewport width. The script reads the current
+  page back out of `scrollLeft`, so a swipe and a button press converge on the
+  same state. Controls are emitted `hidden` and revealed on boot; a track that
+  needs no paging hides them again. Autoplay is suspended by a named set of
+  holds (hover / focus / pointer / hidden tab), so releasing one does not resume
+  while another stands, and an explicit pause outranks all of them.
+
 - Doctor Grid/List — card grid or compact list, with an optional search bar,
-  search-mode tabs, collapsible filter row (sort / gender / language /
-  department / specialty / symptom / accepting-new / online), A–Z index, result
-  count, and pagination. Server-renders from the query string (so the no-JS GET
-  form and shareable URLs work) and progressively enhances to the public
-  `/doctors` route. Templates: `directory.php`, `row-doctor.php`,
+  browse tabs, collapsible filter row (sort / gender / language / department /
+  specialty / symptom / accepting-new / online), A–Z index, result count, and
+  pagination. Templates: `directory.php`, `row-doctor.php`, `row-term.php`,
   `card-doctor.php`.
+
+  **Card elements.** `Concerns\CardElementControls` owns the per-part show/hide
+  switches and is the single source of truth for part names. It is used by
+  `DoctorGridList`, `DoctorCarousel` and `Elementor\RelatedDoctors`.
+
+  | Part | Setting key |
+  | --- | --- |
+  | `image` | `image_show` |
+  | `badge_featured` | `badge_featured_show` |
+  | `badge_international` | `badge_international_show` |
+  | `credentials` | `credentials_show` |
+  | `specialty` | `specialty_show` |
+  | `bio` | `bio_show` |
+  | `experience` | `experience_show` |
+  | `languages` | `languages_show` |
+  | `accepting` | `accepting_show` |
+  | `profile_button` | `profile_button_show` |
+  | `booking_button` | `booking_button_show` |
+
+  `card_parts()` resolves the switches to `array<string, bool>` and is passed to
+  the template as `$data['parts']`; an absent part resolves to visible, which is
+  what lets the shortcode, the archive template and theme overrides render the
+  complete card without passing anything. `card_hidden_parts()` inverts the same
+  array into the `data-card-hide` attribute on the directory root, which
+  `Directory.prototype.showPart()` reads so client-rendered cards match
+  server-rendered ones. Hidden parts are not emitted, never merely
+  `display: none`. Hiding `image` also adds the `dp-card--no-media` class, in
+  both renderers.
+
+  The widget renders two regions that are visible together. The **results**
+  region always holds the doctor output of the shared search services and
+  refreshes from the public `/doctors` route. The **index** region sits above it
+  and holds one hidden panel per browse tab; the `mode` parameter decides which
+  one is shown.
+
+  | Tab | Index source | Bound | Parameter an entry writes |
+  | --- | --- | --- | --- |
+  | By Doctor Name | `WP_Query` over published doctors; ordered in PHP by honorific-stripped name | 500 posts | `doctor` (post slug) |
+  | By Department | `get_terms( hide_empty )` | 500 terms | `department` |
+  | By Specialty | `get_terms( hide_empty )` | 500 terms | `specialty` |
+  | By Symptom | `get_terms( hide_empty )` | 500 terms | `symptom` |
+
+  Choosing an entry writes its parameter into the shared search state, so it
+  reaches `SearchRequest`, the request signature, the REST cache key, and the
+  active-filter chips exactly like a filter-row selection. Choosing the current
+  selection again clears it; switching tabs clears the tab being left, so no
+  filter survives without a visible control. A parameter owned by a rendered
+  index is not also offered as a select in the filter row.
+
+  One widget-local GET parameter extends the shared search state: `letter`
+  (`#` or `A`–`Z`). It filters the index only, never the results, and is ignored
+  when the A–Z bar is switched off, since nothing would be able to clear it. `q`
+  does double duty — it filters the index client-side by name *and* runs as the
+  ordinary search query against the results. Index filtering is applied by
+  marking non-matching rows `hidden` rather than omitting them, so the same
+  markup serves the no-JavaScript `?letter=` / `?q=` links and instant
+  client-side filtering, and clearing a filter restores the full list without a
+  round trip. A–Z letters left with no matching entry are marked `is-empty` and
+  are not clickable.
+
+  Doctor-name index sub-labels use the doctor's primary specialty, then primary
+  department, then the first assigned term of either — a label, unlike the card,
+  should not be blank just because no primary was chosen.
 - Doctor Profile
 - Department Grid
 - Symptom Directory
@@ -607,9 +751,9 @@ Use one versioned option object, `bstdz_doctorpilot_settings`, with schema:
 
 Unknown keys are discarded. Secrets are stored separately from exportable design/general settings and never autoloaded when large. Settings validation enforces ranges and safe enums.
 
-## 14. Pro database tables
+## 14. Database tables
 
-Table names use `$wpdb->prefix`.
+All tables below are owned by the single `doctorpilot` artifact and versioned with it. They were created by the `doctorpilot-pro` add-on before the merge (ADR-0020) and keep their original names, so an upgraded site keeps every row. `Support\Tables` is the single source of truth for the names; `Tables::create()` builds them through `dbDelta` and `Tables::drop()` removes them on an opt-in uninstall. Table names use `$wpdb->prefix`.
 
 ### 14.1 Redirects: `bstdz_doctorpilot_redirects`
 

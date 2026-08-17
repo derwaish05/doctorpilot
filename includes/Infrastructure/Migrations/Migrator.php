@@ -9,8 +9,11 @@ declare( strict_types=1 );
 
 namespace BrainStudioz\DoctorPilot\Infrastructure\Migrations;
 
+use BrainStudioz\DoctorPilot\Infrastructure\Lifecycle\Activator;
 use BrainStudioz\DoctorPilot\PostTypes\DoctorPostType;
 use BrainStudioz\DoctorPilot\Support\Capabilities;
+use BrainStudioz\DoctorPilot\Support\Roles;
+use BrainStudioz\DoctorPilot\Support\Tables;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -132,6 +135,36 @@ final class Migrator {
 					update_post_meta( $doctor_id, '_doctorpilot_exp_local', $exp );
 					update_post_meta( $doctor_id, '_doctorpilot_edu_local', $edu );
 					delete_post_meta( $doctor_id, '_doctorpilot_education_experience' );
+				}
+			},
+
+			// Version 3: adopt everything the Pro add-on used to own, now that
+			// it is part of this plugin.
+			//
+			// A site upgrading from the two-plugin layout already has these
+			// tables, roles and schedules — the add-on created them on its own
+			// activation, and merging the code does not re-run any activation
+			// hook. Every step below is therefore written to be a no-op on that
+			// site and a first install on a site that never had the add-on:
+			// `dbDelta` adds only what is missing, `Roles::install()` and
+			// `Capabilities::grant_default_roles()` are both idempotent grants,
+			// and the schedules are only created when nothing is scheduled.
+			//
+			// The table, option, role and cron-hook names are deliberately
+			// unchanged from the add-on. Renaming any of them here would strand
+			// live rows and stop in-flight imports for exactly the sites this
+			// migration exists to carry across.
+			3 => static function (): void {
+				Tables::create();
+				Roles::install();
+				Capabilities::grant_default_roles();
+
+				if ( false === get_option( 'bstdz_doctorpilot_pro_db_version', false ) ) {
+					update_option( 'bstdz_doctorpilot_pro_db_version', 2, false );
+				}
+
+				if ( ! wp_next_scheduled( Activator::RETENTION_HOOK ) ) {
+					wp_schedule_event( time() + HOUR_IN_SECONDS, 'daily', Activator::RETENTION_HOOK );
 				}
 			},
 		);

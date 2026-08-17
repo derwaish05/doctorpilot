@@ -1,0 +1,307 @@
+/**
+ * DoctorPilot — Doctor Carousel / Grid layer.
+ *
+ * Loaded only where the Doctor Carousel / Grid widget is on the page
+ * (`DoctorCarousel::get_style_depends()`), on top of `frontend.css` and the
+ * premium card layer. The widget's root carries `.dp-dir`, so every card token
+ * the premium layer defines applies here unchanged — this file adds the track
+ * and the controls and nothing else. The card is not restyled.
+ *
+ * The carousel is a scroll container with scroll snapping, not a transformed
+ * track. Two things follow. The browser owns the physics, so touch flicks,
+ * trackpad swipes, momentum and the reduced-motion preference all behave the
+ * way the platform behaves rather than the way a library reimplements them.
+ * And the markup works before the script runs: with no JavaScript the strip is
+ * still scrollable and still keyboard-reachable, so the script's only job is to
+ * add the buttons, the dots and the page maths.
+ *
+ * @package BrainStudioz\DoctorPilot
+ */
+
+/* -------------------------------------------------------------------------
+ * 1. Shell and control placement
+ * ---------------------------------------------------------------------- */
+
+/* The controls ship with the `hidden` attribute and are revealed by the script,
+   and the script hides them again when a track has nothing to page through. The
+   flex rules below would out-specify the user-agent `[hidden]` rule, so this
+   layer restates it rather than leaning on the one in `frontend.css` — the
+   fallback that matters here is the one where the script never runs. */
+.dp-carousel [hidden] {
+	display: none;
+}
+
+.dp-carousel {
+	/* Slides in view. The Columns control overwrites this per breakpoint; the
+	   value here is what an unstyled widget falls back to. */
+	--dpcar-slides: 3;
+	--dpcar-gap: var(--dpc-col-gap, 24px);
+
+	--dpcar-nav-size: 44px;
+	--dpcar-nav-color: var(--dp-accent, #136888);
+	--dpcar-nav-bg: #ffffff;
+	--dpcar-nav-border: var(--dp-line, #e3eaf1);
+	--dpcar-nav-color-hover: #ffffff;
+	--dpcar-nav-bg-hover: var(--dp-accent, #136888);
+	--dpcar-nav-border-hover: var(--dp-accent, #136888);
+	--dpcar-dot: #c6d5e1;
+	--dpcar-dot-active: var(--dp-accent, #136888);
+
+	display: grid;
+	align-items: center;
+	row-gap: 16px;
+	column-gap: 12px;
+	grid-template-columns: minmax(0, 1fr);
+	grid-template-areas:
+		"viewport"
+		"controls";
+}
+
+.dp-carousel__viewport { grid-area: viewport; }
+
+.dp-carousel__controls {
+	grid-area: controls;
+	justify-self: center;
+	display: flex;
+	align-items: center;
+	gap: 12px;
+}
+
+/* Arrows over the cards. Placed in the viewport grid area rather than with
+   absolute positioning, so they centre on the track's real height without the
+   stylesheet having to know what that height is. */
+.dp-carousel--nav-edges .dp-carousel__nav {
+	grid-area: viewport;
+	align-self: center;
+	z-index: 3;
+}
+
+.dp-carousel--nav-edges .dp-carousel__nav--prev {
+	justify-self: start;
+	margin-inline-start: 10px;
+}
+
+.dp-carousel--nav-edges .dp-carousel__nav--next {
+	justify-self: end;
+	margin-inline-end: 10px;
+}
+
+/* Arrows in their own columns beside the cards. */
+.dp-carousel--nav-outside {
+	grid-template-columns: auto minmax(0, 1fr) auto;
+	grid-template-areas:
+		"prev viewport next"
+		".    controls .";
+}
+
+.dp-carousel--nav-outside .dp-carousel__nav--prev { grid-area: prev; }
+.dp-carousel--nav-outside .dp-carousel__nav--next { grid-area: next; }
+
+/* Arrows on the control row, flanking the dots. The two outer 1fr columns
+   centre the group without needing to know how wide the dots are. */
+.dp-carousel--nav-below {
+	grid-template-columns: 1fr auto auto auto 1fr;
+	grid-template-areas:
+		"viewport viewport viewport viewport viewport"
+		".        prev     controls next     .";
+}
+
+.dp-carousel--nav-below .dp-carousel__nav--prev { grid-area: prev; }
+.dp-carousel--nav-below .dp-carousel__nav--next { grid-area: next; }
+
+/* -------------------------------------------------------------------------
+ * 2. Track
+ * ---------------------------------------------------------------------- */
+
+.dp-carousel__viewport {
+	overflow-x: auto;
+	overflow-y: hidden;
+	scroll-snap-type: x mandatory;
+	scroll-behavior: smooth;
+
+	/* The card lifts and casts a shadow on hover. A scroll container clips its
+	   overflow, so the room for both has to be padding — with a matching
+	   negative margin, or every carousel would sit inset from the cards beside
+	   it in the same column. */
+	padding: 10px 4px 18px;
+	margin: -10px -4px -18px;
+
+	/* Firefox and the WebKit pseudo-element. The dots and arrows are the
+	   affordance; a native bar under the cards is noise. */
+	scrollbar-width: none;
+	-ms-overflow-style: none;
+}
+
+.dp-carousel__viewport::-webkit-scrollbar { display: none; }
+
+/* The scroll container is a tab stop, so it must show focus like one. */
+.dp-carousel__viewport:focus-visible {
+	outline: 2px solid var(--dp-accent, #136888);
+	outline-offset: 3px;
+	border-radius: 4px;
+}
+
+.dp-carousel__track {
+	display: flex;
+	align-items: stretch;
+	gap: var(--dpcar-gap);
+}
+
+.dp-carousel__slide {
+	flex: 0 0 calc((100% - (var(--dpcar-slides) - 1) * var(--dpcar-gap)) / var(--dpcar-slides));
+	min-width: 0;
+	scroll-snap-align: start;
+	display: flex;
+}
+
+.dp-carousel__slide > .dp-card { width: 100%; }
+
+/* -------------------------------------------------------------------------
+ * 3. Arrows
+ * ---------------------------------------------------------------------- */
+
+.dp-carousel__nav {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: var(--dpcar-nav-size);
+	height: var(--dpcar-nav-size);
+	padding: 0;
+	border: 1px solid var(--dpcar-nav-border);
+	border-radius: 50%;
+	background: var(--dpcar-nav-bg);
+	color: var(--dpcar-nav-color);
+	cursor: pointer;
+	box-shadow: 0 2px 10px -4px rgba(11, 41, 66, 0.35);
+	transition: background var(--dpc-transition, 240ms), color var(--dpc-transition, 240ms),
+		border-color var(--dpc-transition, 240ms), opacity var(--dpc-transition, 240ms);
+}
+
+.dp-carousel__nav svg {
+	width: 45%;
+	height: 45%;
+	display: block;
+}
+
+.dp-carousel__nav:hover,
+.dp-carousel__nav:focus-visible {
+	background: var(--dpcar-nav-bg-hover);
+	color: var(--dpcar-nav-color-hover);
+	border-color: var(--dpcar-nav-border-hover);
+}
+
+.dp-carousel__nav:focus-visible {
+	outline: 2px solid var(--dp-accent, #136888);
+	outline-offset: 2px;
+}
+
+/* Kept in the layout rather than removed, so reaching an end does not shift the
+   cards sideways. `disabled` already takes it out of the tab order. */
+.dp-carousel__nav[disabled] {
+	opacity: 0.35;
+	cursor: default;
+	box-shadow: none;
+}
+
+.dp-carousel__nav[disabled]:hover {
+	background: var(--dpcar-nav-bg);
+	color: var(--dpcar-nav-color);
+	border-color: var(--dpcar-nav-border);
+}
+
+/* -------------------------------------------------------------------------
+ * 4. Dots and pause
+ * ---------------------------------------------------------------------- */
+
+.dp-carousel__dots {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.dp-carousel__dot {
+	width: 9px;
+	height: 9px;
+	padding: 0;
+	border: 0;
+	border-radius: 50%;
+	background: var(--dpcar-dot);
+	cursor: pointer;
+	transition: background var(--dpc-transition, 240ms), width var(--dpc-transition, 240ms);
+}
+
+.dp-carousel__dot[aria-current="true"] {
+	background: var(--dpcar-dot-active);
+	width: 24px;
+	border-radius: 999px;
+}
+
+.dp-carousel__dot:focus-visible {
+	outline: 2px solid var(--dp-accent, #136888);
+	outline-offset: 3px;
+}
+
+.dp-carousel__play {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 28px;
+	height: 28px;
+	padding: 0;
+	border: 1px solid var(--dpcar-nav-border);
+	border-radius: 50%;
+	background: var(--dpcar-nav-bg);
+	color: var(--dpcar-nav-color);
+	cursor: pointer;
+}
+
+.dp-carousel__play:focus-visible {
+	outline: 2px solid var(--dp-accent, #136888);
+	outline-offset: 2px;
+}
+
+/* Two bars while playing (the button pauses), one triangle while paused (the
+   button plays). Drawn in CSS so the state change costs no markup swap. */
+.dp-carousel__play-icon {
+	width: 8px;
+	height: 10px;
+	border-left: 3px solid currentColor;
+	border-right: 3px solid currentColor;
+}
+
+.dp-carousel__play[aria-pressed="true"] .dp-carousel__play-icon {
+	width: 0;
+	height: 0;
+	border-left: 9px solid currentColor;
+	border-right: 0;
+	border-top: 6px solid transparent;
+	border-bottom: 6px solid transparent;
+	margin-left: 3px;
+}
+
+/* -------------------------------------------------------------------------
+ * 5. Direction
+ * ---------------------------------------------------------------------- */
+
+/* The chevrons are drawn pointing left and right; in a right-to-left document
+   "previous" is the right-hand one. Mirroring the glyph keeps one path per
+   button and one meaning per position. */
+[dir="rtl"] .dp-carousel__nav svg {
+	transform: scaleX(-1);
+}
+
+/* -------------------------------------------------------------------------
+ * 6. Motion preference
+ * ---------------------------------------------------------------------- */
+
+/* The script refuses to autoplay under this preference; the jump-to-page
+   animation has to be turned off here, because it is the browser's, not the
+   script's. */
+@media ( prefers-reduced-motion: reduce ) {
+	.dp-carousel__viewport { scroll-behavior: auto; }
+
+	.dp-carousel__nav,
+	.dp-carousel__dot {
+		transition: none;
+	}
+}

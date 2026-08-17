@@ -72,7 +72,11 @@ final class DoctorSearch extends AbstractWidget {
 			)
 		);
 
+		$this->register_heading_controls();
+
 		$this->end_controls_section();
+
+		$this->register_heading_style();
 
 		$this->add_card_style_controls();
 	}
@@ -83,6 +87,8 @@ final class DoctorSearch extends AbstractWidget {
 	 * @return void
 	 */
 	protected function render(): void {
+		$this->render_heading( $this->get_settings_for_display() );
+
 		// Output is fully escaped inside the renderer/templates.
 		echo ( new SearchRenderer() )->render( array() ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 	}

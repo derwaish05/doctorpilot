@@ -34,29 +34,48 @@ Authorization must be enforced server-side. Nonces verify request intent for aut
 
 ## 3. Release capability matrix
 
-| Capability | Free MVP | Pro v1 | Later |
-|---|:---:|:---:|:---:|
-| Structured doctor profiles and review state | ✓ | Extends | — |
-| Department, Specialty, Symptom, Condition, Treatment, Language | ✓ | ✓ | — |
-| Single location | ✓ | ✓ | — |
-| Multiple locations | — | ✓ | — |
-| Name/department/specialty/symptom search | ✓ | ✓ | — |
-| Gender/language/accepting-new/online filters | ✓ | ✓ | — |
-| Location, insurance, schedule, availability filters | — | ✓ | — |
-| Native templates and shortcodes | ✓ | ✓ | — |
-| Core Elementor widgets | ✓ | ✓ | — |
-| Complete dynamic tags and Theme Builder conditions | — | ✓; Elementor Pro required | — |
-| External URL, phone, enquiry booking | ✓ | ✓ | — |
-| BookPilot provider | — | ✓ | — |
-| CSV import/export, redirect manager, bulk tools | — | ✓ | — |
-| Opt-in aggregate analytics | — | ✓ | — |
-| Global content library and assignment (procedures, education, publications, FAQs) | ✓ | Extends | — |
-| Doctor-specific local items | ✓ | ✓ | — |
-| Bulk assignment / promotion | — | ✓ | — |
-| Merge/repoint duplicate globals | — | ✓ | — |
-| Library CSV import/export | — | ✓ | — |
-| Native appointments/patient records | — | — | Separate product/ADR |
-| AI-assisted medical content | — | — | Separate safety review/ADR |
+Three commercial tiers ship across two artifacts (ADR-0019). **Free** is the WordPress.org build. **Migration** and **Pro** are separately priced entitlements inside the `doctorpilot-pro` artifact — Migration one-time, Pro annual.
+
+| Capability | Free MVP | Migration | Pro v1 | Later |
+|---|:---:|:---:|:---:|:---:|
+| Structured doctor profiles and review state | ✓ | — | Extends | — |
+| Department, Specialty, Symptom, Condition, Treatment, Language | ✓ | — | ✓ | — |
+| Single location | ✓ | — | ✓ | — |
+| Multiple locations | — | — | ✓ | — |
+| Name/department/specialty/symptom search | ✓ | — | ✓ | — |
+| Gender/language/accepting-new/online filters | ✓ | — | ✓ | — |
+| Location, insurance, schedule, availability filters | — | — | ✓ | — |
+| Native templates and shortcodes | ✓ | — | ✓ | — |
+| Core Elementor widgets | ✓ | — | ✓ | — |
+| Complete dynamic tags and Theme Builder conditions | — | — | ✓; Elementor Pro required | — |
+| External URL, phone, enquiry booking | ✓ | — | ✓ | — |
+| BookPilot provider | — | — | ✓ | — |
+| CSV doctor import with dry run, resume, rollback | — | ✓ | — | — |
+| Legacy field mapping and review-flag heuristics | — | ✓ | — | — |
+| Legacy-URL redirect manager | — | ✓ | — | — |
+| Reconciliation reporting and formula-safe CSV export | — | ✓ | — | — |
+| Bulk operations (taxonomy, review state, publish, duplicate) | — | — | ✓ | — |
+| Opt-in aggregate analytics | — | — | ✓ | — |
+| Global content library and assignment (procedures, education, publications, FAQs) | ✓ | — | Extends | — |
+| Doctor-specific local items | ✓ | — | ✓ | — |
+| Bulk assignment / promotion | — | — | ✓ | — |
+| Merge/repoint duplicate globals | — | — | ✓ | — |
+| Library CSV import/export | — | — | ✓ | — |
+| Native appointments/patient records | — | — | — | Separate product/ADR |
+| AI-assisted medical content | — | — | — | Separate safety review/ADR |
+
+### 3.1 Build status against the paid tiers
+
+The tier column above states where a capability *belongs*, not whether it exists. As of 2026-08-11 the paid artifact is unevenly built, and the gap falls almost entirely on the subscription tier:
+
+| Tier | State |
+|---|---|
+| Migration | **Substantially complete.** Import/export, mapping, review flags, redirects, reconciliation, retention, and the Migration admin screens are implemented and were exercised on the Aman deployment. |
+| Pro | **Incomplete — not saleable as a subscription yet.** Implemented: insurance taxonomy, condition/treatment/location/insurance filters, Pro fields, BookPilot provider, ScopeGuard department/self scoping, opt-in analytics, and the Related Doctors widget with its dynamic tag. Not implemented: **FR-009** multi-location records (only a locations-max limit raise exists), **FR-017** schedule and availability filters, **FR-024** sort by earliest verified availability, **FR-032** advanced widgets (only Related Doctors is in Pro), **FR-035** Theme Builder conditions, **FR-046** bulk operations, and the Pro library operations (bulk assignment/promotion, duplicate merge with repointing, library CSV, impact reporting). Pro ships zero front-end assets, consistent with the missing widget set. |
+
+Closing the Pro column is a precondition for charging a renewal, not a roadmap preference (ADR-0019). Licence/activation for both paid tiers is likewise unbuilt.
+
+**Unreconciled: the Free/Pro widget boundary.** FR-031 documents six Free widgets, but `Integration::register_widgets()` registers sixteen — the six named plus PageHeader, HeadingBlock, AboutDoctor, Specialties, ExperienceTimeline, BookingCard, DoctorFacts, AcademicHighlights, Certifications, and CertsPublications. Several of those are the "Doctor Information sections" that FR-032 assigns to **Pro**. Either FR-031/FR-032 are stale or Pro widget value has already shipped in Free. This is deliberately not resolved by editing a tier tag, because the answer changes what Pro can be priced on; it is tracked in `12-packaging-and-tiers.md` §9 and is Phase 3 work.
 
 ## 4. Functional requirements
 
@@ -83,7 +102,8 @@ Authorization must be enforced server-side. Nonces verify request intent for aut
 ### 4.3 Search and filters
 
 - **FR-015 [Free]** Search modes: doctor name, department, specialty, symptom, and universal keyword.
-- **FR-016 [Free]** Core filters: department, specialty, symptom, gender, language, accepting new patients, and online consultation.
+- **FR-016 [Free]** Core filters: department, specialty, symptom, gender, language, accepting new patients, online consultation, and national/international.
+- **FR-016a [Free]** The national/international filter is tri-state — All, National, International — because "national" is a selection a visitor makes, not merely the absence of a filter. It reads the existing `is_international` flag; no new field or taxonomy is introduced. A doctor with no stored flag counts as national, so profiles created by import or by code are not silently dropped from that result.
 - **FR-017 [Pro]** Advanced filters: location, insurance, condition, treatment, consultation type, available today, and available date.
 - **FR-018 [Free]** Debounced suggestions begin only after the configured minimum length and return bounded, public-safe results.
 - **FR-019 [Free]** Results update without a full reload when JavaScript/REST is available and degrade to a standard GET form when it is not.
@@ -91,7 +111,7 @@ Authorization must be enforced server-side. Nonces verify request intent for aut
 - **FR-021 [Free]** Active filters appear as removable chips with a visible “Clear all” action.
 - **FR-022 [Free]** Default ranking is deterministic: exact doctor name, name prefix/token match, exact department/specialty, direct symptom, curated related department/specialty, keyword match, featured flag, manual order, then title.
 - **FR-023 [Free]** No-result UI may offer spelling/synonym suggestions, related departments or symptoms, a hospital contact action, and featured doctors. It must not provide a diagnosis.
-- **FR-024 [Free]** Sorting supports relevance, name, featured, experience, and recently added; Pro adds earliest verified availability.
+- **FR-024 [Free/Pro]** Sorting supports relevance, name, featured, experience, and recently added (Free); Pro adds earliest verified availability. *The Pro half is not implemented — it depends on FR-017.*
 - **FR-025 [Free]** Pagination is mandatory. “Load more” may enhance it but must preserve a crawlable and keyboard-accessible page state.
 
 ### 4.4 Frontend display
@@ -105,7 +125,10 @@ Authorization must be enforced server-side. Nonces verify request intent for aut
 ### 4.5 Elementor compatibility
 
 - **FR-031 [Free]** Core widgets: Doctor Search, Doctor Grid/List, Doctor Profile, Department Grid, Symptom Directory, and Booking Button.
-- **FR-031a [Free]** The Doctor Grid/List widget renders either a card grid or a compact list and can expose search in place: a query field, search-mode tabs (name / department / specialty / symptom), a collapsible filter row, an A–Z index for the list layout, a result count, and pagination. Filters, sort, and query are encoded in the URL per FR-020, the widget works as a plain GET form without JavaScript, and every filter it offers is limited to those enabled in DoctorPilot settings and backed by existing terms.
+- **FR-031a [Free]** The Doctor Grid/List widget renders either a card grid or a compact list and can expose search in place: a query field, browse tabs, a collapsible filter row, an A–Z index, a result count, and pagination. Filters, sort, query, tab, and letter are encoded in the URL per FR-020, the widget works as a plain GET form without JavaScript, and every filter it offers is limited to those enabled in DoctorPilot settings and backed by existing terms.
+- **FR-031b [Free]** The widget's browse tabs open an index *above* the doctor results, and the results stay on screen with it. **By Doctor Name** indexes every published doctor (name plus primary specialty or department); **By Department**, **By Specialty**, and **By Symptom** index that taxonomy's terms, limited to terms at least one published doctor uses. Each index is browsable A–Z and by free text. Every configured tab browses — there is no tab that only scopes the query, because `mode` is not a ranking input and such a tab would change nothing. A site that does not want browse tabs configures none.
+- **FR-031c [Free]** Choosing an entry in a browse index narrows the doctor results below it rather than navigating away: the entry writes that index's search parameter (`doctor`, `department`, `specialty`, `symptom`), is marked as the current selection, and choosing it again clears it. Switching tabs clears the previous tab's selection, so no filter can stay active without a visible control for it. Because the selection travels as an ordinary search parameter it is shared by the URL, the REST route, the cache key, and the active-filter count, and it works as a plain GET link without JavaScript.
+- **FR-031d [Free]** Every filter the widget offers stays applicable at all times, because the results are always present. A parameter owned by a visible browse index is not also offered as a select in the filter row, so one value is never settable from two controls that could disagree.
 - **FR-032 [Pro]** Advanced widgets: Advanced Search, Carousel, Doctor Information sections, Locations, Schedule, Related Doctors, Results Count, Active Filters, and pagination controls.
 - **FR-033 [Free/Pro]** Widgets expose controls appropriate to their output, including typography, color, spacing, border/radius, image ratio, columns, responsive behavior, focus/hover states, empty state, and loading state. Irrelevant controls must not be added merely to inflate feature count.
 - **FR-034 [Free/Pro]** Assets load only for widgets present on the page and use Elementor's dependency APIs.
@@ -121,13 +144,15 @@ Authorization must be enforced server-side. Nonces verify request intent for aut
 
 ### 4.7 Import, export, and migration
 
-- **FR-041 [Pro]** CSV import provides upload validation, column mapping, preview, dry run, row-level errors, optional term creation, and chunked processing.
-- **FR-042 [Pro]** Imported doctors default to draft/pending review and never auto-publish.
-- **FR-043 [Pro]** An external source key makes imports idempotent. Retrying a job must not duplicate successfully imported doctors.
-- **FR-044 [Pro]** Redirects require an explicit normalized source path and destination doctor. Reject redirect loops, duplicate sources, staging destinations, and guessed mappings.
-- **FR-045 [Pro]** Export protects spreadsheet consumers against CSV formula injection.
-- **FR-046 [Pro]** Bulk actions include assign taxonomy, set review state, publish/unpublish with capability checks, duplicate doctor, and completeness report.
-- **FR-047 [Pro]** A failed or interrupted import is resumable and retains an auditable summary without storing uploaded files indefinitely.
+Tier note (ADR-0019): FR-041 through FR-045 and FR-047 belong to the **Migration** one-time entitlement, because they are launch tooling used once per deployment. FR-046 bulk operations stay in **Pro** — bulk editing is day-to-day directory administration, not migration.
+
+- **FR-041 [Migration]** CSV import provides upload validation, column mapping, preview, dry run, row-level errors, optional term creation, and chunked processing.
+- **FR-042 [Migration]** Imported doctors default to draft/pending review and never auto-publish.
+- **FR-043 [Migration]** An external source key makes imports idempotent. Retrying a job must not duplicate successfully imported doctors.
+- **FR-044 [Migration]** Redirects require an explicit normalized source path and destination doctor. Reject redirect loops, duplicate sources, staging destinations, and guessed mappings.
+- **FR-045 [Migration]** Export protects spreadsheet consumers against CSV formula injection.
+- **FR-046 [Pro]** Bulk actions include assign taxonomy, set review state, publish/unpublish with capability checks, duplicate doctor, and completeness report. *Not implemented.*
+- **FR-047 [Migration]** A failed or interrupted import is resumable and retains an auditable summary without storing uploaded files indefinitely.
 
 ### 4.8 SEO
 
@@ -136,13 +161,13 @@ Authorization must be enforced server-side. Nonces verify request intent for aut
 - **FR-050 [Free]** Integrate with the active SEO owner to avoid duplicate canonical, Open Graph, breadcrumb, schema, and sitemap output.
 - **FR-051 [Free]** Public profiles may emit valid Physician and organization-related structured data from reviewed fields, without promising a search-engine rich result.
 - **FR-052 [Free]** Filtered combinations, internal search results, and AJAX endpoints must not create indexable duplicate pages.
-- **FR-053 [Free/Pro]** Legacy redirects are one-to-one 301 mappings and are monitored for loops and 404s.
+- **FR-053 [Migration]** Legacy redirects are one-to-one 301 mappings and are monitored for loops and 404s. Resolution must continue under any licence state, including expired or absent: a lapsed licence must never 404 live inbound traffic (ADR-0019). This is a licence-state guarantee, not a Free-artifact capability — Free ships no redirect code.
 
 ### 4.9 Analytics and privacy
 
 - **FR-054 [Pro]** Analytics are disabled by default and require explicit administrator opt-in with clear disclosure.
 - **FR-055 [Pro]** Store daily aggregate counts only. Do not store IP addresses, user IDs, cookie identifiers, raw user-agent strings, or query-to-person/session associations.
-- **FR-056 [Pro]** Retention and deletion controls apply to analytics and import logs.
+- **FR-056 [Pro/Migration]** Retention and deletion controls apply to analytics (Pro) and import logs (Migration).
 - **FR-057 [Free/Pro]** Symptom search displays a configurable medical disclaimer stating that results support doctor discovery and are not diagnosis or emergency advice.
 
 ### 4.10 Global content library (ADR-0017; see `11-global-content-library.md`)

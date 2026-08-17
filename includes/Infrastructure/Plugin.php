@@ -11,9 +11,19 @@ namespace BrainStudioz\DoctorPilot\Infrastructure;
 
 use BrainStudioz\DoctorPilot\Admin\DoctorEditor;
 use BrainStudioz\DoctorPilot\Admin\Menu;
+use BrainStudioz\DoctorPilot\Admin\MigrationMenu;
 use BrainStudioz\DoctorPilot\Admin\Settings;
+use BrainStudioz\DoctorPilot\Analytics\AnalyticsController;
+use BrainStudioz\DoctorPilot\Analytics\AnalyticsDashboard;
+use BrainStudioz\DoctorPilot\Analytics\AnalyticsService;
 use BrainStudioz\DoctorPilot\Application\Doctors\SaveDoctor;
+use BrainStudioz\DoctorPilot\Booking\BookPilotProvider;
+use BrainStudioz\DoctorPilot\Directory\AdvancedFilters;
+use BrainStudioz\DoctorPilot\Directory\InsuranceTaxonomy;
+use BrainStudioz\DoctorPilot\Directory\ProFields;
 use BrainStudioz\DoctorPilot\Elementor\Integration;
+use BrainStudioz\DoctorPilot\Elementor\ProElementor;
+use BrainStudioz\DoctorPilot\ImportExport\ImportRunner;
 use BrainStudioz\DoctorPilot\Fields\MetaRegistrar;
 use BrainStudioz\DoctorPilot\Frontend\Assets;
 use BrainStudioz\DoctorPilot\Frontend\SearchRenderer;
@@ -21,10 +31,13 @@ use BrainStudioz\DoctorPilot\Frontend\Shortcodes;
 use BrainStudioz\DoctorPilot\Frontend\Templates;
 use BrainStudioz\DoctorPilot\Infrastructure\Cache\CacheGeneration;
 use BrainStudioz\DoctorPilot\Infrastructure\Lifecycle\Activator;
+use BrainStudioz\DoctorPilot\Infrastructure\LegacyAddon;
 use BrainStudioz\DoctorPilot\Infrastructure\Migrations\Migrator;
 use BrainStudioz\DoctorPilot\Library\LibraryPostTypes;
 use BrainStudioz\DoctorPilot\Library\ReverseIndex;
+use BrainStudioz\DoctorPilot\Operations\RetentionJob;
 use BrainStudioz\DoctorPilot\PostTypes\DoctorPostType;
+use BrainStudioz\DoctorPilot\Redirects\RedirectResolver;
 use BrainStudioz\DoctorPilot\Rest\DoctorsController;
 use BrainStudioz\DoctorPilot\Rest\FacetsController;
 use BrainStudioz\DoctorPilot\Rest\LibraryController;
@@ -32,6 +45,7 @@ use BrainStudioz\DoctorPilot\Rest\RouteRegistry;
 use BrainStudioz\DoctorPilot\Rest\SuggestController;
 use BrainStudioz\DoctorPilot\Seo\SeoOwner;
 use BrainStudioz\DoctorPilot\Support\ExtensionRegistry;
+use BrainStudioz\DoctorPilot\Support\ScopeGuard;
 use BrainStudioz\DoctorPilot\Taxonomies\SymptomTermMeta;
 use BrainStudioz\DoctorPilot\Taxonomies\Taxonomies;
 
@@ -40,11 +54,17 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Boots and holds the Free plugin's runtime modules.
+ * Boots and holds the plugin's runtime modules.
  *
  * Keeps wiring in one place so ownership of hooks is explicit and every module
- * has a single registration point. Feature modules (post type, taxonomies,
- * fields, search, Elementor) are attached here as later milestones land.
+ * has a single registration point.
+ *
+ * The advanced directory, migration, redirect, analytics and operations modules
+ * used to live in a separate add-on that bound itself here through
+ * `doctorpilot/registered`. They are booted directly now. `ExtensionRegistry`
+ * and that action are deliberately kept: they are the published contract for
+ * third-party add-ons, and removing them would break anything already built
+ * against them for no gain.
  */
 final class Plugin {
 
@@ -131,10 +151,41 @@ final class Plugin {
 
 		// Elementor integration (Milestone 4). Safe no-op when Elementor is absent.
 		( new Integration() )->register();
+		( new ProElementor() )->register();
+
+		// Object and department scope enforcement for the scoped roles.
+		( new ScopeGuard() )->register();
+
+		// Advanced directory: insurance taxonomy, extra filters, extra fields.
+		( new InsuranceTaxonomy() )->register();
+		( new AdvancedFilters() )->register();
+		( new ProFields() )->register();
+
+		// BookPilot booking provider (registers through the providers filter).
+		( new BookPilotProvider() )->register();
+
+		// Opt-in aggregate analytics.
+		( new AnalyticsService() )->register();
+		( new AnalyticsController() )->register();
+
+		// Legacy-URL redirect resolution runs on the front end for every request.
+		( new RedirectResolver() )->register();
+
+		// Retention cleanup for import logs, expired jobs, and analytics.
+		( new RetentionJob() )->register();
+
+		// Advance running import jobs on the scheduled hook.
+		( new ImportRunner() )->register();
 
 		if ( is_admin() ) {
+			// Retire a leftover doctorpilot-pro install before anything else in
+			// the admin runs, and repair any schedule it cleared on its way out.
+			( new LegacyAddon() )->register();
+
 			( new Menu() )->register();
 			( new DoctorEditor() )->register();
+			( new MigrationMenu() )->register();
+			( new AnalyticsDashboard() )->register();
 		}
 
 		// Allow add-ons to register against a booted, compatible base.

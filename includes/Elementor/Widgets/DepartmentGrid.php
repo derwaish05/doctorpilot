@@ -74,7 +74,11 @@ final class DepartmentGrid extends AbstractWidget {
 			)
 		);
 
+		$this->register_heading_controls();
+
 		$this->end_controls_section();
+
+		$this->register_heading_style();
 	}
 
 	/**
@@ -101,6 +105,9 @@ final class DepartmentGrid extends AbstractWidget {
 		}
 
 		$columns = isset( $settings['columns'] ) ? max( 1, min( 4, (int) $settings['columns'] ) ) : 4;
+
+		// After the empty-state return, so a heading never sits over nothing.
+		$this->render_heading( $settings );
 
 		echo '<div class="dp-directory dp-cols-' . esc_attr( (string) $columns ) . ' dp-departments">';
 		foreach ( $terms as $term ) {

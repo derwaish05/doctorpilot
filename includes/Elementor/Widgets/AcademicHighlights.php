@@ -147,7 +147,11 @@ final class AcademicHighlights extends AbstractWidget {
 			)
 		);
 
+		$this->register_heading_controls();
+
 		$this->end_controls_section();
+
+		$this->register_heading_style();
 
 		$this->register_card_style();
 		$this->register_item_style();
@@ -379,6 +383,10 @@ final class AcademicHighlights extends AbstractWidget {
 			}
 			return;
 		}
+
+		// After the empty return: a heading over an empty stats block would be a
+		// promise the widget cannot keep.
+		$this->render_heading( $settings );
 
 		echo '<div class="dp-stats">';
 

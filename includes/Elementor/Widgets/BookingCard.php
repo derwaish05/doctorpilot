@@ -156,7 +156,11 @@ final class BookingCard extends AbstractWidget {
 			)
 		);
 
+		$this->register_heading_controls();
+
 		$this->end_controls_section();
+
+		$this->register_heading_style();
 
 		$this->register_card_style();
 		$this->register_text_style();
@@ -477,6 +481,10 @@ final class BookingCard extends AbstractWidget {
 		$tel = (string) preg_replace( '/[^0-9+]/', '', $phone );
 
 		$subtitle = str_replace( '{name}', (string) ( $data['name'] ?? '' ), (string) ( $settings['subtitle'] ?? '' ) );
+
+		// Distinct from the card's own Title control above: that one prints
+		// inside the card, this one is a section heading above the whole widget.
+		$this->render_heading( $settings );
 
 		echo '<div class="dp-bcard">';
 

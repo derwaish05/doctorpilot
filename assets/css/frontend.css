@@ -1192,8 +1192,34 @@
 	display: none;
 }
 
-/* Scoped fallback: most themes define `.screen-reader-text`, but the mode tabs
-   depend on it to hide their radio inputs, so the widget cannot assume it. */
+/* The mode tabs are a real radio group styled through their labels, so the
+   inputs must stay focusable but never paint. This deliberately does NOT reuse
+   `.screen-reader-text`: themes routinely un-hide that class on `:focus` (the
+   skip-link pattern), and clicking a tab focuses its radio — which made the
+   native control pop into view. `appearance: none` is the load-bearing part;
+   `clip` alone does not reliably clip a native control's own rendering. */
+.dp-dir .dp-dir__mode-input {
+	position: absolute !important;
+	width: 1px !important;
+	height: 1px !important;
+	margin: -1px !important;
+	padding: 0 !important;
+	border: 0 !important;
+	overflow: hidden !important;
+	clip: rect(0, 0, 0, 0) !important;
+	clip-path: inset(50%) !important;
+	white-space: nowrap !important;
+	pointer-events: none !important;
+	-webkit-appearance: none !important;
+	-moz-appearance: none !important;
+	appearance: none !important;
+	background: none !important;
+	box-shadow: none !important;
+	opacity: 0 !important;
+}
+
+/* Scoped fallback: most themes define `.screen-reader-text`, and the widget's
+   remaining labels use it, so the widget cannot assume it is present. */
 .dp-dir .screen-reader-text {
 	position: absolute;
 	width: 1px;
@@ -1412,6 +1438,31 @@
 	color: var(--dp-dir-muted);
 }
 
+/* Emitted by both the index and the results when nothing matches. */
+.dp-dir .dp-empty {
+	margin: 0;
+	padding: 18px 0;
+	color: var(--dp-dir-muted);
+}
+
+/* Browse index
+   ---------------------------------------------------------------------------
+   The index sits above the results and stays on screen with them. The rule
+   underneath it is the only separator: it reads as "these entries produced the
+   doctors below" without adding a heading the tab label already provides. */
+
+.dp-dir__index {
+	padding-bottom: 28px;
+	margin-bottom: 32px;
+	border-bottom: 1px solid var(--dp-dir-bar-border);
+}
+
+.dp-dir__count--index {
+	font-size: 14px;
+	font-weight: 500;
+	color: var(--dp-dir-muted);
+}
+
 /* A–Z index */
 
 .dp-dir__az {
@@ -1459,22 +1510,25 @@
 	transition: opacity 0.15s ease;
 }
 
-.dp-dir__group {
-	margin-bottom: 26px;
-}
-
-.dp-dir__group-letter {
-	margin: 0 0 10px;
-	padding-bottom: 6px;
-	border-bottom: 2px solid var(--dp-dir-bar-border);
-	color: var(--dp-dir-navy);
-	font-size: 18px;
-}
-
 .dp-dir__rows {
 	display: grid;
 	grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
 	gap: 18px 24px;
+}
+
+.dp-dir__row {
+	/* Selected rows gain a border; reserving the space here keeps neighbouring
+	   rows from shifting by a pixel when a selection is made. */
+	padding: 4px 10px;
+	border: 1px solid transparent;
+	border-radius: 8px;
+}
+
+/* Result rows are not selectable, so they keep the flush list alignment. */
+.dp-dir__row--result {
+	padding: 0;
+	border: 0;
+	border-radius: 0;
 }
 
 .dp-dir__row-name {
@@ -1494,6 +1548,33 @@
 	margin: 2px 0 0;
 	color: var(--dp-dir-muted);
 	font-size: 13px;
+}
+
+/* Selected index entry: outlined and recoloured, so the state survives both a
+   colour-blind reading and a high-contrast forced-colours mode. */
+
+.dp-dir__row:hover:not(.dp-dir__row--result) {
+	background: rgba(13, 59, 92, 0.04);
+}
+
+.dp-dir__row.is-selected {
+	border-color: var(--dp-dir-navy);
+	background: #fff;
+}
+
+.dp-dir__row.is-selected .dp-dir__row-name {
+	color: #128a6e;
+}
+
+.dp-dir__row-name:focus-visible {
+	outline: 2px solid var(--dp-dir-accent);
+	outline-offset: 3px;
+}
+
+@media (forced-colors: active) {
+	.dp-dir__row.is-selected {
+		border-color: Highlight;
+	}
 }
 
 .dp-dir__pagination {
@@ -1539,4 +1620,109 @@
 		max-width: none;
 		flex: 1;
 	}
+
+	/* A long index would push the results off a phone screen before the visitor
+	   knows they exist, so it scrolls within a bounded height instead. */
+	.dp-dir__index [data-dp-rows] {
+		max-height: 60vh;
+		overflow-y: auto;
+	}
+
+	.dp-dir__index {
+		padding-bottom: 20px;
+		margin-bottom: 24px;
+	}
+}
+
+/* ---------------------------------------------------------------------------
+ * Doctor card baseline for non-widget contexts.
+ *
+ * `templates/card-doctor.php` is shared by the Doctor Grid / List widget, the
+ * doctor archive, the search template and the `[doctorpilot_doctors]`
+ * shortcode. Only the widget loads `directory-premium.css`, so the classes the
+ * card gained in the premium upgrade need a floor here — without it a
+ * screen-reader-only span renders as visible text and an inline metadata icon
+ * falls back to the SVG default of 300x150.
+ * ------------------------------------------------------------------------ */
+
+.dp-sr-only {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	padding: 0;
+	margin: -1px;
+	overflow: hidden;
+	clip: rect(0, 0, 0, 0);
+	white-space: nowrap;
+	border: 0;
+}
+
+.dp-meta__icon {
+	flex: none;
+	width: 15px;
+	height: 15px;
+	color: currentColor;
+}
+
+.dp-meta__icon svg {
+	width: 100%;
+	height: 100%;
+	display: block;
+}
+
+.dp-card__meta li {
+	display: flex;
+	align-items: flex-start;
+	gap: 8px;
+}
+
+.dp-card__headline {
+	margin: 0;
+	font-size: 13.5px;
+	line-height: 1.45;
+	color: #4b5563;
+}
+
+.dp-card__badges {
+	position: absolute;
+	top: 8px;
+	left: 8px;
+	right: 8px;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+	pointer-events: none;
+}
+
+.dp-card__badges--end { justify-content: flex-end; }
+
+.dp-card__badges--bottom { top: auto; bottom: 8px; }
+
+.dp-card__badges .dp-badge { position: static; }
+
+.dp-card__placeholder {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.dp-card__initials {
+	font-size: 28px;
+	font-weight: 600;
+	letter-spacing: 0.04em;
+	color: #7d98ae;
+	text-transform: uppercase;
+	line-height: 1;
+}
+
+.dp-card--linked .dp-card__cover {
+	position: absolute;
+	inset: 0;
+	z-index: 1;
+	border-radius: inherit;
+}
+
+.dp-card--linked .dp-card__body > *:not(.dp-card__cover) {
+	position: relative;
+	z-index: 2;
 }

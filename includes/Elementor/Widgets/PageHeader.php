@@ -271,7 +271,11 @@ final class PageHeader extends AbstractWidget {
 			)
 		);
 
+		$this->register_heading_controls();
+
 		$this->end_controls_section();
+
+		$this->register_heading_style();
 
 		$this->register_breadcrumb_controls();
 		$this->register_typography_controls();
@@ -1039,6 +1043,10 @@ final class PageHeader extends AbstractWidget {
 		}
 
 		$view = $this->prepare( $data, $settings );
+
+		// Above the hero, not inside it. The hero's own title is the doctor's
+		// name; this is the optional section label a page might put over it.
+		$this->render_heading( $settings );
 
 		echo '<section class="dp-hero">';
 		echo '<div class="dp-hero__inner">';

@@ -64,6 +64,13 @@ final class SearchRequest {
 	private array $taxonomy_filters;
 
 	/**
+	 * Doctor post slugs the result set is restricted to, or an empty list.
+	 *
+	 * @var array<int, string>
+	 */
+	private array $doctors;
+
+	/**
 	 * Gender filter, or empty string.
 	 *
 	 * @var string
@@ -83,6 +90,18 @@ final class SearchRequest {
 	 * @var bool|null
 	 */
 	private ?bool $online;
+
+	/**
+	 * International filter: true (international only), false (national only),
+	 * or null (any).
+	 *
+	 * Unlike the accepting-new and online filters, both truth values are
+	 * meaningful here — "national" is a real thing to ask for, not merely the
+	 * absence of a filter — so `false` must survive all the way to the query.
+	 *
+	 * @var bool|null
+	 */
+	private ?bool $international;
 
 	/**
 	 * Sort value.
@@ -125,6 +144,8 @@ final class SearchRequest {
 	 * @param string                              $view             View.
 	 * @param int                                 $page             Page.
 	 * @param int                                 $per_page         Per page.
+	 * @param array<int, string>                  $doctors          Doctor post slugs to restrict to.
+	 * @param bool|null                           $international    International filter: true, false, or null (any).
 	 */
 	public function __construct(
 		string $query,
@@ -136,11 +157,14 @@ final class SearchRequest {
 		string $sort,
 		string $view,
 		int $page,
-		int $per_page
+		int $per_page,
+		array $doctors = array(),
+		?bool $international = null
 	) {
 		$this->query            = $query;
 		$this->mode             = $mode;
 		$this->taxonomy_filters = $taxonomy_filters;
+		$this->doctors          = $doctors;
 		$this->gender           = $gender;
 		$this->accepting_new    = $accepting_new;
 		$this->online           = $online;
@@ -148,6 +172,7 @@ final class SearchRequest {
 		$this->view             = $view;
 		$this->page             = $page;
 		$this->per_page         = $per_page;
+		$this->international    = $international;
 	}
 
 	/**
@@ -187,6 +212,18 @@ final class SearchRequest {
 	}
 
 	/**
+	 * Doctor post slugs the result set is restricted to.
+	 *
+	 * Set when a visitor picks a specific doctor from the "By Doctor Name"
+	 * index. An empty list means "no restriction".
+	 *
+	 * @return array<int, string>
+	 */
+	public function doctors(): array {
+		return $this->doctors;
+	}
+
+	/**
 	 * Gender filter.
 	 *
 	 * @return string
@@ -211,6 +248,16 @@ final class SearchRequest {
 	 */
 	public function online(): ?bool {
 		return $this->online;
+	}
+
+	/**
+	 * International filter.
+	 *
+	 * @return bool|null True for international only, false for national only,
+	 *                   null for no filter.
+	 */
+	public function international(): ?bool {
+		return $this->international;
 	}
 
 	/**
@@ -259,9 +306,11 @@ final class SearchRequest {
 			'q'    => $this->query,
 			'mode' => $this->mode,
 			'tax'  => $this->taxonomy_filters,
+			'doc'  => $this->doctors,
 			'g'    => $this->gender,
 			'an'   => $this->accepting_new,
 			'on'   => $this->online,
+			'intl' => $this->international,
 			's'    => $this->sort,
 			'pg'   => $this->page,
 			'pp'   => $this->per_page,

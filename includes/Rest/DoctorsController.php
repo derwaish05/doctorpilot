@@ -211,6 +211,7 @@ final class DoctorsController {
 		return array(
 			'q'             => array_merge( $string_arg, array( 'default' => '' ) ),
 			'mode'          => array_merge( $string_arg, array( 'default' => 'universal' ) ),
+			'doctor'        => $string_arg,
 			'department'    => $string_arg,
 			'specialty'     => $string_arg,
 			'symptom'       => $string_arg,
@@ -218,6 +219,7 @@ final class DoctorsController {
 			'gender'        => $string_arg,
 			'accepting_new' => array( 'type' => 'string', 'required' => false ),
 			'online'        => array( 'type' => 'string', 'required' => false ),
+			'international' => array( 'type' => 'string', 'required' => false ),
 			'sort'          => array_merge( $string_arg, array( 'default' => 'relevance' ) ),
 			'view'          => array_merge( $string_arg, array( 'default' => 'grid' ) ),
 			'page'          => array(

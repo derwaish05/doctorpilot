@@ -35,6 +35,12 @@ final class Deactivator {
 		}
 		wp_clear_scheduled_hook( Activator::MAINTENANCE_HOOK );
 
+		// Retention and import advance the same way. An import paused here
+		// resumes from its stored cursor when the plugin is reactivated; the
+		// job rows are never touched.
+		wp_clear_scheduled_hook( Activator::RETENTION_HOOK );
+		wp_clear_scheduled_hook( Activator::IMPORT_HOOK );
+
 		// Clear any pending flush request and rebuild rewrite rules without ours.
 		delete_option( Activator::FLUSH_FLAG );
 		flush_rewrite_rules();

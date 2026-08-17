@@ -64,7 +64,11 @@ final class SymptomDirectory extends AbstractWidget {
 			)
 		);
 
+		$this->register_heading_controls();
+
 		$this->end_controls_section();
+
+		$this->register_heading_style();
 	}
 
 	/**
@@ -110,6 +114,9 @@ final class SymptomDirectory extends AbstractWidget {
 			$groups[ $letter ][] = $term;
 		}
 		ksort( $groups );
+
+		// After the empty-state return, so a heading never sits over nothing.
+		$this->render_heading( $settings );
 
 		echo '<div class="dp-symptom-directory">';
 		foreach ( $groups as $letter => $items ) {

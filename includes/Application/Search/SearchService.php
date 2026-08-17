@@ -11,6 +11,7 @@ namespace BrainStudioz\DoctorPilot\Application\Search;
 
 use BrainStudioz\DoctorPilot\Domain\Search\SearchRequest;
 use BrainStudioz\DoctorPilot\Domain\Search\SearchRequestFactory;
+use BrainStudioz\DoctorPilot\PostTypes\DoctorPostType;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -103,6 +104,15 @@ final class SearchService {
 			}
 		}
 
+		foreach ( $request->doctors() as $slug ) {
+			$doctor  = get_page_by_path( $slug, OBJECT, DoctorPostType::POST_TYPE );
+			$chips[] = array(
+				'type'  => 'doctor',
+				'value' => $slug,
+				'label' => ( $doctor instanceof \WP_Post ) ? $doctor->post_title : $slug,
+			);
+		}
+
 		if ( '' !== $request->gender() ) {
 			$chips[] = array(
 				'type'  => 'gender',
@@ -124,6 +134,17 @@ final class SearchService {
 				'type'  => 'online',
 				'value' => '1',
 				'label' => __( 'Online consultation', 'doctorpilot' ),
+			);
+		}
+
+		// Both truth values are a filter the visitor chose, so both get a chip.
+		if ( null !== $request->international() ) {
+			$chips[] = array(
+				'type'  => 'international',
+				'value' => $request->international() ? '1' : '0',
+				'label' => $request->international()
+					? __( 'International', 'doctorpilot' )
+					: __( 'National', 'doctorpilot' ),
 			);
 		}
 

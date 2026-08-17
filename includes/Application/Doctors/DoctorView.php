@@ -77,6 +77,11 @@ final class DoctorView {
 			'name'                   => $this->display_name( $post ),
 			'url'                    => (string) get_permalink( $post_id ),
 			'credentials'            => (string) get_post_meta( $post_id, FieldRegistry::META_PREFIX . 'credentials', true ),
+			// The registry labels `post_excerpt` "Headline" and describes it as
+			// the one line under the name on listing cards, so it is the field
+			// a job title belongs in. Added to the card contract here; `full()`
+			// continues to expose the same value as `intro`.
+			'headline'               => (string) $post->post_excerpt,
 			'photo'                  => $this->photo( $post_id ),
 			'primary_department'     => $this->primary_term( $post_id, FieldRegistry::META_PREFIX . 'primary_department_id', Taxonomies::DEPARTMENT ),
 			'primary_specialty'      => $this->primary_term( $post_id, FieldRegistry::META_PREFIX . 'primary_specialty_id', Taxonomies::SPECIALTY ),
@@ -207,7 +212,7 @@ final class DoctorView {
 
 		return array(
 			'id'   => $term->term_id,
-			'name' => $term->name,
+			'name' => self::term_name( $term ),
 			'slug' => $term->slug,
 		);
 	}
@@ -229,12 +234,27 @@ final class DoctorView {
 		foreach ( $terms as $term ) {
 			$out[] = array(
 				'id'   => $term->term_id,
-				'name' => $term->name,
+				'name' => self::term_name( $term ),
 				'slug' => $term->slug,
 			);
 		}
 
 		return $out;
+	}
+
+	/**
+	 * A term's name as authored, ready for a text context.
+	 *
+	 * WordPress stores term names HTML-encoded ("A &amp; B"). Consumers escape
+	 * again for output — `esc_html()` in a template, `textContent` in the
+	 * frontend script — so forwarding the raw value renders the entity
+	 * literally. Decoding once here keeps every consumer correct.
+	 *
+	 * @param \WP_Term $term Term.
+	 * @return string
+	 */
+	private static function term_name( \WP_Term $term ): string {
+		return html_entity_decode( (string) $term->name, ENT_QUOTES, get_bloginfo( 'charset' ) ?: 'UTF-8' );
 	}
 
 	/**

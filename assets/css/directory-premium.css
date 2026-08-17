@@ -1,0 +1,770 @@
+/**
+ * DoctorPilot — premium directory card layer.
+ *
+ * Loaded only when the Doctor Grid / List widget is on the page
+ * (`DoctorGridList::get_style_depends()`), and layered on top of
+ * `frontend.css` rather than replacing it, so native shortcode output and
+ * every other widget keep their existing appearance.
+ *
+ * Everything visual here resolves through a CSS custom property with a
+ * built-in fallback. Elementor controls set the property on `{{WRAPPER}}`;
+ * when a control is untouched the fallback supplies the premium default.
+ * That is what makes an unstyled widget look finished, and it is also why
+ * saved widgets from before this release keep rendering — an absent setting
+ * simply means the fallback applies.
+ *
+ * @package BrainStudioz\DoctorPilot
+ */
+
+/* -------------------------------------------------------------------------
+ * 1. Design tokens
+ * ---------------------------------------------------------------------- */
+
+.dp-dir {
+	/* Palette. Deep medical teal on soft blue-grey, dark navy text. */
+	--dp-accent: #136888;
+	--dp-ink: #0b2942;
+	--dp-ink-muted: #5a6f82;
+	--dp-line: #e3eaf1;
+	--dp-surface: #f5f8fb;
+	--dp-card-bg: #ffffff;
+	--dp-positive: #0f766e;
+
+	/* Card box. */
+	--dpc-bg: var(--dp-card-bg);
+	--dpc-border-width: 1px;
+	--dpc-border-color: var(--dp-line);
+	--dpc-radius: 16px;
+	--dpc-pad: 20px;
+	--dpc-gap: 8px;
+	--dpc-shadow: 0 1px 2px rgba(11, 41, 66, 0.04), 0 10px 26px -14px rgba(11, 41, 66, 0.20);
+	--dpc-shadow-hover: 0 2px 4px rgba(11, 41, 66, 0.06), 0 20px 44px -18px rgba(11, 41, 66, 0.30);
+	--dpc-transition: 240ms;
+	--dpc-hover-lift: -4px;
+	--dpc-hover-scale: 1;
+
+	/* Media. */
+	--dpc-media-ratio: 4 / 5;
+	--dpc-media-fit: cover;
+	--dpc-media-pos: center top;
+	--dpc-media-bg: #eaf1f7;
+	--dpc-media-radius: 0px;
+	--dpc-media-zoom: 1.06;
+	--dpc-overlay: transparent;
+	--dpc-overlay-hover: transparent;
+
+	/* Typography colours. */
+	--dpc-name-color: var(--dp-ink);
+	--dpc-name-hover: var(--dp-accent);
+	--dpc-headline-color: var(--dp-ink-muted);
+	--dpc-cred-color: var(--dp-ink-muted);
+	--dpc-spec-color: var(--dp-accent);
+	--dpc-meta-color: #48627a;
+	--dpc-meta-icon: var(--dp-accent);
+
+	/* Badges. */
+	--dpb-radius: 999px;
+	--dpb-pad: 4px 10px;
+	--dpb-gap: 6px;
+	--dpb-offset-x: 12px;
+	--dpb-offset-y: 12px;
+	--dpb-featured-bg: #0b2942;
+	--dpb-featured-color: #ffffff;
+	--dpb-intl-bg: #0f766e;
+	--dpb-intl-color: #ffffff;
+	--dpb-avail-bg: #e7f5f1;
+	--dpb-avail-color: #0b5f52;
+
+	/* Buttons. */
+	--dpbtn-radius: 10px;
+	--dpbtn-pad: 10px 16px;
+	--dpbtn-gap: 8px;
+	--dpbtn-icon-gap: 6px;
+	--dpbtn-primary-bg: var(--dp-accent);
+	--dpbtn-primary-color: #ffffff;
+	--dpbtn-primary-border: var(--dp-accent);
+	--dpbtn-primary-bg-hover: #0f5670;
+	--dpbtn-primary-color-hover: #ffffff;
+	--dpbtn-secondary-bg: transparent;
+	--dpbtn-secondary-color: var(--dp-accent);
+	--dpbtn-secondary-border: #cfe0ea;
+	--dpbtn-secondary-bg-hover: #eef5f9;
+	--dpbtn-secondary-color-hover: var(--dp-accent);
+}
+
+/* -------------------------------------------------------------------------
+ * 2. Grid
+ *
+ * `frontend.css` sizes the column classes with `repeat(auto-fill, minmax(Npx,
+ * 1fr))`, which ignores the chosen count — at 4 columns on a wide canvas it
+ * fits five or six tracks and the layout stops matching the control. Explicit
+ * track counts fix that; the `auto-fill` behaviour is kept only as the
+ * no-class default.
+ * ---------------------------------------------------------------------- */
+
+.dp-dir .dp-directory {
+	gap: var(--dpc-row-gap, 24px) var(--dpc-col-gap, 24px);
+	align-items: stretch;
+}
+
+.dp-dir .dp-directory.dp-cols-1 { grid-template-columns: minmax(0, 1fr); }
+.dp-dir .dp-directory.dp-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.dp-dir .dp-directory.dp-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.dp-dir .dp-directory.dp-cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+
+@media (max-width: 1024px) {
+	.dp-dir .dp-directory.dp-cols-3,
+	.dp-dir .dp-directory.dp-cols-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 640px) {
+	.dp-dir .dp-directory[class*="dp-cols-"] { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* -------------------------------------------------------------------------
+ * 3. Card shell
+ * ---------------------------------------------------------------------- */
+
+.dp-dir .dp-card {
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	height: 100%;
+	background: var(--dpc-bg);
+	border: var(--dpc-border-width) solid var(--dpc-border-color);
+	border-radius: var(--dpc-radius);
+	box-shadow: var(--dpc-shadow);
+	overflow: hidden;
+	transition:
+		box-shadow var(--dpc-transition) ease,
+		transform var(--dpc-transition) ease,
+		border-color var(--dpc-transition) ease;
+}
+
+.dp-dir .dp-card:hover,
+.dp-dir .dp-card:focus-within {
+	box-shadow: var(--dpc-shadow-hover);
+	transform: translateY(var(--dpc-hover-lift)) scale(var(--dpc-hover-scale));
+}
+
+/* Whole-card click target. The overlay sits under the real controls so the
+   profile link, booking button and badges stay independently focusable and
+   keyboard users never lose a stop. */
+.dp-dir .dp-card--linked .dp-card__cover {
+	position: absolute;
+	inset: 0;
+	z-index: 1;
+	border-radius: inherit;
+}
+
+.dp-dir .dp-card--linked .dp-card__body > *:not(.dp-card__cover),
+.dp-dir .dp-card--linked .dp-card__media { position: relative; z-index: 2; }
+
+/* -------------------------------------------------------------------------
+ * 4. Media
+ *
+ * The ratio box reserves height before the image loads and when no image
+ * exists at all, so a missing photo cannot shift the row.
+ * ---------------------------------------------------------------------- */
+
+.dp-dir .dp-card__media {
+	position: relative;
+	aspect-ratio: var(--dpc-media-ratio);
+	background: var(--dpc-media-bg);
+	border-radius: var(--dpc-media-radius);
+	overflow: hidden;
+	flex: none;
+}
+
+.dp-dir .dp-card__media img {
+	width: 100%;
+	height: 100%;
+	object-fit: var(--dpc-media-fit);
+	object-position: var(--dpc-media-pos);
+	display: block;
+	transition: transform var(--dpc-transition) ease;
+}
+
+.dp-dir .dp-card:hover .dp-card__media img { transform: scale(var(--dpc-media-zoom)); }
+
+.dp-dir .dp-card__media::after {
+	content: "";
+	position: absolute;
+	inset: 0;
+	background: var(--dpc-overlay);
+	transition: background var(--dpc-transition) ease;
+	pointer-events: none;
+}
+
+.dp-dir .dp-card:hover .dp-card__media::after { background: var(--dpc-overlay-hover); }
+
+/* Initials fallback. Replaces the flat grey block that made photoless
+   doctors read as broken. */
+.dp-dir .dp-card__placeholder {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 100%;
+	height: 100%;
+	background: linear-gradient(150deg, #eef4f9 0%, #dce8f1 100%);
+}
+
+.dp-dir .dp-card__initials {
+	font-size: clamp(22px, 2.4vw, 34px);
+	font-weight: 600;
+	letter-spacing: 0.04em;
+	color: #7d98ae;
+	text-transform: uppercase;
+	line-height: 1;
+}
+
+/* -------------------------------------------------------------------------
+ * 5. Badges
+ * ---------------------------------------------------------------------- */
+
+.dp-dir .dp-card__badges {
+	position: absolute;
+	top: var(--dpb-offset-y);
+	left: var(--dpb-offset-x);
+	right: var(--dpb-offset-x);
+	z-index: 3;
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--dpb-gap);
+	pointer-events: none;
+}
+
+.dp-dir .dp-card__badges--end { justify-content: flex-end; }
+
+/* Availability sits at the foot of the image so it never collides with the
+   Featured and International rails along the top. */
+.dp-dir .dp-card__badges--bottom {
+	top: auto;
+	bottom: var(--dpb-offset-y);
+}
+
+.dp-dir .dp-card__badges .dp-badge {
+	position: static;
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	padding: var(--dpb-pad);
+	font-size: 11.5px;
+	font-weight: 600;
+	letter-spacing: 0.02em;
+	line-height: 1.4;
+	border-radius: var(--dpb-radius);
+	white-space: nowrap;
+	backdrop-filter: saturate(140%) blur(2px);
+}
+
+.dp-dir .dp-badge--featured {
+	background: var(--dpb-featured-bg);
+	color: var(--dpb-featured-color);
+}
+
+.dp-dir .dp-badge--international {
+	background: var(--dpb-intl-bg);
+	color: var(--dpb-intl-color);
+}
+
+.dp-dir .dp-badge--availability {
+	background: var(--dpb-avail-bg);
+	color: var(--dpb-avail-color);
+}
+
+.dp-dir .dp-badge svg { width: 12px; height: 12px; flex: none; }
+
+/* -------------------------------------------------------------------------
+ * 6. Body and type scale
+ * ---------------------------------------------------------------------- */
+
+.dp-dir .dp-card__body {
+	display: flex;
+	flex-direction: column;
+	gap: var(--dpc-gap);
+	flex: 1 1 auto;
+	padding: var(--dpc-pad);
+	min-width: 0;
+}
+
+.dp-dir .dp-card__name {
+	margin: 0;
+	font-size: 18px;
+	font-weight: 650;
+	line-height: 1.3;
+	letter-spacing: -0.01em;
+	color: var(--dpc-name-color);
+}
+
+.dp-dir .dp-card__name a {
+	color: inherit;
+	text-decoration: none;
+	transition: color var(--dpc-transition) ease;
+}
+
+.dp-dir .dp-card__name a:hover,
+.dp-dir .dp-card__name a:focus-visible { color: var(--dpc-name-hover); }
+
+.dp-dir .dp-card__headline {
+	margin: 0;
+	font-size: 13.5px;
+	font-weight: 500;
+	line-height: 1.45;
+	color: var(--dpc-headline-color);
+}
+
+.dp-dir .dp-card__credentials {
+	margin: 0;
+	font-size: 12.5px;
+	font-weight: 500;
+	letter-spacing: 0.03em;
+	text-transform: uppercase;
+	color: var(--dpc-cred-color);
+}
+
+.dp-dir .dp-card__specialty {
+	margin: 0;
+	font-size: 13.5px;
+	font-weight: 600;
+	line-height: 1.4;
+	color: var(--dpc-spec-color);
+}
+
+/* Optional line clamp. Applied by the template only when a limit is set, so
+   a single-line value is never given a multi-line box. */
+.dp-dir .dp-clamp {
+	display: -webkit-box;
+	-webkit-box-orient: vertical;
+	-webkit-line-clamp: var(--dp-clamp, 2);
+	line-clamp: var(--dp-clamp, 2);
+	overflow: hidden;
+}
+
+/* -------------------------------------------------------------------------
+ * 7. Metadata
+ *
+ * Icon rows rather than list markers. The template omits an entire `li` when
+ * its value is empty, so there are no orphan bullets or dangling labels.
+ * ---------------------------------------------------------------------- */
+
+.dp-dir .dp-card__meta {
+	list-style: none;
+	margin: 2px 0 0;
+	padding: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	font-size: 13px;
+	line-height: 1.45;
+	color: var(--dpc-meta-color);
+	min-width: 0;
+}
+
+.dp-dir .dp-card__meta li {
+	display: flex;
+	align-items: flex-start;
+	gap: 8px;
+	margin: 0;
+	min-width: 0;
+}
+
+.dp-dir .dp-card__meta li::marker { content: none; }
+
+.dp-dir .dp-meta__icon {
+	flex: none;
+	width: 15px;
+	height: 15px;
+	margin-top: 1px;
+	color: var(--dpc-meta-icon);
+}
+
+.dp-dir .dp-meta__icon svg { width: 100%; height: 100%; display: block; }
+
+.dp-dir .dp-meta__label { font-weight: 600; color: var(--dp-ink); }
+
+.dp-dir .dp-meta__value { min-width: 0; overflow-wrap: anywhere; }
+
+.dp-dir .dp-card__meta .dp-accepting { color: var(--dp-positive); font-weight: 600; }
+
+/* -------------------------------------------------------------------------
+ * 8. Actions
+ *
+ * `margin-top: auto` pins the buttons to the bottom so cards with different
+ * amounts of metadata still line their CTAs up across a row. The separator
+ * and padding stop the buttons sitting hard against the card edge.
+ * ---------------------------------------------------------------------- */
+
+.dp-dir .dp-card__actions {
+	margin-top: auto;
+	padding-top: 14px;
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--dpbtn-gap);
+	border-top: 1px solid var(--dpc-actions-rule, transparent);
+}
+
+.dp-dir .dp-card__actions .dp-btn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: var(--dpbtn-icon-gap);
+	padding: var(--dpbtn-pad);
+	border-radius: var(--dpbtn-radius);
+	border: 1px solid transparent;
+	font-size: 13.5px;
+	font-weight: 600;
+	line-height: 1.2;
+	text-decoration: none;
+	cursor: pointer;
+	transition:
+		background-color var(--dpc-transition) ease,
+		color var(--dpc-transition) ease,
+		border-color var(--dpc-transition) ease;
+}
+
+.dp-dir .dp-card__actions .dp-btn svg { width: 15px; height: 15px; flex: none; }
+
+.dp-dir .dp-card__actions .dp-btn--primary {
+	background: var(--dpbtn-primary-bg);
+	color: var(--dpbtn-primary-color);
+	border-color: var(--dpbtn-primary-border);
+	flex: 1 1 auto;
+}
+
+.dp-dir .dp-card__actions .dp-btn--primary:hover,
+.dp-dir .dp-card__actions .dp-btn--primary:focus-visible {
+	background: var(--dpbtn-primary-bg-hover);
+	color: var(--dpbtn-primary-color-hover);
+	border-color: var(--dpbtn-primary-bg-hover);
+}
+
+.dp-dir .dp-card__actions .dp-btn--secondary {
+	background: var(--dpbtn-secondary-bg);
+	color: var(--dpbtn-secondary-color);
+	border-color: var(--dpbtn-secondary-border);
+	flex: 1 1 auto;
+}
+
+.dp-dir .dp-card__actions .dp-btn--secondary:hover,
+.dp-dir .dp-card__actions .dp-btn--secondary:focus-visible {
+	background: var(--dpbtn-secondary-bg-hover);
+	color: var(--dpbtn-secondary-color-hover);
+}
+
+/* -------------------------------------------------------------------------
+ * 9. Presets
+ *
+ * A preset only re-points tokens. Any control the user touches writes the
+ * same token on `{{WRAPPER}}`, which is a higher-specificity origin, so an
+ * explicit choice always beats its preset.
+ * ---------------------------------------------------------------------- */
+
+/* Classic — the pre-upgrade appearance, kept as a restore path. */
+.dp-dir--preset-classic {
+	--dpc-radius: 8px;
+	--dpc-pad: 14px;
+	--dpc-gap: 6px;
+	--dpc-shadow: none;
+	--dpc-shadow-hover: 0 6px 18px -10px rgba(11, 41, 66, 0.28);
+	--dpc-hover-lift: 0px;
+	--dpc-media-zoom: 1;
+	--dpbtn-radius: 6px;
+	--dpc-name-color: var(--dp-accent);
+}
+
+/* Modern — the default. */
+.dp-dir--preset-modern {
+	--dpc-actions-rule: var(--dp-line);
+}
+
+/* Elevated — borderless, floating. */
+.dp-dir--preset-elevated {
+	--dpc-border-width: 0px;
+	--dpc-radius: 18px;
+	--dpc-shadow: 0 2px 6px rgba(11, 41, 66, 0.05), 0 18px 40px -18px rgba(11, 41, 66, 0.28);
+	--dpc-shadow-hover: 0 4px 10px rgba(11, 41, 66, 0.07), 0 30px 60px -20px rgba(11, 41, 66, 0.36);
+	--dpc-hover-lift: -6px;
+}
+
+/* Minimal — no chrome, spacing and rules only. */
+.dp-dir--preset-minimal {
+	--dpc-bg: transparent;
+	--dpc-border-width: 0px;
+	--dpc-radius: 12px;
+	--dpc-shadow: none;
+	--dpc-shadow-hover: none;
+	--dpc-hover-lift: 0px;
+	--dpc-pad: 14px 0 0;
+	--dpc-media-radius: 12px;
+	--dpc-media-zoom: 1;
+	--dpbtn-secondary-border: transparent;
+	--dpbtn-secondary-bg: #eef5f9;
+}
+
+.dp-dir--preset-minimal .dp-card { overflow: visible; }
+.dp-dir--preset-minimal .dp-card__actions { border-top: 0; padding-top: 12px; }
+
+/* Image overlay — content sits over a full-bleed portrait. */
+.dp-dir--preset-overlay {
+	--dpc-media-ratio: 3 / 4;
+	--dpc-overlay: linear-gradient(to top, rgba(4, 20, 34, 0.88) 0%, rgba(4, 20, 34, 0.45) 38%, rgba(4, 20, 34, 0) 68%);
+	--dpc-overlay-hover: linear-gradient(to top, rgba(4, 20, 34, 0.92) 0%, rgba(4, 20, 34, 0.55) 44%, rgba(4, 20, 34, 0.08) 74%);
+	--dpc-name-color: #ffffff;
+	--dpc-name-hover: #cfe8f2;
+	--dpc-headline-color: rgba(255, 255, 255, 0.82);
+	--dpc-cred-color: rgba(255, 255, 255, 0.72);
+	--dpc-spec-color: #9fd8ea;
+	--dpc-meta-color: rgba(255, 255, 255, 0.86);
+	--dpc-meta-icon: #9fd8ea;
+	--dpbtn-secondary-color: #ffffff;
+	--dpbtn-secondary-border: rgba(255, 255, 255, 0.42);
+	--dpbtn-secondary-bg-hover: rgba(255, 255, 255, 0.14);
+	--dpbtn-secondary-color-hover: #ffffff;
+	--dpc-border-width: 0px;
+}
+
+.dp-dir--preset-overlay .dp-card:not(.dp-card--row) { display: block; }
+
+/* The overlay scrim needs the photo to fill the card, which is incompatible
+   with the fixed-width media column of an image-card list. In that pairing the
+   row layout wins and the card falls back to the standard split. */
+.dp-dir--preset-overlay .dp-card--row {
+	--dpc-overlay: transparent;
+	--dpc-overlay-hover: transparent;
+	--dpc-name-color: var(--dp-ink);
+	--dpc-headline-color: var(--dp-ink-muted);
+	--dpc-cred-color: var(--dp-ink-muted);
+	--dpc-spec-color: var(--dp-accent);
+	--dpc-meta-color: #48627a;
+	--dpc-meta-icon: var(--dp-accent);
+	--dpbtn-secondary-color: var(--dp-accent);
+	--dpbtn-secondary-border: #cfe0ea;
+	--dpbtn-secondary-bg-hover: #eef5f9;
+	--dpbtn-secondary-color-hover: var(--dp-accent);
+}
+
+.dp-dir--preset-overlay .dp-card--row .dp-card__media { position: relative; inset: auto; }
+.dp-dir--preset-overlay .dp-card--row .dp-card__body { aspect-ratio: auto; justify-content: center; }
+.dp-dir--preset-overlay .dp-card--row .dp-card__placeholder {
+	background: linear-gradient(150deg, #eef4f9 0%, #dce8f1 100%);
+}
+.dp-dir--preset-overlay .dp-card--row .dp-card__initials { color: #7d98ae; }
+
+.dp-dir--preset-overlay .dp-card:not(.dp-card--row) .dp-card__media {
+	position: absolute;
+	inset: 0;
+	aspect-ratio: auto;
+	border-radius: 0;
+}
+
+.dp-dir--preset-overlay .dp-card:not(.dp-card--row) .dp-card__body {
+	position: relative;
+	z-index: 2;
+	min-height: 0;
+	height: 100%;
+	justify-content: flex-end;
+	aspect-ratio: var(--dpc-media-ratio);
+}
+
+.dp-dir--preset-overlay .dp-card__actions { border-top: 0; }
+
+/* The overlay scrim is the only thing making white text legible, so the
+   photoless fallback has to be dark rather than the pale default. */
+.dp-dir--preset-overlay .dp-card__placeholder {
+	background: linear-gradient(150deg, #143a52 0%, #0b2942 100%);
+}
+
+.dp-dir--preset-overlay .dp-card__initials { color: rgba(255, 255, 255, 0.55); }
+
+/* Photo switched off in the widget's Card elements section. The overlay
+   preset's white type is legible only against the scrim the photo carries, so
+   with no photo the card falls back to the standard light surface — the same
+   reasoning, and the same token reset, as the image-card list above. */
+.dp-dir--preset-overlay .dp-card--no-media {
+	--dpc-name-color: var(--dp-ink);
+	--dpc-headline-color: var(--dp-ink-muted);
+	--dpc-cred-color: var(--dp-ink-muted);
+	--dpc-spec-color: var(--dp-accent);
+	--dpc-meta-color: #48627a;
+	--dpc-meta-icon: var(--dp-accent);
+	--dpbtn-secondary-color: var(--dp-accent);
+	--dpbtn-secondary-border: #cfe0ea;
+	--dpbtn-secondary-bg-hover: #eef5f9;
+	--dpbtn-secondary-color-hover: var(--dp-accent);
+}
+
+/* With no photo there is no portrait box to match, so the body sizes to its
+   own content rather than holding the media aspect ratio or filling a height
+   the photo used to set. Applies to every preset, not just overlay.
+
+   Image-card rows are excluded: their media is a fixed-width column rather
+   than a box the body has to match, so they need no reset.
+
+   The second selector exists only to outrank the overlay preset's own body
+   rule above, which scores four class selectors because `:not()` lends its
+   argument's specificity. Repeating `.dp-card` takes this one to five, so it
+   wins on specificity rather than on source order. */
+.dp-dir .dp-card--no-media:not(.dp-card--row) .dp-card__body,
+.dp-dir--preset-overlay .dp-card.dp-card--no-media:not(.dp-card--row) .dp-card__body {
+	position: relative;
+	aspect-ratio: auto;
+	height: auto;
+	min-height: 0;
+	justify-content: flex-start;
+}
+
+/* Compact — denser, smaller portrait. */
+.dp-dir--preset-compact {
+	--dpc-media-ratio: 16 / 10;
+	--dpc-radius: 12px;
+	--dpc-pad: 14px;
+	--dpc-gap: 5px;
+	--dpbtn-pad: 8px 12px;
+	--dpc-hover-lift: -2px;
+}
+
+.dp-dir--preset-compact .dp-card__name { font-size: 16px; }
+.dp-dir--preset-compact .dp-card__meta { font-size: 12.5px; gap: 4px; }
+
+/* -------------------------------------------------------------------------
+ * 10. List layout
+ * ---------------------------------------------------------------------- */
+
+.dp-dir--list .dp-directory,
+.dp-dir .dp-directory--list {
+	grid-template-columns: minmax(0, 1fr);
+	gap: var(--dpc-row-gap, 16px);
+}
+
+.dp-dir .dp-card--row {
+	flex-direction: row;
+	align-items: stretch;
+}
+
+.dp-dir .dp-card--row .dp-card__media {
+	width: var(--dpc-list-media-w, 200px);
+	aspect-ratio: var(--dpc-list-media-ratio, 1 / 1);
+	flex: none;
+}
+
+.dp-dir .dp-card--row .dp-card__body { justify-content: center; }
+
+.dp-dir .dp-card--row.dp-card--media-right { flex-direction: row-reverse; }
+
+.dp-dir .dp-card--row.dp-card--media-top { flex-direction: column; }
+
+.dp-dir .dp-card--row.dp-card--media-top .dp-card__media {
+	width: 100%;
+	aspect-ratio: var(--dpc-media-ratio);
+}
+
+.dp-dir .dp-card--row .dp-card__actions {
+	border-top: 0;
+	padding-top: 12px;
+	justify-content: flex-start;
+}
+
+.dp-dir .dp-card--row .dp-card__actions .dp-btn { flex: 0 0 auto; }
+
+@media (max-width: 640px) {
+	.dp-dir .dp-card--row,
+	.dp-dir .dp-card--row.dp-card--media-right { flex-direction: column; }
+	.dp-dir .dp-card--row .dp-card__media { width: 100%; aspect-ratio: var(--dpc-media-ratio); }
+	.dp-dir .dp-card__actions { flex-direction: column; }
+	.dp-dir .dp-card__actions .dp-btn { width: 100%; }
+}
+
+/* -------------------------------------------------------------------------
+ * 11. Skeleton loading
+ *
+ * Skeletons mirror the real card box so swapping them for results does not
+ * move anything. Announcement is handled by the live region in the template;
+ * the skeletons themselves are hidden from assistive tech.
+ * ---------------------------------------------------------------------- */
+
+.dp-skel {
+	background: var(--dpc-bg);
+	border: var(--dpc-border-width) solid var(--dpc-border-color);
+	border-radius: var(--dpc-radius);
+	box-shadow: var(--dpc-shadow);
+	overflow: hidden;
+}
+
+.dp-skel__media { aspect-ratio: var(--dpc-media-ratio); background: #e8eef4; }
+
+.dp-skel__body { padding: var(--dpc-pad); display: flex; flex-direction: column; gap: 10px; }
+
+.dp-skel__line { height: 11px; border-radius: 6px; background: #e8eef4; }
+.dp-skel__line--lg { height: 16px; width: 72%; }
+.dp-skel__line--sm { width: 45%; }
+.dp-skel__line--btn { height: 36px; border-radius: var(--dpbtn-radius); margin-top: 8px; }
+
+.dp-skel__media,
+.dp-skel__line {
+	background-image: linear-gradient(90deg, #e8eef4 0%, #f4f8fb 50%, #e8eef4 100%);
+	background-size: 200% 100%;
+	animation: dp-skel-shimmer 1.4s ease-in-out infinite;
+}
+
+@keyframes dp-skel-shimmer {
+	from { background-position: 200% 0; }
+	to { background-position: -200% 0; }
+}
+
+.dp-dir--loading .dp-directory > .dp-card { opacity: 0.45; transition: opacity 160ms ease; }
+
+/* -------------------------------------------------------------------------
+ * 12. Accessibility
+ * ---------------------------------------------------------------------- */
+
+.dp-dir :focus-visible {
+	outline: 2px solid var(--dp-accent);
+	outline-offset: 2px;
+	border-radius: 4px;
+}
+
+.dp-sr-only {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	padding: 0;
+	margin: -1px;
+	overflow: hidden;
+	clip: rect(0, 0, 0, 0);
+	white-space: nowrap;
+	border: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.dp-dir *,
+	.dp-dir *::before,
+	.dp-dir *::after {
+		transition-duration: 0.01ms !important;
+		animation-duration: 0.01ms !important;
+		animation-iteration-count: 1 !important;
+	}
+
+	.dp-dir .dp-card:hover,
+	.dp-dir .dp-card:focus-within { transform: none; }
+	.dp-dir .dp-card:hover .dp-card__media img { transform: none; }
+}
+
+@media (forced-colors: active) {
+	.dp-dir .dp-card { border: 1px solid CanvasText; }
+	.dp-dir .dp-card__actions .dp-btn { border: 1px solid ButtonText; }
+}
+
+/* -------------------------------------------------------------------------
+ * 13. RTL
+ *
+ * Logical properties cover flow; these handle the physically-positioned
+ * badge rail and the row reversal, which cannot be expressed logically.
+ * ---------------------------------------------------------------------- */
+
+[dir="rtl"] .dp-dir .dp-card__badges { flex-direction: row-reverse; }
+[dir="rtl"] .dp-dir .dp-card__badges--end { justify-content: flex-start; }
+[dir="rtl"] .dp-dir .dp-card--row { flex-direction: row-reverse; }
+[dir="rtl"] .dp-dir .dp-card--row.dp-card--media-right { flex-direction: row; }
+[dir="rtl"] .dp-dir .dp-card--row.dp-card--media-top { flex-direction: column; }
+[dir="rtl"] .dp-dir .dp-card__meta li { flex-direction: row; }

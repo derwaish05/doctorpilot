@@ -68,12 +68,19 @@ final class DoctorProfile extends AbstractWidget {
 			)
 		);
 
+		$this->register_heading_controls();
+
 		$this->end_controls_section();
 
+		$this->register_heading_style();
+
+		// Renamed from "Headings": this section styles the h2 that opens each
+		// section *inside* the profile, which is a different thing from the
+		// widget heading the section above controls.
 		$this->start_controls_section(
 			'section_style',
 			array(
-				'label' => __( 'Headings', 'doctorpilot' ),
+				'label' => __( 'Profile sections', 'doctorpilot' ),
 				'tab'   => \Elementor\Controls_Manager::TAB_STYLE,
 			)
 		);
@@ -112,6 +119,8 @@ final class DoctorProfile extends AbstractWidget {
 		if ( null === $data ) {
 			return;
 		}
+
+		$this->render_heading( $settings );
 
 		include Templates::locate( 'profile-content.php' );
 	}

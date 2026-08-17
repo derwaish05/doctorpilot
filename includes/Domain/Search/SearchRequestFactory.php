@@ -100,6 +100,10 @@ final class SearchRequestFactory {
 			}
 		}
 
+		// A specific doctor picked from the "By Doctor Name" index. Slugs, not
+		// IDs, so the state stays shareable and readable in the URL.
+		$doctors = self::slug_list( $raw['doctor'] ?? '' );
+
 		$gender = isset( $raw['gender'] ) ? sanitize_key( (string) $raw['gender'] ) : '';
 		if ( ! in_array( $gender, array( 'female', 'male', 'other' ), true ) ) {
 			$gender = '';
@@ -107,6 +111,7 @@ final class SearchRequestFactory {
 
 		$accepting_new = self::tri_bool( $raw['accepting_new'] ?? null );
 		$online        = self::tri_bool( $raw['online'] ?? null );
+		$international = self::tri_bool( $raw['international'] ?? null );
 
 		$sort = isset( $raw['sort'] ) ? sanitize_key( (string) $raw['sort'] ) : 'relevance';
 		if ( ! in_array( $sort, SearchRequest::SORTS, true ) ) {
@@ -133,7 +138,9 @@ final class SearchRequestFactory {
 			$sort,
 			$view,
 			$page,
-			$per_page
+			$per_page,
+			$doctors,
+			$international
 		);
 	}
 

@@ -2,8 +2,8 @@
 /**
  * Plugin Name:       DoctorPilot – Doctor Directory & Search
  * Plugin URI:        https://brainstudioz.com/doctorpilot/
- * Description:        Structured doctor directory and intelligent search for hospitals. Manage doctors, departments, specialties, symptoms, and locations as structured WordPress data and present them with Elementor.
- * Version:           0.1.0
+ * Description:        Structured doctor directory and intelligent search for hospitals. Manage doctors, departments, specialties, symptoms, conditions, treatments, languages, locations and insurance providers as structured WordPress data; present them with Elementor; migrate an existing directory in with CSV import, legacy-URL redirects and reconciliation reporting.
+ * Version:           0.2.0
  * Requires at least: 6.4
  * Requires PHP:      8.1
  * Author:            BrainStudioz
@@ -33,13 +33,22 @@ if ( defined( 'DOCTORPILOT_VERSION' ) ) {
  * Version, runtime, and path constants.
  * ---------------------------------------------------------------------------
  */
-define( 'DOCTORPILOT_VERSION', '0.1.0' );
+define( 'DOCTORPILOT_VERSION', '0.2.0' );
 
-// Base extension API version. Pro add-ons declare the base version they need.
+/*
+ * Extension API version. Nothing in this repository consumes it any more — the
+ * Pro add-on that did was merged in at 0.2.0 — but `ExtensionRegistry` and the
+ * `doctorpilot/registered` action are a published contract, so third-party
+ * add-ons built against version 1 keep working.
+ */
 define( 'DOCTORPILOT_BASE_API_VERSION', 1 );
 
-// Data schema version. Incremented deliberately when migrations are added.
-define( 'DOCTORPILOT_SCHEMA_VERSION', 2 );
+/*
+ * Data schema version. Incremented deliberately when migrations are added.
+ * Version 3 adopts the tables, roles and cron hooks that belonged to the Pro
+ * add-on before it was merged into this plugin.
+ */
+define( 'DOCTORPILOT_SCHEMA_VERSION', 3 );
 
 // Minimum supported runtime (kept in sync with the plugin header and readme).
 define( 'DOCTORPILOT_MIN_WP', '6.4' );
@@ -96,8 +105,8 @@ if ( ! \BrainStudioz\DoctorPilot\Support\RuntimeGuard::is_supported() ) {
 
 /*
  * ---------------------------------------------------------------------------
- * Boot the plugin on plugins_loaded so other plugins (Elementor, Pro) have a
- * chance to register the hooks DoctorPilot listens for.
+ * Boot the plugin on plugins_loaded so other plugins (Elementor, third-party
+ * add-ons) have a chance to register the hooks DoctorPilot listens for.
  * ---------------------------------------------------------------------------
  */
 add_action(

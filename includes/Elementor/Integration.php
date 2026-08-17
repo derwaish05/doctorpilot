@@ -76,6 +76,41 @@ final class Integration {
 				$ver
 			);
 		}
+
+		// The premium card layer is a separate handle so Elementor can load it
+		// through the widget's own style dependency — pages without the Doctor
+		// Grid / List widget never download it. It depends on the shared
+		// stylesheet so its overrides always cascade afterwards.
+		$premium = Widgets\DoctorGridList::PREMIUM_STYLE_HANDLE;
+
+		if ( ! wp_style_is( $premium, 'registered' ) ) {
+			$premium_path = DOCTORPILOT_PLUGIN_DIR . 'assets/css/directory-premium.css';
+			$premium_ver  = is_readable( $premium_path ) ? (string) filemtime( $premium_path ) : DOCTORPILOT_VERSION;
+
+			wp_register_style(
+				$premium,
+				DOCTORPILOT_PLUGIN_URL . 'assets/css/directory-premium.css',
+				array( self::STYLE_HANDLE ),
+				$premium_ver
+			);
+		}
+
+		// The carousel layer adds the track and its controls on top of the card
+		// tokens, so it depends on the premium layer rather than duplicating it.
+		// A page with only the directory widget never downloads this.
+		$carousel = Widgets\DoctorCarousel::STYLE_HANDLE;
+
+		if ( ! wp_style_is( $carousel, 'registered' ) ) {
+			$carousel_path = DOCTORPILOT_PLUGIN_DIR . 'assets/css/carousel.css';
+			$carousel_ver  = is_readable( $carousel_path ) ? (string) filemtime( $carousel_path ) : DOCTORPILOT_VERSION;
+
+			wp_register_style(
+				$carousel,
+				DOCTORPILOT_PLUGIN_URL . 'assets/css/carousel.css',
+				array( $premium ),
+				$carousel_ver
+			);
+		}
 	}
 
 	/**
@@ -84,6 +119,16 @@ final class Integration {
 	 * @return void
 	 */
 	public function register_scripts(): void {
+		$this->register_directory_script();
+		$this->register_carousel_script();
+	}
+
+	/**
+	 * Register the directory script and its localized strings.
+	 *
+	 * @return void
+	 */
+	private function register_directory_script(): void {
 		$handle = Widgets\DoctorGridList::SCRIPT_HANDLE;
 
 		if ( wp_script_is( $handle, 'registered' ) ) {
@@ -111,6 +156,8 @@ final class Integration {
 					/* translators: %d: number of matching doctors. */
 					'countPlural'   => __( '%d doctors found', 'doctorpilot' ),
 					'empty'         => __( 'No doctors matched your search.', 'doctorpilot' ),
+					/* translators: %s: index name, e.g. "departments". */
+					'emptyTerms'    => __( 'No %s matched your search.', 'doctorpilot' ),
 					'error'         => __( 'Something went wrong. Please try again.', 'doctorpilot' ),
 					'viewProfile'   => __( 'View Profile', 'doctorpilot' ),
 					'featured'      => __( 'Featured', 'doctorpilot' ),
@@ -121,8 +168,47 @@ final class Integration {
 					/* translators: %d: years of experience. */
 					'yearPlural'    => __( '%d years experience', 'doctorpilot' ),
 					'pagination'    => __( 'Doctor results pages', 'doctorpilot' ),
-					/* translators: %d: total number of matches. */
-					'truncated'     => __( 'Showing the first results of %d doctors. Narrow the search to see the rest.', 'doctorpilot' ),
+					/* translators: %s: doctor name. Appended, visually hidden, to a "View Profile" link. */
+					'profileFor'    => __( 'for %s', 'doctorpilot' ),
+					/* translators: %s: doctor name. Appended, visually hidden, to a booking button. */
+					'bookingWith'   => __( 'with %s', 'doctorpilot' ),
+				),
+			)
+		);
+	}
+
+	/**
+	 * Register the carousel script and its localized strings.
+	 *
+	 * @return void
+	 */
+	private function register_carousel_script(): void {
+		$handle = Widgets\DoctorCarousel::SCRIPT_HANDLE;
+
+		if ( wp_script_is( $handle, 'registered' ) ) {
+			return;
+		}
+
+		$path = DOCTORPILOT_PLUGIN_DIR . 'assets/js/carousel.js';
+		$ver  = is_readable( $path ) ? (string) filemtime( $path ) : DOCTORPILOT_VERSION;
+
+		wp_register_script(
+			$handle,
+			DOCTORPILOT_PLUGIN_URL . 'assets/js/carousel.js',
+			array(),
+			$ver,
+			true
+		);
+
+		wp_localize_script(
+			$handle,
+			'doctorPilotCarousel',
+			array(
+				'strings' => array(
+					/* translators: 1: current page number, 2: total pages. */
+					'page'  => __( 'Page %1$d of %2$d', 'doctorpilot' ),
+					'play'  => __( 'Play the carousel', 'doctorpilot' ),
+					'pause' => __( 'Pause the carousel', 'doctorpilot' ),
 				),
 			)
 		);
@@ -162,6 +248,7 @@ final class Integration {
 		$widgets = array(
 			Widgets\DoctorSearch::class,
 			Widgets\DoctorGridList::class,
+			Widgets\DoctorCarousel::class,
 			Widgets\DepartmentGrid::class,
 			Widgets\SymptomDirectory::class,
 			Widgets\DoctorProfile::class,

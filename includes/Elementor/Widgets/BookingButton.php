@@ -84,7 +84,11 @@ final class BookingButton extends AbstractWidget {
 			)
 		);
 
+		$this->register_heading_controls();
+
 		$this->end_controls_section();
+
+		$this->register_heading_style();
 
 		$this->start_controls_section(
 			'section_button_style',
@@ -158,6 +162,11 @@ final class BookingButton extends AbstractWidget {
 		}
 
 		$target = '_blank' === $cta->target() ? ' target="_blank" rel="noopener"' : '';
+
+		// Last, after every early return: an unpublished doctor or a doctor with
+		// no booking destination renders nothing at all, and a heading floating
+		// above nothing would be worse than no heading.
+		$this->render_heading( $settings );
 
 		echo '<div class="dp-booking-widget">';
 		printf(
