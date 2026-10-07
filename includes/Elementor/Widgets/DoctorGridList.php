@@ -20,6 +20,7 @@ use BrainStudioz\DoctorPilot\Fields\FieldRegistry;
 use BrainStudioz\DoctorPilot\Frontend\Templates;
 use BrainStudioz\DoctorPilot\PostTypes\DoctorPostType;
 use BrainStudioz\DoctorPilot\Rest\RouteRegistry;
+use BrainStudioz\DoctorPilot\Support\Multilingual;
 use BrainStudioz\DoctorPilot\Taxonomies\Taxonomies;
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -194,7 +195,6 @@ final class DoctorGridList extends AbstractWidget {
 			'department'    => __( 'Department', 'doctorpilot' ),
 			'specialty'     => __( 'Specialty', 'doctorpilot' ),
 			'symptom'       => __( 'Symptom', 'doctorpilot' ),
-			'accepting_new' => __( 'Accepting new patients', 'doctorpilot' ),
 			'international' => __( 'National / International', 'doctorpilot' ),
 			'online'        => __( 'Online consultation', 'doctorpilot' ),
 		);
@@ -284,8 +284,8 @@ final class DoctorGridList extends AbstractWidget {
 	 *
 	 * Written inline on the root rather than through the Elementor stylesheet
 	 * because the control no longer exists to own a selector. A new control
-	 * writes the same token at `{{WRAPPER}}`, which is a stylesheet rule and so
-	 * loses to this inline style — deliberately: an explicit legacy value stays
+	 * writes the same token at `{{WRAPPER}} .dp-dir` — the same element, but a
+	 * stylesheet rule, so it loses to this inline style — deliberately: an explicit legacy value stays
 	 * authoritative until the site owner sets the modern control, at which point
 	 * they should clear the legacy one. Both are surfaced in the editor.
 	 *
@@ -397,6 +397,18 @@ final class DoctorGridList extends AbstractWidget {
 				'type'         => \Elementor\Controls_Manager::SWITCHER,
 				'return_value' => 'yes',
 				'default'      => 'yes',
+			)
+		);
+
+		$this->add_control(
+			'read_query',
+			array(
+				'label'        => __( 'Apply filters from the page URL', 'doctorpilot' ),
+				'type'         => \Elementor\Controls_Manager::SWITCHER,
+				'return_value' => 'yes',
+				'default'      => '',
+				'description'  => __( 'Turn this on for a results-only grid whose filters arrive in the link — a Doctor Search Index block on another page, or any hand-built link. A grid that shows its own search bar or filters already reads them.', 'doctorpilot' ),
+				'condition'    => array( 'search_show' => '' ),
 			)
 		);
 
@@ -802,7 +814,13 @@ final class DoctorGridList extends AbstractWidget {
 		$default_sort = $this->valid_sort( (string) ( $settings['sort'] ?? 'name' ) );
 		$az_show      = 'yes' === ( $settings['az_show'] ?? 'yes' );
 
-		$raw = $this->request_params( $settings, $default_sort, $search_on || array() !== $filters );
+		// A grid with its own search bar or filter panel always honours the query
+		// string. Without either, it is a results-only grid: it reads the URL only
+		// when the author says its filters arrive from elsewhere, so a fixed list
+		// stays fixed.
+		$read_query = $search_on || array() !== $filters || 'yes' === ( $settings['read_query'] ?? '' );
+
+		$raw = $this->request_params( $settings, $default_sort, $read_query );
 
 		// A tab opens an A–Z index above the doctor results. The results always
 		// stay on screen: picking an index entry writes that index's search
@@ -873,17 +891,20 @@ final class DoctorGridList extends AbstractWidget {
 			'default_sort'  => $default_sort,
 			'uid'           => 'dp-dir-' . (string) $this->get_id(),
 			'rest_base'     => esc_url_raw( rest_url( RouteRegistry::NAMESPACE ) ),
+			// Sent with every no-reload refresh so the REST route answers in the
+			// language of the page it is refreshing, whatever WPML's URL mode is.
+			'lang'          => Multilingual::current_language(),
 			'per_page'      => $per_page,
 			'is_editor'     => $this->is_edit_mode(),
 			'preset'        => $this->preset( $settings ),
 			'legacy_style'  => $this->legacy_card_tokens( $settings ),
-			'badge_avail'   => ( $settings['badge_availability_show'] ?? '' ) === 'yes',
 			'card_classes'  => $this->card_classes( $settings, $layout ),
 			'meta_icons'    => ( $settings['meta_icons_show'] ?? 'yes' ) === 'yes',
 			'card_linked'   => ( $settings['card_linked'] ?? '' ) === 'yes',
 			'clamp'         => max( 0, (int) ( $settings['bio_clamp'] ?? 0 ) ),
 			'parts'         => $card_parts,
 			'hidden_parts'  => $this->card_hidden_parts( $card_parts ),
+			'shown_parts'   => $this->card_shown_parts( $card_parts ),
 		);
 
 		$this->render_heading( $settings );
@@ -1042,7 +1063,8 @@ final class DoctorGridList extends AbstractWidget {
 			if ( $term_id <= 0 ) {
 				continue;
 			}
-			$term = get_term( $term_id, $taxonomy );
+			// Same stored-term-ID problem as `DoctorView::primary_term()`.
+			$term = get_term( Multilingual::term_id( $term_id, $taxonomy ), $taxonomy );
 			if ( $term instanceof \WP_Term ) {
 				return self::decode( $term->name );
 			}
@@ -1104,25 +1126,32 @@ final class DoctorGridList extends AbstractWidget {
 	/**
 	 * Read and validate the A–Z letter from the query string.
 	 *
-	 * @return string Single uppercase letter, '#', or '' for "all".
+	 * Only A–Z is a filter. Anything else — including a stale `#` from a link
+	 * made before that glyph became the "show all" control — falls through to
+	 * '', which is what "all" is.
+	 *
+	 * @return string Single uppercase letter, or '' for "all".
 	 */
 	private function request_letter(): string {
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Public, read-only GET state.
 		$raw = isset( $_GET['letter'] ) ? self::scalar( wp_unslash( $_GET['letter'] ) ) : '';
 		$raw = strtoupper( trim( $raw ) );
 
-		if ( '#' === $raw || 1 === preg_match( '/^[A-Z]$/', $raw ) ) {
-			return $raw;
-		}
-
-		return '';
+		return 1 === preg_match( '/^[A-Z]$/', $raw ) ? $raw : '';
 	}
 
 	/**
 	 * Index letter for a display name, ignoring an honorific prefix.
 	 *
+	 * A name that does not start with A–Z gets '#', which no longer has a
+	 * button of its own — that glyph now labels the "show all" entry. Such a
+	 * name therefore has no letter that selects it and appears only in the
+	 * unfiltered list. That is the intended trade: a row of letters where one
+	 * of them silently means "and also everything else" was the more confusing
+	 * of the two.
+	 *
 	 * @param string $name Display name.
-	 * @return string Single uppercase letter, or '#'.
+	 * @return string Single uppercase letter, or '#' for "no letter bucket".
 	 */
 	private static function letter_for( string $name ): string {
 		$name = (string) preg_replace( '/^\s*(dr|prof|mr|mrs|ms)\.?\s+/i', '', trim( $name ) );
@@ -1194,7 +1223,7 @@ final class DoctorGridList extends AbstractWidget {
 		}
 
 		$accepted = array_merge(
-			array( 'q', 'mode', 'doctor', 'gender', 'accepting_new', 'online', 'international', 'sort', 'page' ),
+			array( 'q', 'mode', 'doctor', 'gender', 'online', 'international', 'sort', 'page' ),
 			array_keys( SearchRequestFactory::filter_taxonomies() )
 		);
 

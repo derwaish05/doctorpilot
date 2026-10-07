@@ -4,6 +4,541 @@ All notable changes to DoctorPilot are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/) and the project uses semantic
 versioning.
 
+## [Unreleased]
+
+### Added
+- **`/doctors/` is now a working search page on its own.** The doctor archive
+  renders the same search bar, tabs, A–Z row and filtered grid the Doctor Grid /
+  List widget renders — through the same assembly, not a copy of it — so a link
+  like `/doctors/?department=cardiology` from the search index block (or from
+  anywhere else) lands on real, filtered results with no page to build and no
+  Elementor involved. A department, specialty or symptom archive
+  (`/doctor-department/cardiology/`) bridges its own term into the matching
+  filter, so the two URLs agree.
+
+  A site that would rather design its own search page still can: set it as the
+  Search page in DoctorPilot → Settings and every link points there instead.
+  With nothing set, links now fall back to the archive rather than back to the
+  page they were clicked on.
+- **Society memberships, as a third group on the Certifications & Publications
+  widget.** A membership record holds the society, a role or grade, a year and
+  an optional link, and renders in the widget's existing list markup:
+  *Royal College of Radiologists — Fellow · 2015*. The group has its own Show
+  switch, title, icon (with the library dropdown and pixfort picker like the
+  other two), and switches for the role-and-year line and the link.
+
+  Memberships work the way certifications and publications do — both ways. A new
+  **Society Memberships** library sits under Library in the admin, so a society
+  is entered once and assigned to any number of doctors, and each doctor's
+  Certifications & Publications tab also takes a list of their own. Assigned
+  records render first, then the doctor's own. Unpublished or deleted library
+  records are skipped rather than breaking the list, and the type is registered
+  for WPML like the rest of the library.
+
+  The group's Show switch defaults to on, like the other two, so a widget
+  already on a page picks the section up as soon as that doctor has a
+  membership — and shows nothing at all until then. Turn it off per widget to
+  keep a placement to certifications and publications only. The no-Elementor
+  profile template lists memberships too, under its own heading (its
+  Certifications heading used to promise memberships and show none).
+
+  page.** Search box, tabs (By Doctor Name / Department / Specialty / Symptom),
+  an A–Z row and multi-column lists of names and terms — and no results grid.
+  It reuses the directory's own classes, so it inherits that styling, and it has
+  its own Search bar / A–Z bar / Entries style sections driving CSS custom
+  properties.
+
+  Every entry is a real link rendered server-side, so the block works with
+  JavaScript off: a doctor goes to their profile, a department, specialty or
+  symptom goes to the search page carrying `?department=…` — the same parameters
+  `SearchRequestFactory` reads, so the landing page filters as if the visitor had
+  picked the term there. JavaScript only switches tabs, hides rows as you type or
+  pick a letter, and adds the suggestion dropdown.
+
+- **Suggestions under the search box.** Typing queries the existing
+  `/doctors/suggest` route and groups the matches by doctor, department,
+  specialty and symptom, each with a "View all" link. Arrow keys move through
+  them, Enter opens one, Escape closes. Suggestions gained a `slug` and a `url`
+  so a match can be linked at all — a doctor suggestion previously returned only
+  its name twice.
+
+- **A Search page setting** (DoctorPilot → Settings → General) naming the page
+  the index links to, with a per-widget override for a block that should point
+  somewhere else. With neither set, entries link to the page they are on and the
+  Elementor panel says so.
+
+### Changed
+- **One palette for the whole plugin.** The stylesheets had grown widget by
+  widget into 96 distinct colours — twelve different greys for secondary text,
+  eight for a hairline, seventeen pale surfaces, five card radii and three
+  unrelated shadow inks. Every one of them now resolves to a single token set
+  declared on `:root`, and there is no longer a colour, radius or shadow literal
+  anywhere in `frontend.css`, `directory-premium.css` or `carousel.css`.
+
+  The palette sat on a handful of widget classes before, which is why the hero,
+  the timeline and the search block could not see it and re-invented each value.
+  Widget tokens (`--dpc-*`, `--dpi-*`, `--dp-dir-*`, `--dpbtn-*`, `--dpcar-*`)
+  keep their names — the Elementor style controls write to them — but every
+  default now points at the palette, as do the widget control defaults, so a
+  colour set in one place reaches every widget that uses it.
+
+  Visible changes where a value was an outlier: the Featured badge is navy
+  rather than royal blue on archive pages, secondary text is one grey
+  throughout, the directory toolbar takes the same blue band as the search
+  block, borders are one hairline, and a few radii move a step onto the scale.
+  Anything set by hand in Elementor is untouched.
+
+- **Three contrast and state bugs the sweep surfaced.** The Heading Block's
+  subheading was pale yellow on white — about 1.1:1, invisible. The hero's ghost
+  button had a solid yellow fill, which is not a ghost button; it is now
+  outlined, with readable text on the banner. And a focus ring in the directory
+  sat at a 3px offset where every other ring in the plugin uses 2px.
+
+- **"Apply filters from the page URL" on the Doctor Grid / List widget.** A grid
+  that shows its own search bar or filter panel has always read the query
+  string. One with neither — a results-only grid, which is what a page pairing
+  the new index block with a plain list of results wants — ignored it, so a link
+  carrying `?department=cardiology` landed on an unfiltered list. The new switch
+  turns that on. It only appears when the search bar is off, and it defaults off,
+  so no page already built changes: a fixed list stays fixed.
+
+- Index building moved into a `BrowseIndex` trait — the A–Z bucketing that
+  strips honorifics, the 500-entry cap, the term and doctor catalogues. The
+  Doctor Grid / List widget still carries its own copies; the trait documents
+  that the two must be merged rather than edited in parallel, and it already
+  takes the sort argument that merge will need.
+
+## [0.7.0] - 2026-08-24
+
+### Added
+- **Icon sizes default to 1em.** Every icon-size slider — Certifications,
+  Certifications & Publications, Doctor Facts, Specialties, the achievement
+  lists, the Experience & Education checklist, the Booking Card's button icons
+  and the Page Header's chip and button icons — now starts at `1em` and offers
+  em and rem alongside px, so an icon tracks the text beside it instead of
+  sitting at a fixed pixel size. Each one sets width and height as well as
+  font-size, so inline SVGs (pixfort's included) and webfont glyphs land on the
+  same size.
+
+  Icons on already-built pages change size only where nobody set one: the sliders
+  that used to default to a fixed size (Page Header 16px and 20px, Booking Card
+  20px, Specialties 18px) now follow their text. The achievement list's icon
+  floor in `frontend.css` moved from 18px to 1em to match.
+
+- **Default colours for the widget text and headings.** Every heading control
+  now starts on the brand teal `#136888` — the built-in widget Heading, the
+  Heading Block's heading, and each widget's section or group title
+  (Certifications, Publications, the achievement lists, the stat block, the
+  profile section headings). Every body text control starts on black `#000000` —
+  the biography, item names and organizations, meta and description lines, fact
+  labels and values, timeline entries, checklist items, specialty labels and the
+  Heading Block's description.
+
+  The heading default matches what the stylesheet already paints, so headings do
+  not move. The text defaults do change what a page shows: the greys and teals
+  that the stylesheet used for body copy become black wherever an author has not
+  set a colour by hand. Anything set by hand is untouched.
+
+  Left as they were: the Page Header hero and the Booking Card, whose text is
+  white on a dark banner; the doctor directory and carousel cards, which have
+  their own colour-token layer; and accent elements — icons, timeline nodes,
+  stat values, the Heading Block's subheading — which keep their accent.
+
+- **Item styling on the Certifications & Publications widget.** A new **Items**
+  style section turns each certification and publication row into a box you can
+  design: padding, border radius, the gap after the icon, icon alignment,
+  transition duration, and Background, Border and Box-shadow across Normal and
+  Hover tabs. One section covers both groups, the way the widget's Icon and Text
+  sections already do.
+
+  "Gap between items" moved out of the Layout section into this one. It keeps its
+  control ID, so whatever is already set stays set, and no page changes: every
+  new control starts empty, which is the plain list the widget renders today.
+
+## [0.6.0] - 2026-08-24
+
+### Added
+- **pixfort icons on every icon option.** All twenty icon controls across the
+  widgets — Page Header's book, call and certification icons, Booking Card's
+  three, Doctor Facts' per-row icons, Certifications, Certifications &
+  Publications, Specialties, the achievement lists and Experience & Education —
+  now start with a small **library dropdown**: *Elementor icon library* or
+  *pixfort icon*. Choose pixfort and the panel swaps the Elementor picker for
+  pixfort's own, with its Line, Duotone and Solid tabs and search; switch back
+  and the Font Awesome icon you had returns untouched, because the two are
+  separate settings and neither overwrites the other.
+
+  Nothing already built changes: a page saved before this release has no library
+  choice stored, which resolves to the Elementor picker it is already using. The
+  dropdown appears only while `pixfort-core` is active — with one library there
+  is nothing to choose — and a page that asks for a pixfort icon on a site where
+  that plugin has since been switched off falls back to its Elementor icon
+  rather than rendering blank.
+
+- **A Design choice on the Experience & Education widget: Timeline or
+  Checklist.** The timeline — the rail of icon nodes with a card per entry — is
+  still what the widget does, and every page already built keeps it: pages saved
+  before this release carry no Design setting, so they resolve to Timeline.
+
+  Checklist renders the same entries as a compact icon-marked list, one entry per
+  line, with the organization and years joined onto that line by a separator you
+  can set (an en dash by default). It emits the same `dp-stats__ach*` markup the
+  achievement lists use, so a profile that mixes the two reads as one design, and
+  it falls back to the built-in circle-check mark when no icon is chosen. Its own
+  List style section covers item gap, columns, text and icon; the Rail, Card and
+  Text sections now show only for the timeline, and the node/organization icon
+  controls only appear where they apply.
+
+### Changed
+- **The Doctor Index block now opens showing only its search bar.** No browse
+  list is selected by default — a wall of names used to greet anyone who arrived
+  meaning to type. Pressing a browse button opens its list; pressing the open
+  one closes it again, so the bare state stays reachable. With nothing selected
+  at rest the buttons are disclosure controls (`aria-expanded`) rather than a
+  tablist, which must always have exactly one tab selected and whose roving
+  tabindex would otherwise have left no focusable button at all while everything
+  was closed. **More Filters** is enabled only while the doctor-name list is
+  open, which now covers the closed state too.
+- **The A–Z row's `#` is now "show all", not a bucket.** It sits where an "All"
+  option sits in every other filter, is highlighted whenever no letter is
+  applied, is never dimmed, and clicking it clears the letter. Its label is
+  translatable, so a site that prefers the word "All" can say so without
+  touching the filtering. Consequence worth knowing: a name that does not begin
+  with A–Z no longer has a letter that selects it, and appears only in the
+  unfiltered list — a row of letters where one of them silently also meant
+  "everything else" was the more confusing of the two. Applies to the Doctor
+  Grid's browse index, the Doctor Index block, and the directory shortcode.
+
+### Added
+- **The Doctor Index block gains a real filter row: Sort By, Gender and
+  Languages Spoken**, behind the same collapsible **More Filters** button the
+  Doctor Grid uses. Sort reorders the lists (A → Z / Z → A), and Gender and
+  Languages narrow the **By Doctor Name** list as you pick them.
+
+  On the Department, Specialty and Symptom tabs a term has no gender or language
+  to match, so the row is unavailable there: **More Filters** is disabled and
+  dimmed rather than hidden, which keeps the bar from reflowing and reads as
+  "belongs to another tab" instead of "something broke". Your choices are kept,
+  not reset, so switching back to **By Doctor Name** restores them. Links stay
+  honest too — a department entry carries only its department, and a doctor
+  entry is still a plain profile permalink; neither smuggles in a filter you
+  cannot see at the moment you click.
+
+  All three are read back from the query string on the server, so the block
+  sorts and narrows identically with JavaScript off — where the disabled state
+  is already correct on the first paint — and a filter with no options to offer
+  is not rendered at all.
+
+### Removed
+- The Doctor Index block's **Show side button** control, with its Button text,
+  Button link and Button icon. It was a plain link to the search page that
+  happened to be labelled "More Filters" while filtering nothing; the real
+  filter row replaces it under the same label.
+
+### Fixed
+- **The Sort By / Gender / Languages dropdown arrows no longer sit in the pill's
+  curve.** The arrow was the browser's own, painted outside the box model where
+  padding cannot reach it. The selects now draw their own chevron — the same
+  shape as the More Filters one — inset from the trailing edge, and flipped for
+  RTL.
+- **A blanket focus ring reshaped every control in the directory it touched.**
+  One `.dp-dir :focus-visible` rule set `border-radius` alongside the outline —
+  which does not round the ring, it overwrites the element's own radius — so
+  focusing a pill select or the pill search field squared it off to 6px and
+  floated a rounded rectangle 2px outside a round control. The rule is gone.
+  Focus is now stated per control in that control's own shape: bordered
+  controls recolour their border, everything else gets a tight outline with no
+  offset that traces the pill exactly.
+- **Focusing a search field no longer stacks two rings around it.** The bars
+  drew an offset `outline` outside the pill, and the raw input inside drew a
+  second, square ring of its own from the browser or the active theme. Both are
+  gone. Focus is now a single change of colour on the field's existing pill
+  border — no extra box, no offset, no reflow. The state is kept rather than
+  removed outright, because a search field that shows no focus strands keyboard
+  users and fails WCAG 2.2 AA.
+- **The two search bars on a page no longer look like different components.**
+  The Doctor Index block painted a saturated `#7ec8e8` band with a fully rounded
+  pill edge, while the Doctor Grid / List bar used the pale tinted surface with
+  a panel radius. Both now read the shared `--dp-bar-bg` / `--dp-bar-border`
+  tokens and the same panel radius, so they cannot drift apart again; `#7ec8e8`
+  is removed. The pill shape stays where it belongs — on the controls inside the
+  band (search field, tabs, actions), not on the band itself.
+- **An icon chosen from Elementor's uploaded-SVG library warned on every
+  render.** That library stores the attachment data as an array, and the widgets
+  compared it as a string — `Array to string conversion` on each page view, into
+  the log or, with display errors on, into the markup. Icon resolution now lives
+  in one place and tests the value without casting it.
+
+## [0.5.1] - 2026-08-21
+
+### Fixed
+- **The About Doctor widget rendered the whole page inside itself.** Editing
+  anything on the widget — even just its Eyebrow text — made it come back
+  containing the Page Header: breadcrumbs, photo, name, key facts, booking
+  buttons, and a second copy of its own heading below them.
+
+  `DoctorView::rendered_biography()` runs the doctor's biography through
+  `the_content` so shortcodes and embeds work. Elementor hooks that filter at
+  priority 9 and `apply_builder_in_content()` does not *filter* the content — it
+  discards it and substitutes the entire rendered document for the current post.
+  Called from a widget that is itself part of that document, it rendered the
+  document inside the widget. Elementor drops its own filter for the nested
+  pass, so it stopped after one level rather than hanging, which is why this
+  looked like a display glitch instead of the near-infinite loop it was.
+
+  The biography pass now suspends that one filter through Elementor's own public
+  `remove_content_filter()` / `add_content_filter()` API, and restores it only
+  when it was registered to begin with — Elementor removes it during its own
+  nested renders, and re-adding it there would have caused the opposite bug. A
+  re-entrancy guard backs it up, so nothing reached from `the_content` can
+  recurse through the biography again. Every other `the_content` filter still
+  runs, so shortcodes, embeds and other plugins are unaffected.
+
+## [0.5.0] - 2026-08-21
+
+### Added
+- **Separate style sections for the Eyebrow and the Heading**, on every widget
+  that has the built-in heading — 19 of them, from Doctor Grid / List and Doctor
+  Carousel to Certifications, Booking Card and Page Header. They used to share
+  one "Heading" section offering colour and typography and nothing else.
+
+  Each line now gets its own Style section with the same full set: typography,
+  padding, margin, border radius, transition duration, and Normal / Hover tabs
+  carrying text colour, background (classic or gradient) and box shadow. The two
+  are independent — a tinted pill above a plain heading, or a banded heading
+  under a plain eyebrow, without either choice constraining the other.
+
+- **"Fit background to text"**, one switcher per line. Both lines are
+  block-level, so a background colour paints the full column width — right for a
+  banded heading, wrong for the label an eyebrow usually wants. Off by default.
+
+### Changed
+- The old single "Heading" style section is now two: **Eyebrow** and **Heading**.
+  Nothing you have already set moves or resets — Elementor stores settings by
+  control ID, and every existing ID (`eyebrow_color`, `eyebrow_typography`,
+  `wh_title_color`, `wh_title_typography`, `wh_spacing`) is unchanged. A widget
+  nobody has touched emits exactly the CSS it emitted before.
+- "Spacing below" stays in the Heading section, with its description clarifying
+  what it has always done: the gap below the whole eyebrow-and-heading block,
+  not below the heading line.
+
+
+## [0.4.0] - 2026-08-20
+
+Schema version 5. **The upgrade permanently deletes stored data — see below.**
+
+### Removed
+- **The Credentials field is gone, and so are its saved values.** The request was
+  to replace "Credentials" with "Headline" everywhere; on inspection the plugin
+  already had a field called **Headline** — `post_excerpt`, the line under the
+  doctor's name on cards — so a straight rename would have put two identically
+  labelled fields in the same editor tab. The field the client wanted already
+  existed. Credentials was surplus, and is removed instead (ADR-0024).
+
+  It leaves every layer at once: the editor row, the card line in both the PHP
+  template and the JavaScript renderer, the profile header line, the legacy
+  search renderer, `.dp-card__credentials` / `.dp-profile__credentials` /
+  `--dpc-cred-color` in both stylesheets, the `credentials_show` switcher and the
+  Credentials colour and typography group in the Doctor Grid / List and Doctor
+  Carousel panels, the Elementor dynamic tag, the search index, the completeness
+  check, the CSV export column, the CSV import branch, the migration mapping and
+  its `qualifications` / `degrees` synonyms, and `wpml-config.xml`.
+
+  **Export your doctors before upgrading if you want these values.** Migration 5
+  deletes every `_doctorpilot_credentials` row, in every language. Reverting the
+  plugin restores the field but not the strings, and after the upgrade the
+  exporter no longer has the column — so the export has to happen first.
+
+  Affected doctors are reindexed afterwards, because the credentials text had
+  also been copied into each doctor's search document and keyword index, where
+  it would otherwise have gone on matching searches for a qualification the site
+  no longer stores. That reindex runs in batches of 100 on `shutdown` rather
+  than inside the migration itself, so a large directory spreads the work over a
+  few page loads instead of stalling whichever request happens to trip the
+  upgrade.
+
+### Changed
+- **The "Short bio" card switcher is now labelled "Headline".** It always
+  controlled the Headline; only the label said otherwise. The setting key
+  `bio_show` is unchanged, so pages already built keep whatever the author chose
+  — renaming the key would have quietly reset the switch to its default on every
+  one of them.
+
+### Compatibility
+- The REST doctor payload no longer contains `credentials`.
+- The exported CSV loses its third column; a downstream script reading columns by
+  position is off by one from that point on.
+- Theme overrides of `card-doctor.php` or `profile-content.php` copied from 0.3.0
+  read a key that no longer exists — a notice and a blank line, not a fatal.
+  Re-copy them.
+- Saved Elementor widgets keep orphaned `credentials_show`, `cred_color` and
+  `cred_typography` settings; Elementor ignores controls it cannot find. Custom
+  CSS targeting `--dpc-cred-color` or `.dp-card__credentials` now matches
+  nothing.
+- **Re-point any Doctor Field dynamic tag bound to Credentials before you save
+  that template again.** The tag prints nothing after the upgrade, which is
+  obvious enough. The trap is the next save: the control falls back to its
+  default, so the tag is silently rewritten to **Name** and the page starts
+  printing the doctor's name twice.
+- Completeness scores move slightly — the check is gone, so the denominator
+  drops from 22 to 21 weight points. Nothing is gated on the score.
+- A search that matched only on a credentials token — an abbreviation like
+  "FRCR" — now returns nothing unless that text also appears in the biography,
+  headline or clinical interests.
+
+
+
+## [0.3.0] - 2026-08-19
+
+Highlights, achievement list widgets, a single practice location, site-wide
+booking defaults, and a menu of their own for the taxonomies. Schema version 4;
+the upgrade migrates doctors off the removed BookPilot provider and corrects two
+booking settings that were in the schema but never read.
+
+
+- **Every doctor taxonomy now has its own top-level Taxonomies menu.** Department
+  and Specialty used to be two items inside the DoctorPilot menu and the other
+  five were reachable only from a doctor's edit screen or by URL — a trade-off
+  made because listing all of them pushed Health, Analytics and Settings below
+  the fold. A menu of their own removes the trade-off: all eight vocabularies,
+  Insurance included, are one click away, and the DoctorPilot menu is back to
+  the screens that are not term lists.
+
+  The list is built from what is actually registered against the doctor post
+  type, so an add-on's taxonomy appears without editing `Menu`. The parent's
+  slug is the first taxonomy's own screen rather than a placeholder page, and it
+  follows the first surviving taxonomy — pinning it to Department would break
+  the top-level link on a site that unregisters Department.
+
+  `Menu::MENU_TAXONOMIES` is removed. `parent_file` is now filtered only on
+  `edit-tags.php` and `term.php`: `$taxnow` is set on every admin request, so a
+  broader check also fired on the doctor list, where a term's post-count link
+  carries `taxonomy=` for any taxonomy without a `query_var`.
+
+### Fixed
+- **Card style controls now actually do something.** Almost every control in the
+  Doctor Grid / List and Doctor Carousel style panels — card background, border,
+  radius, padding, shadow, hover lift, image ratio and fit, every text colour,
+  badge colours and shape, button colours and shape — was silently ignored.
+  46 of the 51 card controls did nothing at all. Only the gaps, the list media
+  width, the actions rule and the bio clamp worked, which is why the panel
+  looked partly alive.
+
+  The controls wrote their CSS variable to the Elementor widget wrapper, while
+  `directory-premium.css` declares the same variables on the directory root
+  inside it. A CSS custom property declared on an element beats one inherited
+  from an ancestor no matter how specific the ancestor's selector is, so every
+  value reached the directory root and was overwritten there before a card could
+  read it. The controls now write to `{{WRAPPER}} .dp-dir` — the same element as
+  the defaults, one specificity step above them and above the presets.
+
+  **Expect a visible change on upgrade.** Any value set while the control was
+  dead — including values set, seen to do nothing, and abandoned — takes effect
+  the moment this ships. Look over the affected widgets after updating.
+
+  Elementor's cached per-post CSS is now discarded automatically when the plugin
+  version changes, because a page otherwise keeps serving CSS compiled from the
+  previous release's selectors and the fix would reach nobody until someone
+  happened to re-save that page. Running from an unversioned working copy, do it
+  by hand once: **Elementor → Tools → Regenerate Files & Data**.
+
+  The one deliberate exception: under the Image overlay preset, a card with no
+  photo and an image-card list still force their own dark text colours over
+  whatever the colour controls say, so white type never lands on a white card.
+  The preset's description now states this.
+
+### Added
+- **WPML compatibility.** The plugin had none: a multilingual site got
+  translated doctors that were invisible to search, Elementor sections that
+  silently rendered nothing on a translated page, empty results from any shared
+  or language-switched URL, and cards showing an English department under an
+  Arabic name.
+
+  All of it now goes through one bridge class built on WPML's public filters, so
+  saved term slugs resolve to the current language at render time — existing
+  widgets keep working with no re-saving — stored term and post IDs convert when
+  read, the doctor profile uses the translated Elementor template, and the search
+  cache is keyed per language. A `wpml-config.xml` declares the post types,
+  taxonomies, custom fields and term meta so WPML's own setup screen can offer
+  them. Both public REST routes accept a `lang` parameter and switch language
+  before reading anything, because whether a REST URL carries WPML's language
+  prefix depends on the site's URL mode.
+
+  **A single-language site is unaffected** — every call is an identity function
+  behind one `has_filter()` check, verified by a harness that asserts identical
+  results and zero extra queries with no multilingual plugin present.
+
+  **Not yet signed off on a real WPML install.** WPML is not installed on the
+  development site, so this is verified against a simulated implementation of
+  its documented filters. That proves this plugin's half of the contract, not
+  WPML's. See ADR-0023 for what to test first.
+- **Every doctor now gets a search index, however it was created.** Previously
+  only a save through the plugin's own editor form rebuilt the derived search
+  values, so a doctor created by WP-CLI, by the REST API, by Quick Edit or by a
+  translation plugin was dropped from every search result rather than ranked
+  low. This was a latent bug on single-language sites too.
+
+  Rebuilds are collected and flushed once per doctor at the end of the request,
+  after every field and term is written, so the cost is one rebuild per doctor —
+  unchanged from before for an ordinary save or an import row, and no longer
+  zero for everything else.
+- **Departments and Specialties now have admin menu items**, directly under
+  Certifications in the DoctorPilot menu. They had none before — not in the
+  wrong place, but missing entirely, reachable only from a doctor's edit screen
+  or by typing the URL. WordPress builds taxonomy submenus only for post types
+  whose `show_in_menu` is literally `true`, and the doctor post type points at
+  the DoctorPilot menu instead, so its taxonomies were skipped. Opening either
+  screen now also keeps the DoctorPilot menu open, which it did not do for any
+  taxonomy screen before.
+
+  The other five doctor taxonomies — Symptom, Condition, Treatment, Language,
+  Location — are deliberately left out, so the menu does not push Health and
+  Settings below the fold.
+
+  **Superseded:** every doctor taxonomy now lives in its own top-level
+  Taxonomies menu, and `Menu::MENU_TAXONOMIES` no longer exists. See the
+  Taxonomies menu entry below.
+- **The doctor card's specialty and department are two separate lines.** The
+  single "Specialty or department" switcher becomes three: **Primary specialty**
+  (on), **Fall back to department** (on) — which puts the department on the
+  specialty line only when a doctor has no specialty — and **Department** (off),
+  which gives the department a line of its own below the specialty.
+
+  The two lines resolve together so the department can never print twice: once
+  it has a line of its own, the specialty line stops borrowing it. The compact
+  list layout joins the two with a separator rather than showing only the first,
+  because collapsing would have made the Department switch do nothing for any
+  doctor who has a specialty.
+
+  Every default is chosen so an already-published page renders byte-identically
+  after the upgrade. Verified by diffing old against new output across every
+  combination of the three switches and every shape of doctor data, in both the
+  PHP templates and the JavaScript renderer.
+
+### Removed
+- **"Accepting new patients" is gone from the whole plugin** — the card
+  metadata row, the availability badge over the photo, the **Card elements →
+  "Accepting new patients" row** switcher, the **Show availability badge**
+  control and its Availability badge style group, the directory and search
+  filters, the REST `accepting_new` argument, the `accepting_new_patients` key
+  in the REST doctor payload, and the `_doctorpilot_accepting_new_patients`
+  field itself — which also removes the checkbox from the doctor editor's
+  Listing flags box. See ADR-0021.
+
+  **Breaking.** A REST client reading `accepting_new_patients` no longer
+  receives it; a request still passing `accepting_new` is ignored rather than
+  rejected, so old links keep working but stop filtering.
+
+  **If your theme overrides `directory.php` or `search.php`, re-copy those two
+  templates before upgrading.** Both called a method that no longer exists, so
+  an old copy fatals the page. Overrides of `card-doctor.php` or
+  `row-doctor.php` are safe to upgrade with — they simply keep showing the row
+  until the first search, then lose it.
+
+  **No data is deleted.** Existing `_doctorpilot_accepting_new_patients` post
+  meta stays in the database, unread. Deleting a field definition is reversible;
+  deleting a hospital's rows is not.
+
 ## [0.2.0] — 2026-08-15
 
 ### Added

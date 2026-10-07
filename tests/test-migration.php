@@ -22,7 +22,7 @@ use BrainStudioz\DoctorPilot\Redirects\RedirectValidator;
 final class Test_DoctorPilot_Migration extends WP_UnitTestCase {
 
 	public function test_mapping_requires_name_and_source_key(): void {
-		$errors = MappingConfig::validate_mapping( array( 'Some Column' => 'credentials' ) );
+		$errors = MappingConfig::validate_mapping( array( 'Some Column' => 'gender' ) );
 		$this->assertNotEmpty( $errors );
 
 		$errors = MappingConfig::validate_mapping(

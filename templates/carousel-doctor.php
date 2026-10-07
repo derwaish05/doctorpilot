@@ -3,7 +3,7 @@
  * Doctor carousel / grid template.
  *
  * Expects $data with keys: settings, cards, display, preset, columns, uid,
- * card_classes, meta_icons, card_linked, badge_avail, clamp, parts, arrows,
+ * card_classes, meta_icons, card_linked, clamp, parts, arrows,
  * dots, rewind, autoplay, autoplay_ms, arrow_pos, empty_text, is_editor.
  *
  * The track is a real scroll container, so this markup is usable before — and

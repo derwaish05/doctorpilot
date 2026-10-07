@@ -10,7 +10,11 @@
  * Every metadata row is emitted only when it has a value, so the card never
  * shows an orphan icon, an empty label, or a blank line.
  *
- * Override by copying to your theme as doctorpilot/card-doctor.php.
+ * Override by copying to your theme as doctorpilot/card-doctor.php. Note that a
+ * copy taken from an older release keeps rendering on page load but not after a
+ * filter or search change: `assets/js/directory.js` rebuilds cards from this
+ * version's rules, so an override has to track the parts this file reads from
+ * `$data['parts']`.
  *
  * @package BrainStudioz\DoctorPilot
  */
@@ -29,7 +33,6 @@ $dp_classes    = isset( $data['card_classes'] ) ? (string) $data['card_classes']
 $dp_icons      = ! isset( $data['meta_icons'] ) || (bool) $data['meta_icons'];
 $dp_linked     = isset( $data['card_linked'] ) && (bool) $data['card_linked'];
 $dp_clamp      = isset( $data['clamp'] ) ? (int) $data['clamp'] : 0;
-$dp_badge_avail = isset( $data['badge_avail'] ) && (bool) $data['badge_avail'];
 
 /**
  * Per-part visibility, from the widget's "Card elements" switchers.
@@ -45,6 +48,18 @@ $dp_show  = static function ( string $dp_part ) use ( $dp_parts ): bool {
 	return ! isset( $dp_parts[ $dp_part ] ) || (bool) $dp_parts[ $dp_part ];
 };
 
+/**
+ * Opt-in parts, which default the other way: absent means off.
+ *
+ * The department line is the only one so far. It has to be opt-in because the
+ * card has always printed a single line here — the specialty, or the department
+ * standing in for it — so defaulting the new line to visible would add a row to
+ * every already-built page on upgrade.
+ */
+$dp_opt = static function ( string $dp_part ) use ( $dp_parts ): bool {
+	return isset( $dp_parts[ $dp_part ] ) && (bool) $dp_parts[ $dp_part ];
+};
+
 // Presets that lay the body over the photo need a fallback when there is no
 // photo to lay it over. The JavaScript renderer appends the same class.
 if ( ! $dp_show( 'image' ) ) {
@@ -57,6 +72,50 @@ $dp_headline   = trim( (string) ( $card['headline'] ?? '' ) );
 $dp_specialty  = isset( $card['primary_specialty']['name'] ) ? (string) $card['primary_specialty']['name'] : '';
 $dp_department = isset( $card['primary_department']['name'] ) ? (string) $card['primary_department']['name'] : '';
 $dp_years      = (int) ( $card['years_experience'] ?? 0 );
+
+/*
+ * Specialty and department are two lines, resolved together because the
+ * department can supply either one and must never supply both.
+ * `Directory.prototype.cardLines` in `assets/js/directory.js` resolves the same
+ * three flags the same way; change one and you must change the other.
+ *
+ * The department line carries `dp-card__specialty` as well as its own class so
+ * it inherits the widget's existing specialty typography rather than falling
+ * back to unstyled body copy.
+ */
+$dp_department_line = $dp_opt( 'department' ) ? $dp_department : '';
+
+$dp_specialty_line = '';
+if ( $dp_show( 'specialty' ) ) {
+	$dp_specialty_line = $dp_specialty;
+
+	// A stand-in only, so it is dropped the moment the department has a line of
+	// its own — the same name twice running reads as a bug.
+	if ( '' === $dp_specialty_line && '' === $dp_department_line && $dp_show( 'specialty_fallback' ) ) {
+		$dp_specialty_line = $dp_department;
+	}
+}
+
+// Emitted from one loop rather than two conditionals so that a card showing a
+// single line prints byte-for-byte what it printed before the department line
+// existed. Two adjacent `if` blocks would leave an extra run of indentation
+// between them, which is invisible on the page but changes the response an
+// upstream cache is holding an ETag for.
+$dp_specialty_rows = array();
+
+if ( '' !== $dp_specialty_line ) {
+	$dp_specialty_rows[] = array(
+		'class' => 'dp-card__specialty',
+		'text'  => $dp_specialty_line,
+	);
+}
+
+if ( '' !== $dp_department_line ) {
+	$dp_specialty_rows[] = array(
+		'class' => 'dp-card__specialty dp-card__department',
+		'text'  => $dp_department_line,
+	);
+}
 
 $dp_languages = array();
 foreach ( (array) ( $card['languages'] ?? array() ) as $dp_lang ) {
@@ -79,7 +138,6 @@ $dp_icon = static function ( string $name ) use ( $dp_icons ): string {
 	$paths = array(
 		'experience' => '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
 		'language'   => '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a15 15 0 0 1 0 18a15 15 0 0 1 0-18"/>',
-		'check'      => '<path d="M20 6 9 17l-5-5"/>',
 	);
 
 	if ( ! isset( $paths[ $name ] ) ) {
@@ -142,12 +200,6 @@ if ( '' === (string) ( $card['photo']['url'] ?? '' ) ) {
 				<span class="dp-badge dp-badge--international"><?php esc_html_e( 'International', 'doctorpilot' ); ?></span>
 			</div>
 		<?php endif; ?>
-
-		<?php if ( $dp_badge_avail && ! empty( $card['accepting_new_patients'] ) ) : ?>
-			<div class="dp-card__badges dp-card__badges--bottom">
-				<span class="dp-badge dp-badge--availability"><?php esc_html_e( 'Accepting new patients', 'doctorpilot' ); ?></span>
-			</div>
-		<?php endif; ?>
 	</div>
 	<?php endif; ?>
 
@@ -168,15 +220,9 @@ if ( '' === (string) ( $card['photo']['url'] ?? '' ) ) {
 			<?php endif; ?>
 		</h3>
 
-		<?php if ( $dp_show( 'credentials' ) && '' !== (string) ( $card['credentials'] ?? '' ) ) : ?>
-			<p class="dp-card__credentials"><?php echo esc_html( (string) $card['credentials'] ); ?></p>
-		<?php endif; ?>
-
-		<?php if ( $dp_show( 'specialty' ) && '' !== $dp_specialty ) : ?>
-			<p class="dp-card__specialty"><?php echo esc_html( $dp_specialty ); ?></p>
-		<?php elseif ( $dp_show( 'specialty' ) && '' !== $dp_department ) : ?>
-			<p class="dp-card__specialty"><?php echo esc_html( $dp_department ); ?></p>
-		<?php endif; ?>
+		<?php foreach ( $dp_specialty_rows as $dp_row ) : ?>
+			<p class="<?php echo esc_attr( $dp_row['class'] ); ?>"><?php echo esc_html( $dp_row['text'] ); ?></p>
+		<?php endforeach; ?>
 
 		<?php if ( $dp_show( 'bio' ) && '' !== $dp_headline ) : ?>
 			<p class="dp-card__headline<?php echo $dp_clamp > 0 ? ' dp-clamp' : ''; ?>">
@@ -187,11 +233,6 @@ if ( '' === (string) ( $card['photo']['url'] ?? '' ) ) {
 		<?php
 		// Built first so an entirely empty list is never printed at all.
 		$dp_meta = array();
-
-		// Held in a variable rather than re-tested below, because the
-		// `dp-accepting` modifier is applied by position: it belongs to the last
-		// row only while the availability row is the row that was appended last.
-		$dp_accepting = $dp_show( 'accepting' ) && ! empty( $card['accepting_new_patients'] );
 
 		if ( $dp_show( 'experience' ) && $dp_years > 0 ) {
 			$dp_meta[] = $dp_icon( 'experience' ) . '<span class="dp-meta__value">' . esc_html(
@@ -206,16 +247,12 @@ if ( '' === (string) ( $card['photo']['url'] ?? '' ) ) {
 		if ( $dp_show( 'languages' ) && array() !== $dp_languages ) {
 			$dp_meta[] = $dp_icon( 'language' ) . '<span class="dp-meta__value">' . esc_html( implode( ', ', $dp_languages ) ) . '</span>';
 		}
-
-		if ( $dp_accepting ) {
-			$dp_meta[] = $dp_icon( 'check' ) . '<span class="dp-meta__value">' . esc_html__( 'Accepting new patients', 'doctorpilot' ) . '</span>';
-		}
 		?>
 
 		<?php if ( array() !== $dp_meta ) : ?>
 			<ul class="dp-card__meta">
-				<?php foreach ( $dp_meta as $dp_index => $dp_row ) : ?>
-					<li<?php echo ( $dp_accepting && count( $dp_meta ) - 1 === $dp_index ) ? ' class="dp-accepting"' : ''; ?>>
+				<?php foreach ( $dp_meta as $dp_row ) : ?>
+					<li>
 						<?php
 						echo wp_kses(
 							$dp_row,

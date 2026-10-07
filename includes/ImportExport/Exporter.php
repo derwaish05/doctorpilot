@@ -44,7 +44,7 @@ final class Exporter {
 			)
 		);
 
-		$columns = array( 'source_key', 'name', 'credentials', 'department', 'specialty', 'language', 'legacy_url' );
+		$columns = array( 'source_key', 'name', 'department', 'specialty', 'language', 'legacy_url' );
 
 		$handle = fopen( 'php://temp', 'r+' ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fopen
 		fputcsv( $handle, $columns );
@@ -54,7 +54,6 @@ final class Exporter {
 			$row = array(
 				$this->safe( (string) get_post_meta( $id, self::META_PREFIX . 'external_source_id', true ) ?: get_post_field( 'post_name', $id ) ),
 				$this->safe( (string) get_the_title( $id ) ),
-				$this->safe( (string) get_post_meta( $id, self::META_PREFIX . 'credentials', true ) ),
 				$this->safe( $this->terms( $id, 'doctorpilot_department' ) ),
 				$this->safe( $this->terms( $id, 'doctorpilot_specialty' ) ),
 				$this->safe( $this->terms( $id, 'doctorpilot_language' ) ),

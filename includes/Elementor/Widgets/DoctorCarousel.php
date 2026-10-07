@@ -706,7 +706,6 @@ final class DoctorCarousel extends AbstractWidget {
 			'card_classes' => ( 'yes' === ( $settings['card_linked'] ?? '' ) ) ? 'dp-card dp-card--linked' : 'dp-card',
 			'meta_icons'   => 'yes' === ( $settings['meta_icons_show'] ?? 'yes' ),
 			'card_linked'  => 'yes' === ( $settings['card_linked'] ?? '' ),
-			'badge_avail'  => 'yes' === ( $settings['badge_availability_show'] ?? '' ),
 			'clamp'        => max( 0, (int) ( $settings['bio_clamp'] ?? 0 ) ),
 			'parts'        => $card_parts,
 			'arrows'       => 'carousel' === $display && 'yes' === ( $settings['arrows_show'] ?? 'yes' ),

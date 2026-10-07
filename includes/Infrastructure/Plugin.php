@@ -17,7 +17,6 @@ use BrainStudioz\DoctorPilot\Analytics\AnalyticsController;
 use BrainStudioz\DoctorPilot\Analytics\AnalyticsDashboard;
 use BrainStudioz\DoctorPilot\Analytics\AnalyticsService;
 use BrainStudioz\DoctorPilot\Application\Doctors\SaveDoctor;
-use BrainStudioz\DoctorPilot\Booking\BookPilotProvider;
 use BrainStudioz\DoctorPilot\Directory\AdvancedFilters;
 use BrainStudioz\DoctorPilot\Directory\InsuranceTaxonomy;
 use BrainStudioz\DoctorPilot\Directory\ProFields;
@@ -32,6 +31,7 @@ use BrainStudioz\DoctorPilot\Frontend\Templates;
 use BrainStudioz\DoctorPilot\Infrastructure\Cache\CacheGeneration;
 use BrainStudioz\DoctorPilot\Infrastructure\Lifecycle\Activator;
 use BrainStudioz\DoctorPilot\Infrastructure\LegacyAddon;
+use BrainStudioz\DoctorPilot\Infrastructure\Migrations\CredentialsReindexQueue;
 use BrainStudioz\DoctorPilot\Infrastructure\Migrations\Migrator;
 use BrainStudioz\DoctorPilot\Library\LibraryPostTypes;
 use BrainStudioz\DoctorPilot\Library\ReverseIndex;
@@ -117,6 +117,9 @@ final class Plugin {
 		// Run idempotent upgrade migrations when the stored version is behind.
 		add_action( 'init', array( $this, 'maybe_upgrade' ), 1 );
 
+		// Drain any doctors migration 5 left to reindex (no-op once empty).
+		( new CredentialsReindexQueue() )->register();
+
 		// Perform the deferred, one-time rewrite flush requested at activation.
 		add_action( 'init', array( $this, 'maybe_flush_rewrites' ), 99 );
 
@@ -160,9 +163,6 @@ final class Plugin {
 		( new InsuranceTaxonomy() )->register();
 		( new AdvancedFilters() )->register();
 		( new ProFields() )->register();
-
-		// BookPilot booking provider (registers through the providers filter).
-		( new BookPilotProvider() )->register();
 
 		// Opt-in aggregate analytics.
 		( new AnalyticsService() )->register();
@@ -219,7 +219,40 @@ final class Plugin {
 
 		// Keep the recorded plugin version current after any code update.
 		if ( DOCTORPILOT_VERSION !== get_option( 'bstdz_doctorpilot_plugin_version' ) ) {
+			$this->clear_elementor_css_cache();
+
 			update_option( 'bstdz_doctorpilot_plugin_version', DOCTORPILOT_VERSION, false );
+		}
+	}
+
+	/**
+	 * Discard Elementor's generated per-post CSS after a plugin update.
+	 *
+	 * Elementor compiles each page's widget styles once, into
+	 * `uploads/elementor/css/post-{id}.css`, and regenerates only when the post
+	 * is saved or Elementor's own version changes. Neither happens when *this*
+	 * plugin ships a new `selectors` array, so a page keeps serving CSS built
+	 * from the previous release's selectors — and a style fix reaches nobody
+	 * until an editor happens to re-save that page for some unrelated reason.
+	 *
+	 * The cost is one recompile per page on next view, which Elementor already
+	 * does after any of its own updates. The alternative is asking every site
+	 * owner to find Elementor → Tools → Regenerate CSS, which most never will.
+	 *
+	 * Deliberately keyed to the plugin version rather than to the schema
+	 * version: a release can change a selector without changing the schema.
+	 *
+	 * @return void
+	 */
+	private function clear_elementor_css_cache(): void {
+		if ( ! did_action( 'elementor/loaded' ) || ! class_exists( '\Elementor\Plugin' ) ) {
+			return;
+		}
+
+		$elementor = \Elementor\Plugin::$instance;
+
+		if ( isset( $elementor->files_manager ) && method_exists( $elementor->files_manager, 'clear_cache' ) ) {
+			$elementor->files_manager->clear_cache();
 		}
 	}
 

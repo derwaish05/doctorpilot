@@ -84,14 +84,19 @@ final class Certifications extends AbstractWidget {
 			)
 		);
 
+		$this->register_icon_source( 'icon', __( 'Icon', 'doctorpilot' ) );
+
 		$this->add_control(
 			'icon',
 			array(
-				'label'   => __( 'Icon', 'doctorpilot' ),
-				'type'    => \Elementor\Controls_Manager::ICONS,
-				'default' => array( 'value' => 'fas fa-award', 'library' => 'fa-solid' ),
+				'label'     => __( 'Icon', 'doctorpilot' ),
+				'type'      => \Elementor\Controls_Manager::ICONS,
+				'default'   => array( 'value' => 'fas fa-award', 'library' => 'fa-solid' ),
+				'condition' => $this->icon_condition( 'icon', 'elementor' ),
 			)
 		);
+
+		$this->register_pixfort_icon( 'icon' );
 
 		$this->add_control(
 			'show_org',
@@ -185,6 +190,7 @@ final class Certifications extends AbstractWidget {
 			array(
 				'label'     => __( 'Title color', 'doctorpilot' ),
 				'type'      => \Elementor\Controls_Manager::COLOR,
+				'default'   => '#136888',
 				'selectors' => array( '{{WRAPPER}} .dp-certs__title' => 'color: {{VALUE}};' ),
 			)
 		);
@@ -229,9 +235,17 @@ final class Certifications extends AbstractWidget {
 			array(
 				'label'      => __( 'Icon size', 'doctorpilot' ),
 				'type'       => \Elementor\Controls_Manager::SLIDER,
-				'size_units' => array( 'px' ),
-				'range'      => array( 'px' => array( 'min' => 10, 'max' => 28 ) ),
-				'selectors'  => array( '{{WRAPPER}} .dp-certs__icon' => 'font-size: {{SIZE}}{{UNIT}};' ),
+				'size_units' => array( 'px', 'em', 'rem' ),
+				'range'      => array(
+					'px'  => array( 'min' => 10, 'max' => 28 ),
+					'em'  => array( 'min' => 0.5, 'max' => 4, 'step' => 0.1 ),
+					'rem' => array( 'min' => 0.5, 'max' => 4, 'step' => 0.1 ),
+				),
+				'default'    => array( 'unit' => 'em', 'size' => 1 ),
+				'selectors'  => array(
+					'{{WRAPPER}} .dp-certs__icon'     => 'font-size: {{SIZE}}{{UNIT}};',
+					'{{WRAPPER}} .dp-certs__icon svg, {{WRAPPER}} .dp-certs__icon i' => 'width: {{SIZE}}{{UNIT}}; height: {{SIZE}}{{UNIT}};',
+				),
 			)
 		);
 
@@ -246,6 +260,7 @@ final class Certifications extends AbstractWidget {
 			array(
 				'label'     => __( 'Name color', 'doctorpilot' ),
 				'type'      => \Elementor\Controls_Manager::COLOR,
+				'default'   => '#000000',
 				'selectors' => array( '{{WRAPPER}} .dp-certs__name, {{WRAPPER}} .dp-certs__name a' => 'color: {{VALUE}};' ),
 			)
 		);
@@ -255,6 +270,7 @@ final class Certifications extends AbstractWidget {
 			array(
 				'label'     => __( 'Organization color', 'doctorpilot' ),
 				'type'      => \Elementor\Controls_Manager::COLOR,
+				'default'   => '#000000',
 				'selectors' => array( '{{WRAPPER}} .dp-certs__org' => 'color: {{VALUE}};' ),
 			)
 		);
@@ -296,12 +312,7 @@ final class Certifications extends AbstractWidget {
 		$show_dates = 'yes' === ( $settings['show_dates'] ?? '' );
 		$do_link    = 'yes' === ( $settings['link_credential'] ?? '' );
 
-		$icon = '';
-		if ( is_array( $settings['icon'] ?? null ) && '' !== (string) ( $settings['icon']['value'] ?? '' ) ) {
-			ob_start();
-			\Elementor\Icons_Manager::render_icon( $settings['icon'], array( 'aria-hidden' => 'true' ) );
-			$icon = (string) ob_get_clean();
-		}
+		$icon = $this->icon_markup( $settings, 'icon' );
 
 		// After both early returns, so an unassigned doctor or a doctor with no
 		// certifications renders nothing rather than a bare heading.

@@ -40,19 +40,27 @@ final class PhoneProvider implements BookingProviderInterface {
 	 * {@inheritDoc}
 	 */
 	public function resolve( int $doctor_id, ?int $location_idx = null ) {
-		$phone = (string) get_post_meta( $doctor_id, FieldRegistry::META_PREFIX . 'booking_phone', true );
+		// The doctor's own number wins; blank inherits the switchboard number
+		// from Settings → Booking.
+		$phone = trim( (string) get_post_meta( $doctor_id, FieldRegistry::META_PREFIX . 'booking_phone', true ) );
+		if ( '' === $phone ) {
+			$phone = BookingDefaults::phone();
+		}
+
 		$digits = preg_replace( '/[^0-9+]/', '', $phone );
 
 		if ( '' === (string) $digits ) {
 			return ErrorFactory::create(
 				ErrorFactory::PROVIDER_UNAVAILABLE,
-				__( 'No booking phone number is configured for this doctor.', 'doctorpilot' ),
+				__( 'No booking phone number is configured for this doctor or as a site default.', 'doctorpilot' ),
 				422
 			);
 		}
 
-		$label = (string) get_post_meta( $doctor_id, FieldRegistry::META_PREFIX . 'booking_label', true );
-		$label = '' !== $label ? $label : __( 'Call to book', 'doctorpilot' );
+		$label = BookingDefaults::label(
+			(string) get_post_meta( $doctor_id, FieldRegistry::META_PREFIX . 'booking_label', true ),
+			__( 'Call to book', 'doctorpilot' )
+		);
 
 		return new BookingCta( 'phone', $label, 'tel:' . $digits, '_self' );
 	}

@@ -9,7 +9,6 @@ on the live profile `https://amanhospital.org/doctor/ali-a-haydar/`
 | Field | Value | Source |
 |---|---|---|
 | Name | Dr. Ali A. Haydar | page title / H1 |
-| Credentials | MD, MRCP, FRCR, EMBA | profile header |
 | Positions | Chief Medical Officer; Chair of Diagnostic & Interventional Radiology | profile header |
 | Primary specialty | Interventional Radiology | profile |
 | Department | Radiology | profile |

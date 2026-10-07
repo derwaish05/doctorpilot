@@ -217,10 +217,10 @@ final class DoctorEditor {
 		return array(
 			'profile'        => __( 'Name and identity as they appear in search results, listing cards and the public profile header.', 'doctorpilot' ),
 			'professional'   => __( 'Taxonomy assignments drive filtering and related-doctor modules. Select every term that applies, then name the primary one.', 'doctorpilot' ),
+			'highlights'     => __( 'The stat cards and achievement lists shown in the Highlights section of the public profile.', 'doctorpilot' ),
 			'clinical'       => __( 'What patients can search for. Symptoms and treatments feed the “find care for…” index.', 'doctorpilot' ),
 			'history'        => __( 'Training, fellowships and appointments. One row per entry.', 'doctorpilot' ),
 			'certifications' => __( 'Board certifications, memberships and peer-reviewed work.', 'doctorpilot' ),
-			'location'       => __( 'Where this doctor practises and how patients reach them.', 'doctorpilot' ),
 			'booking'        => __( 'How patients book an appointment with this doctor.', 'doctorpilot' ),
 			'seo'            => __( 'Overrides for the profile’s search appearance. Leave blank to inherit the site defaults.', 'doctorpilot' ),
 			'faqs'           => __( 'Answers shown on the profile and exposed as FAQ schema.', 'doctorpilot' ),
@@ -236,10 +236,10 @@ final class DoctorEditor {
 		return array(
 			'profile'        => __( 'Profile', 'doctorpilot' ),
 			'professional'   => __( 'Professional information', 'doctorpilot' ),
+			'highlights'     => __( 'Highlights', 'doctorpilot' ),
 			'clinical'       => __( 'Clinical services', 'doctorpilot' ),
 			'history'        => __( 'Experience & education', 'doctorpilot' ),
 			'certifications' => __( 'Certifications & publications', 'doctorpilot' ),
-			'location'       => __( 'Location & contact', 'doctorpilot' ),
 			'booking'        => __( 'Booking', 'doctorpilot' ),
 			'seo'            => __( 'SEO', 'doctorpilot' ),
 			'faqs'           => __( 'Frequently asked questions', 'doctorpilot' ),
@@ -285,7 +285,7 @@ final class DoctorEditor {
 			if ( 'terms' === $input ) {
 				$terms  = wp_get_object_terms( $post_id, (string) $field['taxonomy'], array( 'fields' => 'ids' ) );
 				$count += is_wp_error( $terms ) ? 0 : count( $terms );
-			} elseif ( in_array( $input, array( 'repeater', 'lines', 'library' ), true ) ) {
+			} elseif ( in_array( $input, array( 'repeater', 'lines', 'library', 'single' ), true ) ) {
 				$value  = get_post_meta( $post_id, (string) $field['key'], true );
 				$count += is_array( $value ) ? count( $value ) : 0;
 			}
@@ -413,6 +413,8 @@ final class DoctorEditor {
 			),
 			'experience'    => array( __( 'Experience', 'doctorpilot' ), false, '' ),
 			'education'     => array( __( 'Education', 'doctorpilot' ), false, '' ),
+			'outreach'      => array( __( 'Community outreach', 'doctorpilot' ), false, '' ),
+			'profession'    => array( __( 'Health care profession', 'doctorpilot' ), false, '' ),
 		);
 
 		return $boxes[ $box ] ?? array( ucwords( str_replace( '_', ' ', $box ) ), false, '' );
@@ -454,7 +456,7 @@ final class DoctorEditor {
 		$badge = $this->private_badge( ! empty( $field['private'] ) && '' === (string) $field['box'] );
 
 		// Term, library, and repeater fields get a header row with a live count.
-		$is_block = in_array( $input, array( 'terms', 'library', 'repeater' ), true );
+		$is_block = in_array( $input, array( 'terms', 'library', 'repeater', 'single' ), true );
 
 		echo '<div class="dp-field dp-field--' . esc_attr( $input ) . '">';
 
@@ -514,6 +516,9 @@ final class DoctorEditor {
 				break;
 			case 'repeater':
 				$this->render_repeater( $post_id, $field, $key );
+				break;
+			case 'single':
+				$this->render_single( $post_id, $field, $key );
 				break;
 			case 'text':
 			default:
@@ -1181,7 +1186,102 @@ final class DoctorEditor {
 		echo '<span class="dp-row__num" aria-hidden="true"></span>';
 		echo '</div>';
 
+		$this->render_row_fields( $key, $schema, $row, $index );
+
+		printf(
+			'<button type="button" class="button-link dp-remove-row">%s</button>',
+			esc_html__( 'Remove', 'doctorpilot' )
+		);
+		echo '</div>';
+	}
+
+	/**
+	 * Render one flat set of inputs for a field whose schema describes a single
+	 * record rather than a list — a doctor's practice location.
+	 *
+	 * Values are submitted at row index 0 under the same name a repeater would
+	 * use, so the stored shape (a list of rows), the `repeater` sanitizer and
+	 * every reader of the meta stay exactly as they were.
+	 *
+	 * Rows beyond the first are round-tripped as hidden inputs rather than
+	 * omitted. Omitting them would look harmless — the editor only ever shows
+	 * one location — but the save handler rewrites the whole meta value from the
+	 * submitted form, so any doctor holding two locations would lose the second
+	 * the next time anyone pressed Update, from any tab, with no warning. The
+	 * `doctorpilot/locations/max` filter is raised to 10 by `AdvancedFilters`,
+	 * so multi-location doctors are real data, not a legacy edge case.
+	 *
+	 * @param int                  $post_id Doctor post ID.
+	 * @param array<string, mixed> $field   Field definition.
+	 * @param string               $key     Meta key.
+	 * @return void
+	 */
+	private function render_single( int $post_id, array $field, string $key ): void {
+		$schema = is_array( $field['repeater'] ) ? $field['repeater'] : array();
+		$rows   = get_post_meta( $post_id, $key, true );
+		$rows   = array_values( array_filter( is_array( $rows ) ? $rows : array(), 'is_array' ) );
+
+		$first = $rows[0] ?? array();
+		$extra = array_slice( $rows, 1 );
+
+		echo '<div class="dp-single" data-key="' . esc_attr( $key ) . '">';
+		$this->render_row_fields( $key, $schema, $first, '0' );
+		echo '</div>';
+
+		if ( array() === $extra ) {
+			return;
+		}
+
+		// Preserved verbatim, keyed off the schema so a sub-field that is not
+		// part of the record cannot be smuggled back in through the form.
+		$index = 1;
+		foreach ( $extra as $row ) {
+			foreach ( array_keys( $schema ) as $sub_key ) {
+				$value = $row[ $sub_key ] ?? '';
+				if ( ! is_scalar( $value ) ) {
+					continue;
+				}
+				printf(
+					'<input type="hidden" name="%1$s" value="%2$s" />',
+					esc_attr( 'doctorpilot[' . $key . '][' . $index . '][' . $sub_key . ']' ),
+					// Not esc_attr(): it does not double-encode, so a stored value
+					// holding a literal "&amp;" would come back as "&" and the
+					// preserved row would degrade a little on every save.
+					htmlspecialchars( (string) $value, ENT_QUOTES, 'UTF-8', true )
+				);
+			}
+			++$index;
+		}
+
+		echo '<p class="dp-desc">' . esc_html(
+			sprintf(
+				/* translators: %d: number of additional stored locations. */
+				_n(
+					'%d further location is stored for this doctor and still appears on the public profile. It is kept on save but is not editable here.',
+					'%d further locations are stored for this doctor and still appear on the public profile. They are kept on save but are not editable here.',
+					count( $extra ),
+					'doctorpilot'
+				),
+				count( $extra )
+			)
+		) . '</p>';
+	}
+
+	/**
+	 * Render the inputs for one record of a repeater schema.
+	 *
+	 * Shared by the repeater row and the single-record renderer so both produce
+	 * identical controls and field names.
+	 *
+	 * @param string                             $key    Meta key.
+	 * @param array<string, array<string,mixed>> $schema Item schema.
+	 * @param array<string, mixed>               $row    Row values.
+	 * @param string                             $index  Row index or placeholder.
+	 * @return void
+	 */
+	private function render_row_fields( string $key, array $schema, array $row, string $index ): void {
 		echo '<div class="dp-row__fields">';
+
 		foreach ( $schema as $sub_key => $sub_def ) {
 			$sub_label   = isset( $sub_def['label'] ) ? (string) $sub_def['label'] : $sub_key;
 			$sanitize    = isset( $sub_def['sanitize'] ) ? (string) $sub_def['sanitize'] : 'text';
@@ -1232,12 +1332,6 @@ final class DoctorEditor {
 			}
 			echo '</label>';
 		}
-		echo '</div>';
-
-		printf(
-			'<button type="button" class="button-link dp-remove-row">%s</button>',
-			esc_html__( 'Remove', 'doctorpilot' )
-		);
 		echo '</div>';
 	}
 

@@ -135,9 +135,6 @@ final class DoctorWriter {
 	 * @return void
 	 */
 	private function write_scalar_meta( int $doctor_id, array $values ): void {
-		if ( isset( $values['credentials'] ) ) {
-			update_post_meta( $doctor_id, self::META_PREFIX . 'credentials', sanitize_text_field( $values['credentials'] ) );
-		}
 		if ( isset( $values['gender'] ) ) {
 			update_post_meta( $doctor_id, self::META_PREFIX . 'gender', sanitize_key( $values['gender'] ) );
 		}

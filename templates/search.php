@@ -80,10 +80,6 @@ $dp_sorts = array(
 				<fieldset class="dp-filter-group">
 					<legend><?php esc_html_e( 'Options', 'doctorpilot' ); ?></legend>
 					<label class="dp-filter">
-						<input type="checkbox" name="accepting_new" value="1" <?php checked( true === $dp_request->accepting_new() ); ?> />
-						<?php esc_html_e( 'Accepting new patients', 'doctorpilot' ); ?>
-					</label>
-					<label class="dp-filter">
 						<input type="checkbox" name="online" value="1" <?php checked( true === $dp_request->online() ); ?> />
 						<?php esc_html_e( 'Online consultation', 'doctorpilot' ); ?>
 					</label>

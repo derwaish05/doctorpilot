@@ -85,10 +85,12 @@ final class CertsPublications extends AbstractWidget {
 			'certs_title',
 			array( 'label' => __( 'Title', 'doctorpilot' ), 'type' => \Elementor\Controls_Manager::TEXT, 'default' => __( 'Certifications', 'doctorpilot' ), 'condition' => array( 'certs_show' => 'yes' ) )
 		);
+		$this->register_icon_source( 'certs_icon', __( 'Certifications icon', 'doctorpilot' ), array( 'certs_show' => 'yes' ) );
 		$this->add_control(
 			'certs_icon',
-			array( 'label' => __( 'Icon', 'doctorpilot' ), 'type' => \Elementor\Controls_Manager::ICONS, 'default' => array( 'value' => 'fas fa-award', 'library' => 'fa-solid' ), 'condition' => array( 'certs_show' => 'yes' ) )
+			array( 'label' => __( 'Icon', 'doctorpilot' ), 'type' => \Elementor\Controls_Manager::ICONS, 'default' => array( 'value' => 'fas fa-award', 'library' => 'fa-solid' ), 'condition' => $this->icon_condition( 'certs_icon', 'elementor', array( 'certs_show' => 'yes' ) ) )
 		);
+		$this->register_pixfort_icon( 'certs_icon', array( 'certs_show' => 'yes' ) );
 		$this->add_control(
 			'certs_show_org',
 			array( 'label' => __( 'Show organization', 'doctorpilot' ), 'type' => \Elementor\Controls_Manager::SWITCHER, 'return_value' => 'yes', 'default' => 'yes', 'condition' => array( 'certs_show' => 'yes' ) )
@@ -112,10 +114,12 @@ final class CertsPublications extends AbstractWidget {
 			'pubs_title',
 			array( 'label' => __( 'Title', 'doctorpilot' ), 'type' => \Elementor\Controls_Manager::TEXT, 'default' => __( 'Publications', 'doctorpilot' ), 'condition' => array( 'pubs_show' => 'yes' ) )
 		);
+		$this->register_icon_source( 'pubs_icon', __( 'Publications icon', 'doctorpilot' ), array( 'pubs_show' => 'yes' ) );
 		$this->add_control(
 			'pubs_icon',
-			array( 'label' => __( 'Icon', 'doctorpilot' ), 'type' => \Elementor\Controls_Manager::ICONS, 'default' => array( 'value' => 'far fa-file-lines', 'library' => 'fa-regular' ), 'condition' => array( 'pubs_show' => 'yes' ) )
+			array( 'label' => __( 'Icon', 'doctorpilot' ), 'type' => \Elementor\Controls_Manager::ICONS, 'default' => array( 'value' => 'far fa-file-lines', 'library' => 'fa-regular' ), 'condition' => $this->icon_condition( 'pubs_icon', 'elementor', array( 'pubs_show' => 'yes' ) ) )
 		);
+		$this->register_pixfort_icon( 'pubs_icon', array( 'pubs_show' => 'yes' ) );
 		$this->add_control(
 			'pubs_show_meta',
 			array( 'label' => __( 'Show journal & date', 'doctorpilot' ), 'type' => \Elementor\Controls_Manager::SWITCHER, 'return_value' => 'yes', 'default' => 'yes', 'condition' => array( 'pubs_show' => 'yes' ) )
@@ -129,6 +133,31 @@ final class CertsPublications extends AbstractWidget {
 			array( 'label' => __( 'Link to URL / DOI', 'doctorpilot' ), 'type' => \Elementor\Controls_Manager::SWITCHER, 'return_value' => 'yes', 'default' => 'yes', 'condition' => array( 'pubs_show' => 'yes' ) )
 		);
 
+		// Society memberships group.
+		$this->add_control( 'mems_heading', array( 'label' => __( 'Society Memberships', 'doctorpilot' ), 'type' => \Elementor\Controls_Manager::HEADING, 'separator' => 'before' ) );
+		$this->add_control(
+			'mems_show',
+			array( 'label' => __( 'Show', 'doctorpilot' ), 'type' => \Elementor\Controls_Manager::SWITCHER, 'return_value' => 'yes', 'default' => 'yes' )
+		);
+		$this->add_control(
+			'mems_title',
+			array( 'label' => __( 'Title', 'doctorpilot' ), 'type' => \Elementor\Controls_Manager::TEXT, 'default' => __( 'Society Memberships', 'doctorpilot' ), 'condition' => array( 'mems_show' => 'yes' ) )
+		);
+		$this->register_icon_source( 'mems_icon', __( 'Memberships icon', 'doctorpilot' ), array( 'mems_show' => 'yes' ) );
+		$this->add_control(
+			'mems_icon',
+			array( 'label' => __( 'Icon', 'doctorpilot' ), 'type' => \Elementor\Controls_Manager::ICONS, 'default' => array( 'value' => 'fas fa-users', 'library' => 'fa-solid' ), 'condition' => $this->icon_condition( 'mems_icon', 'elementor', array( 'mems_show' => 'yes' ) ) )
+		);
+		$this->register_pixfort_icon( 'mems_icon', array( 'mems_show' => 'yes' ) );
+		$this->add_control(
+			'mems_show_meta',
+			array( 'label' => __( 'Show role & year', 'doctorpilot' ), 'type' => \Elementor\Controls_Manager::SWITCHER, 'return_value' => 'yes', 'default' => 'yes', 'condition' => array( 'mems_show' => 'yes' ) )
+		);
+		$this->add_control(
+			'mems_link',
+			array( 'label' => __( 'Link to society URL', 'doctorpilot' ), 'type' => \Elementor\Controls_Manager::SWITCHER, 'return_value' => 'yes', 'default' => 'yes', 'condition' => array( 'mems_show' => 'yes' ) )
+		);
+
 		$this->register_heading_controls();
 
 		$this->end_controls_section();
@@ -136,6 +165,7 @@ final class CertsPublications extends AbstractWidget {
 		$this->register_heading_style();
 
 		$this->register_layout_style();
+		$this->register_item_style();
 		$this->register_icon_style();
 		$this->register_text_style();
 	}
@@ -193,6 +223,40 @@ final class CertsPublications extends AbstractWidget {
 			)
 		);
 
+		$this->add_control( 'title_heading', array( 'label' => __( 'Group title', 'doctorpilot' ), 'type' => \Elementor\Controls_Manager::HEADING, 'separator' => 'before' ) );
+		$this->add_group_control(
+			\Elementor\Group_Control_Typography::get_type(),
+			array( 'name' => 'title_typography', 'selector' => '{{WRAPPER}} .dp-cp__title' )
+		);
+		$this->add_control(
+			'title_color',
+			array(
+				'label'     => __( 'Color', 'doctorpilot' ),
+				'type'      => \Elementor\Controls_Manager::COLOR,
+				'default'   => '#136888',
+				'selectors' => array( '{{WRAPPER}} .dp-cp__title' => 'color: {{VALUE}};' ),
+			)
+		);
+
+		$this->end_controls_section();
+	}
+
+	/**
+	 * Item style: the box each certification or publication row sits in.
+	 *
+	 * One section for both groups, like the Icon and Text sections above it —
+	 * the widget styles certifications and publications as one list.
+	 *
+	 * @return void
+	 */
+	private function register_item_style(): void {
+		$item = '{{WRAPPER}} .dp-cp__item';
+
+		$this->start_controls_section(
+			'section_item_style',
+			array( 'label' => __( 'Items', 'doctorpilot' ), 'tab' => \Elementor\Controls_Manager::TAB_STYLE )
+		);
+
 		$this->add_responsive_control(
 			'item_gap',
 			array(
@@ -204,19 +268,94 @@ final class CertsPublications extends AbstractWidget {
 			)
 		);
 
-		$this->add_control( 'title_heading', array( 'label' => __( 'Group title', 'doctorpilot' ), 'type' => \Elementor\Controls_Manager::HEADING, 'separator' => 'before' ) );
-		$this->add_group_control(
-			\Elementor\Group_Control_Typography::get_type(),
-			array( 'name' => 'title_typography', 'selector' => '{{WRAPPER}} .dp-cp__title' )
-		);
-		$this->add_control(
-			'title_color',
+		$this->add_responsive_control(
+			'item_padding',
 			array(
-				'label'     => __( 'Color', 'doctorpilot' ),
-				'type'      => \Elementor\Controls_Manager::COLOR,
-				'selectors' => array( '{{WRAPPER}} .dp-cp__title' => 'color: {{VALUE}};' ),
+				'label'      => __( 'Padding', 'doctorpilot' ),
+				'type'       => \Elementor\Controls_Manager::DIMENSIONS,
+				'size_units' => array( 'px', 'em' ),
+				'selectors'  => array( $item => 'padding: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};' ),
 			)
 		);
+
+		$this->add_responsive_control(
+			'item_radius',
+			array(
+				'label'      => __( 'Border radius', 'doctorpilot' ),
+				'type'       => \Elementor\Controls_Manager::DIMENSIONS,
+				'size_units' => array( 'px', '%' ),
+				'selectors'  => array( $item => 'border-radius: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};' ),
+			)
+		);
+
+		$this->add_responsive_control(
+			'item_icon_gap',
+			array(
+				'label'      => __( 'Gap after icon', 'doctorpilot' ),
+				'type'       => \Elementor\Controls_Manager::SLIDER,
+				'size_units' => array( 'px' ),
+				'range'      => array( 'px' => array( 'min' => 0, 'max' => 32 ) ),
+				'selectors'  => array( $item => 'gap: {{SIZE}}{{UNIT}};' ),
+			)
+		);
+
+		$this->add_control(
+			'item_align',
+			array(
+				'label'     => __( 'Icon alignment', 'doctorpilot' ),
+				'type'      => \Elementor\Controls_Manager::SELECT,
+				'default'   => '',
+				'options'   => array(
+					''            => __( 'Top (default)', 'doctorpilot' ),
+					'center'      => __( 'Middle', 'doctorpilot' ),
+					'flex-end'    => __( 'Bottom', 'doctorpilot' ),
+				),
+				'selectors' => array( $item => 'align-items: {{VALUE}};' ),
+			)
+		);
+
+		$this->add_control(
+			'item_transition',
+			array(
+				'label'     => __( 'Transition duration (s)', 'doctorpilot' ),
+				'type'      => \Elementor\Controls_Manager::SLIDER,
+				'range'     => array( 'px' => array( 'min' => 0, 'max' => 3, 'step' => 0.1 ) ),
+				'selectors' => array( $item => 'transition: all {{SIZE}}s ease;' ),
+			)
+		);
+
+		$this->start_controls_tabs( 'item_tabs' );
+
+		$this->start_controls_tab( 'item_tab_normal', array( 'label' => __( 'Normal', 'doctorpilot' ) ) );
+		$this->add_group_control(
+			\Elementor\Group_Control_Background::get_type(),
+			array( 'name' => 'item_bg', 'types' => array( 'classic', 'gradient' ), 'selector' => $item )
+		);
+		$this->add_group_control(
+			\Elementor\Group_Control_Border::get_type(),
+			array( 'name' => 'item_border', 'selector' => $item )
+		);
+		$this->add_group_control(
+			\Elementor\Group_Control_Box_Shadow::get_type(),
+			array( 'name' => 'item_shadow', 'selector' => $item )
+		);
+		$this->end_controls_tab();
+
+		$this->start_controls_tab( 'item_tab_hover', array( 'label' => __( 'Hover', 'doctorpilot' ) ) );
+		$this->add_group_control(
+			\Elementor\Group_Control_Background::get_type(),
+			array( 'name' => 'item_bg_hover', 'types' => array( 'classic', 'gradient' ), 'selector' => $item . ':hover' )
+		);
+		$this->add_group_control(
+			\Elementor\Group_Control_Border::get_type(),
+			array( 'name' => 'item_border_hover', 'selector' => $item . ':hover' )
+		);
+		$this->add_group_control(
+			\Elementor\Group_Control_Box_Shadow::get_type(),
+			array( 'name' => 'item_shadow_hover', 'selector' => $item . ':hover' )
+		);
+		$this->end_controls_tab();
+		$this->end_controls_tabs();
 
 		$this->end_controls_section();
 	}
@@ -248,9 +387,17 @@ final class CertsPublications extends AbstractWidget {
 			array(
 				'label'      => __( 'Size', 'doctorpilot' ),
 				'type'       => \Elementor\Controls_Manager::SLIDER,
-				'size_units' => array( 'px' ),
-				'range'      => array( 'px' => array( 'min' => 10, 'max' => 32 ) ),
-				'selectors'  => array( $icon => 'font-size: {{SIZE}}{{UNIT}};' ),
+				'size_units' => array( 'px', 'em', 'rem' ),
+				'range'      => array(
+					'px'  => array( 'min' => 10, 'max' => 32 ),
+					'em'  => array( 'min' => 0.5, 'max' => 4, 'step' => 0.1 ),
+					'rem' => array( 'min' => 0.5, 'max' => 4, 'step' => 0.1 ),
+				),
+				'default'    => array( 'unit' => 'em', 'size' => 1 ),
+				'selectors'  => array(
+					$icon                            => 'font-size: {{SIZE}}{{UNIT}};',
+					$icon . ' svg, ' . $icon . ' i'  => 'width: {{SIZE}}{{UNIT}}; height: {{SIZE}}{{UNIT}};',
+				),
 			)
 		);
 
@@ -280,6 +427,7 @@ final class CertsPublications extends AbstractWidget {
 			array(
 				'label'     => __( 'Color', 'doctorpilot' ),
 				'type'      => \Elementor\Controls_Manager::COLOR,
+				'default'   => '#000000',
 				'selectors' => array( '{{WRAPPER}} .dp-cp__name, {{WRAPPER}} .dp-cp__name a' => 'color: {{VALUE}};' ),
 			)
 		);
@@ -294,6 +442,7 @@ final class CertsPublications extends AbstractWidget {
 			array(
 				'label'     => __( 'Color', 'doctorpilot' ),
 				'type'      => \Elementor\Controls_Manager::COLOR,
+				'default'   => '#000000',
 				'selectors' => array( '{{WRAPPER}} .dp-cp__meta' => 'color: {{VALUE}};' ),
 			)
 		);
@@ -308,6 +457,7 @@ final class CertsPublications extends AbstractWidget {
 			array(
 				'label'     => __( 'Color', 'doctorpilot' ),
 				'type'      => \Elementor\Controls_Manager::COLOR,
+				'default'   => '#000000',
 				'selectors' => array( '{{WRAPPER}} .dp-cp__desc' => 'color: {{VALUE}};' ),
 			)
 		);
@@ -342,6 +492,7 @@ final class CertsPublications extends AbstractWidget {
 
 		$certs = is_array( $data['certifications'] ?? null ) ? $data['certifications'] : array();
 		$pubs  = is_array( $data['publications'] ?? null ) ? $data['publications'] : array();
+		$mems  = is_array( $data['memberships'] ?? null ) ? $data['memberships'] : array();
 
 		$groups = '';
 		if ( 'yes' === ( $settings['certs_show'] ?? '' ) ) {
@@ -350,10 +501,13 @@ final class CertsPublications extends AbstractWidget {
 		if ( 'yes' === ( $settings['pubs_show'] ?? '' ) ) {
 			$groups .= $this->render_publications( $pubs, $settings );
 		}
+		if ( 'yes' === ( $settings['mems_show'] ?? '' ) ) {
+			$groups .= $this->render_memberships( $mems, $settings );
+		}
 
 		if ( '' === $groups ) {
 			if ( \Elementor\Plugin::instance()->editor->is_edit_mode() ) {
-				echo '<p>' . esc_html__( 'This doctor has no certifications or publications yet.', 'doctorpilot' ) . '</p>';
+				echo '<p>' . esc_html__( 'This doctor has no certifications, publications or society memberships yet.', 'doctorpilot' ) . '</p>';
 			}
 			return;
 		}
@@ -375,7 +529,7 @@ final class CertsPublications extends AbstractWidget {
 	 * @return string
 	 */
 	private function render_certifications( array $certs, array $settings ): string {
-		$icon       = $this->icon_html( $settings['certs_icon'] ?? array() );
+		$icon       = $this->icon_markup( $settings, 'certs_icon' );
 		$show_org   = 'yes' === ( $settings['certs_show_org'] ?? '' );
 		$show_dates = 'yes' === ( $settings['certs_show_dates'] ?? '' );
 		$do_link    = 'yes' === ( $settings['certs_link'] ?? '' );
@@ -422,7 +576,7 @@ final class CertsPublications extends AbstractWidget {
 	 * @return string
 	 */
 	private function render_publications( array $pubs, array $settings ): string {
-		$icon      = $this->icon_html( $settings['pubs_icon'] ?? array() );
+		$icon      = $this->icon_markup( $settings, 'pubs_icon' );
 		$show_meta = 'yes' === ( $settings['pubs_show_meta'] ?? '' );
 		$show_desc = 'yes' === ( $settings['pubs_show_desc'] ?? '' );
 		$do_link   = 'yes' === ( $settings['pubs_link'] ?? '' );
@@ -461,18 +615,43 @@ final class CertsPublications extends AbstractWidget {
 	}
 
 	/**
-	 * Render an Elementor icon to an HTML string.
+	 * Build the society memberships group HTML, or '' when empty.
 	 *
-	 * @param mixed $icon ICONS control value.
+	 * @param array<int, mixed>    $mems     Membership rows.
+	 * @param array<string, mixed> $settings Widget settings.
 	 * @return string
 	 */
-	private function icon_html( $icon ): string {
-		if ( ! is_array( $icon ) || '' === (string) ( $icon['value'] ?? '' ) ) {
+	private function render_memberships( array $mems, array $settings ): string {
+		$icon      = $this->icon_markup( $settings, 'mems_icon' );
+		$show_meta = 'yes' === ( $settings['mems_show_meta'] ?? '' );
+		$do_link   = 'yes' === ( $settings['mems_link'] ?? '' );
+
+		$items = '';
+		foreach ( $mems as $mem ) {
+			if ( ! is_array( $mem ) ) {
+				continue;
+			}
+
+			$society = trim( (string) ( $mem['society'] ?? $mem['title'] ?? '' ) );
+			if ( '' === $society ) {
+				continue;
+			}
+
+			$meta = '';
+			if ( $show_meta ) {
+				$meta = trim( implode( ' · ', array_filter( array( trim( (string) ( $mem['role'] ?? '' ) ), trim( (string) ( $mem['year'] ?? '' ) ) ) ) ) );
+			}
+
+			$url = $do_link ? trim( (string) ( $mem['url'] ?? '' ) ) : '';
+
+			$items .= $this->item_html( $icon, $society, $meta, '', $url );
+		}
+
+		if ( '' === $items ) {
 			return '';
 		}
-		ob_start();
-		\Elementor\Icons_Manager::render_icon( $icon, array( 'aria-hidden' => 'true' ) );
-		return (string) ob_get_clean();
+
+		return $this->group_html( (string) ( $settings['mems_title'] ?? '' ), $items );
 	}
 
 	/**

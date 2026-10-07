@@ -3,7 +3,7 @@
  * Plugin Name:       DoctorPilot – Doctor Directory & Search
  * Plugin URI:        https://brainstudioz.com/doctorpilot/
  * Description:        Structured doctor directory and intelligent search for hospitals. Manage doctors, departments, specialties, symptoms, conditions, treatments, languages, locations and insurance providers as structured WordPress data; present them with Elementor; migrate an existing directory in with CSV import, legacy-URL redirects and reconciliation reporting.
- * Version:           0.2.0
+ * Version:           0.7.0
  * Requires at least: 6.4
  * Requires PHP:      8.1
  * Author:            BrainStudioz
@@ -33,7 +33,7 @@ if ( defined( 'DOCTORPILOT_VERSION' ) ) {
  * Version, runtime, and path constants.
  * ---------------------------------------------------------------------------
  */
-define( 'DOCTORPILOT_VERSION', '0.2.0' );
+define( 'DOCTORPILOT_VERSION', '0.7.0' );
 
 /*
  * Extension API version. Nothing in this repository consumes it any more — the
@@ -46,9 +46,11 @@ define( 'DOCTORPILOT_BASE_API_VERSION', 1 );
 /*
  * Data schema version. Incremented deliberately when migrations are added.
  * Version 3 adopts the tables, roles and cron hooks that belonged to the Pro
- * add-on before it was merged into this plugin.
+ * add-on before it was merged into this plugin. Version 4 retires the BookPilot
+ * provider and corrects two booking settings. Version 5 removes the Credentials
+ * field and — uniquely among these — deletes the stored values with it.
  */
-define( 'DOCTORPILOT_SCHEMA_VERSION', 3 );
+define( 'DOCTORPILOT_SCHEMA_VERSION', 5 );
 
 // Minimum supported runtime (kept in sync with the plugin header and readme).
 define( 'DOCTORPILOT_MIN_WP', '6.4' );

@@ -104,16 +104,22 @@ final class DoctorFacts extends AbstractWidget {
 				)
 			);
 
+			/* translators: %s: row label. */
+			$icon_label = sprintf( __( '%s icon', 'doctorpilot' ), $row['label'] );
+
+			$this->register_icon_source( $key . '_icon', $icon_label, array( $key . '_show' => 'yes' ) );
+
 			$this->add_control(
 				$key . '_icon',
 				array(
-					/* translators: %s: row label. */
-					'label'     => sprintf( __( '%s icon', 'doctorpilot' ), $row['label'] ),
+					'label'     => $icon_label,
 					'type'      => \Elementor\Controls_Manager::ICONS,
 					'default'   => array( 'value' => $row['icon'], 'library' => 0 === strpos( $row['icon'], 'far' ) ? 'fa-regular' : 'fa-solid' ),
-					'condition' => array( $key . '_show' => 'yes' ),
+					'condition' => $this->icon_condition( $key . '_icon', 'elementor', array( $key . '_show' => 'yes' ) ),
 				)
 			);
+
+			$this->register_pixfort_icon( $key . '_icon', array( $key . '_show' => 'yes' ) );
 
 			if ( 'availability' === $key ) {
 				$this->add_control(
@@ -225,7 +231,7 @@ final class DoctorFacts extends AbstractWidget {
 			array(
 				'label'     => __( 'Background', 'doctorpilot' ),
 				'type'      => \Elementor\Controls_Manager::COLOR,
-				'default'   => '#E9F6F0',
+				'default'   => '#e9f6f0',
 				'selectors' => array( $icon => 'background: {{VALUE}};' ),
 			)
 		);
@@ -234,9 +240,17 @@ final class DoctorFacts extends AbstractWidget {
 			array(
 				'label'      => __( 'Icon size', 'doctorpilot' ),
 				'type'       => \Elementor\Controls_Manager::SLIDER,
-				'size_units' => array( 'px' ),
-				'range'      => array( 'px' => array( 'min' => 10, 'max' => 28 ) ),
-				'selectors'  => array( $icon => 'font-size: {{SIZE}}{{UNIT}};' ),
+				'size_units' => array( 'px', 'em', 'rem' ),
+				'range'      => array(
+					'px'  => array( 'min' => 10, 'max' => 28 ),
+					'em'  => array( 'min' => 0.5, 'max' => 4, 'step' => 0.1 ),
+					'rem' => array( 'min' => 0.5, 'max' => 4, 'step' => 0.1 ),
+				),
+				'default'    => array( 'unit' => 'em', 'size' => 1 ),
+				'selectors'  => array(
+					$icon                            => 'font-size: {{SIZE}}{{UNIT}};',
+					$icon . ' svg, ' . $icon . ' i'  => 'width: {{SIZE}}{{UNIT}}; height: {{SIZE}}{{UNIT}};',
+				),
 			)
 		);
 		$this->add_responsive_control(
@@ -286,6 +300,7 @@ final class DoctorFacts extends AbstractWidget {
 			array(
 				'label'     => __( 'Color', 'doctorpilot' ),
 				'type'      => \Elementor\Controls_Manager::COLOR,
+				'default'   => '#000000',
 				'selectors' => array( '{{WRAPPER}} .dp-facts__label' => 'color: {{VALUE}};' ),
 			)
 		);
@@ -300,6 +315,7 @@ final class DoctorFacts extends AbstractWidget {
 			array(
 				'label'     => __( 'Color', 'doctorpilot' ),
 				'type'      => \Elementor\Controls_Manager::COLOR,
+				'default'   => '#000000',
 				'selectors' => array( '{{WRAPPER}} .dp-facts__value, {{WRAPPER}} .dp-facts__value a' => 'color: {{VALUE}};' ),
 			)
 		);
@@ -344,12 +360,7 @@ final class DoctorFacts extends AbstractWidget {
 				continue;
 			}
 
-			$icon = '';
-			if ( is_array( $settings[ $key . '_icon' ] ?? null ) && '' !== (string) ( $settings[ $key . '_icon' ]['value'] ?? '' ) ) {
-				ob_start();
-				\Elementor\Icons_Manager::render_icon( $settings[ $key . '_icon' ], array( 'aria-hidden' => 'true' ) );
-				$icon = (string) ob_get_clean();
-			}
+			$icon = $this->icon_markup( $settings, $key . '_icon' );
 
 			$value_html = '' !== (string) $value['href']
 				? '<a href="' . esc_attr( (string) $value['href'] ) . '">' . esc_html( (string) $value['text'] ) . '</a>'

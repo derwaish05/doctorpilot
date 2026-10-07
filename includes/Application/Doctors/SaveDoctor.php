@@ -17,6 +17,7 @@ use BrainStudioz\DoctorPilot\Fields\Sanitizer;
 use BrainStudioz\DoctorPilot\Library\DoctorContentResolver;
 use BrainStudioz\DoctorPilot\Library\ReverseIndex;
 use BrainStudioz\DoctorPilot\PostTypes\DoctorPostType;
+use BrainStudioz\DoctorPilot\Taxonomies\Taxonomies;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -32,6 +33,31 @@ if ( ! defined( 'ABSPATH' ) ) {
  * publication escalation is ignored.
  */
 final class SaveDoctor {
+
+	/**
+	 * Doctor IDs whose derived values need rebuilding before the request ends.
+	 *
+	 * Used as a set, keyed by post ID. Collecting rather than rebuilding
+	 * immediately is what keeps the cost of the generic listeners at one rebuild
+	 * per doctor per request, however many hooks fired for it — an import row
+	 * fires `wp_after_insert_post` once and `set_object_terms` once per
+	 * taxonomy, so rebuilding eagerly would recompute the same doctor seven
+	 * times, the first of them before any of its data had been written.
+	 *
+	 * Deferring also fixes the ordering. At `shutdown` every field, term and
+	 * relationship is on disk no matter which order the writer used, so the
+	 * index is built from the finished record instead of a half-written one.
+	 *
+	 * @var array<int, bool>
+	 */
+	private array $pending = array();
+
+	/**
+	 * Whether the `shutdown` flush is already scheduled.
+	 *
+	 * @var bool
+	 */
+	private bool $flush_scheduled = false;
 
 	/**
 	 * Nonce action for the editor meta box.
@@ -58,6 +84,164 @@ final class SaveDoctor {
 		// Compose the post title from the First/Last name fields before the post
 		// is written. Using this filter avoids a recursive wp_update_post call.
 		add_filter( 'wp_insert_post_data', array( $this, 'compose_title' ), 10, 2 );
+
+		/*
+		 * Derived search values, for doctors this plugin's own form did not
+		 * write. `handle()` requires the editor nonce so that an unrelated save
+		 * cannot be mistaken for a form submission — correct, but it means a
+		 * doctor created by anything else has no search index at all, and a
+		 * doctor with no index is dropped from every search rather than ranked
+		 * low. That covers a WPML or Polylang translation, a WP-CLI import, a
+		 * REST write, and a Quick Edit.
+		 *
+		 * Split from `handle()` rather than folded into it: this path must not
+		 * touch submitted fields, validate a nonce, or run the primary-term
+		 * reconciler. It only recomputes values that are derived from data
+		 * already in the database, which is safe to do on any save.
+		 */
+		add_action( 'wp_after_insert_post', array( $this, 'refresh_derived' ), 20, 4 );
+
+		// Term assignment does not go through `wp_after_insert_post` — the
+		// block editor and WPML both set terms in a separate request — and the
+		// index is mostly built from term names.
+		add_action( 'set_object_terms', array( $this, 'refresh_derived_for_terms' ), 20, 6 );
+	}
+
+	/**
+	 * Rebuild derived values after any save of a doctor.
+	 *
+	 * @param int           $post_id     Post ID.
+	 * @param \WP_Post      $post        Post object.
+	 * @param bool          $update      Whether this is an update.
+	 * @param \WP_Post|null $post_before Post before the update.
+	 * @return void
+	 */
+	public function refresh_derived( int $post_id, $post, $update = false, $post_before = null ): void {
+		if ( ! $post instanceof \WP_Post || DoctorPostType::POST_TYPE !== $post->post_type ) {
+			return;
+		}
+
+		if ( wp_is_post_revision( $post_id ) || wp_is_post_autosave( $post_id ) ) {
+			return;
+		}
+
+		$this->queue( $post_id, $post->post_status );
+	}
+
+	/**
+	 * Rebuild derived values when a doctor's terms change.
+	 *
+	 * @param int    $object_id  Object ID.
+	 * @param array  $terms      Terms.
+	 * @param array  $tt_ids     Term taxonomy IDs.
+	 * @param string $taxonomy   Taxonomy.
+	 * @param bool   $append     Whether terms were appended.
+	 * @param array  $old_tt_ids Previous term taxonomy IDs.
+	 * @return void
+	 */
+	public function refresh_derived_for_terms( $object_id, $terms, $tt_ids, $taxonomy, $append = false, $old_tt_ids = array() ): void {
+		// Only the taxonomies the index is actually built from. Assigning a
+		// location changes nothing `SearchIndexBuilder` reads, so rebuilding for
+		// it would recompute byte-identical values.
+		if ( ! in_array( (string) $taxonomy, SearchIndexBuilder::INDEXED_TAXONOMIES, true ) ) {
+			return;
+		}
+
+		if ( DoctorPostType::POST_TYPE !== get_post_type( (int) $object_id ) ) {
+			return;
+		}
+
+		// Unchanged assignment — WordPress fires this on every save regardless.
+		if ( ! $append && $this->same_terms( (array) $tt_ids, (array) $old_tt_ids ) ) {
+			return;
+		}
+
+		$this->queue( (int) $object_id );
+	}
+
+	/**
+	 * Mark a doctor as needing its derived values rebuilt.
+	 *
+	 * @param int    $post_id Doctor post ID.
+	 * @param string $status  Post status, when the caller already knows it.
+	 * @return void
+	 */
+	private function queue( int $post_id, string $status = '' ): void {
+		if ( $post_id <= 0 ) {
+			return;
+		}
+
+		if ( '' === $status ) {
+			$status = (string) get_post_status( $post_id );
+		}
+
+		/*
+		 * An auto-draft is the empty row WordPress creates when someone opens
+		 * "Add New" and may never save. Indexing it writes four meta rows onto a
+		 * record with no title and no terms, on every visit to that screen.
+		 * Trashed and inherited (revision, attachment) rows are equally not
+		 * worth indexing.
+		 */
+		if ( in_array( $status, array( 'auto-draft', 'trash', 'inherit' ), true ) ) {
+			return;
+		}
+
+		// Already rebuilt this request by the editor form or the CSV writer, both
+		// of which do it after writing everything.
+		if ( SearchIndexBuilder::was_rebuilt( $post_id ) ) {
+			return;
+		}
+
+		$this->pending[ $post_id ] = true;
+
+		if ( ! $this->flush_scheduled ) {
+			$this->flush_scheduled = true;
+			add_action( 'shutdown', array( $this, 'flush_pending' ), 5 );
+		}
+	}
+
+	/**
+	 * Rebuild everything queued during this request.
+	 *
+	 * Public because it is a hook callback. Safe to call twice: the queue is
+	 * emptied first, so a re-entrant call finds nothing to do.
+	 *
+	 * @return void
+	 */
+	public function flush_pending(): void {
+		$ids = array_keys( $this->pending );
+
+		$this->pending = array();
+
+		foreach ( $ids as $post_id ) {
+			// Status is re-checked: a doctor queued while published may have
+			// been trashed later in the same request.
+			if ( SearchIndexBuilder::was_rebuilt( $post_id ) ) {
+				continue;
+			}
+
+			if ( in_array( (string) get_post_status( $post_id ), array( 'auto-draft', 'trash', 'inherit' ), true ) ) {
+				continue;
+			}
+
+			$this->save_derived( (int) $post_id );
+		}
+	}
+
+	/**
+	 * Whether two term-taxonomy ID lists describe the same assignment.
+	 *
+	 * @param array<int, mixed> $a First list.
+	 * @param array<int, mixed> $b Second list.
+	 * @return bool
+	 */
+	private function same_terms( array $a, array $b ): bool {
+		$a = array_map( 'intval', $a );
+		$b = array_map( 'intval', $b );
+		sort( $a );
+		sort( $b );
+
+		return $a === $b;
 	}
 
 	/**
@@ -152,6 +336,10 @@ final class SaveDoctor {
 		PrimaryTermValidator::reconcile( $post_id );
 
 		$this->save_derived( $post_id );
+
+		// Done synchronously and authoritatively; the listeners' queue entry for
+		// this doctor would only repeat it at shutdown.
+		unset( $this->pending[ $post_id ] );
 	}
 
 	/**

@@ -18,9 +18,10 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 /**
  * Renders the hero header for a single doctor from canonical data: breadcrumb,
- * name, role, key facts, credential chips, photo with a specialty badge, and the
- * booking / call actions. The doctor is the selected one or the current queried
- * doctor, so a single design serves every doctor on a single-doctor template.
+ * name, role, key facts, credential chips, photo with an optional specialty
+ * badge (off by default), and the booking / call actions. The doctor is the
+ * selected one or the current queried doctor, so a single design serves every
+ * doctor on a single-doctor template.
  */
 final class PageHeader extends AbstractWidget {
 
@@ -95,12 +96,26 @@ final class PageHeader extends AbstractWidget {
 		);
 
 		$this->add_control(
+			'show_photo_badge',
+			array(
+				'label'        => __( 'Show photo badge', 'doctorpilot' ),
+				'type'         => \Elementor\Controls_Manager::SWITCHER,
+				'label_on'     => __( 'Show', 'doctorpilot' ),
+				'label_off'    => __( 'Hide', 'doctorpilot' ),
+				'return_value' => 'yes',
+				'default'      => '',
+				'description'  => __( 'Off by default. Turn on to overlay the specialty (or international) badge on the photo.', 'doctorpilot' ),
+			)
+		);
+
+		$this->add_control(
 			'badge_international_text',
 			array(
 				'label'       => __( 'International badge text', 'doctorpilot' ),
 				'type'        => \Elementor\Controls_Manager::TEXT,
 				'default'     => __( 'International doctor', 'doctorpilot' ),
 				'description' => __( 'Shown on the photo badge when the doctor is flagged as international; otherwise the primary specialty is shown.', 'doctorpilot' ),
+				'condition'   => array( 'show_photo_badge' => 'yes' ),
 			)
 		);
 
@@ -165,14 +180,19 @@ final class PageHeader extends AbstractWidget {
 			)
 		);
 
+		$this->register_icon_source( 'book_icon', __( 'Book button icon', 'doctorpilot' ) );
+
 		$this->add_control(
 			'book_icon',
 			array(
-				'label'   => __( 'Book button icon', 'doctorpilot' ),
-				'type'    => \Elementor\Controls_Manager::ICONS,
-				'default' => array( 'value' => 'far fa-calendar-check', 'library' => 'fa-regular' ),
+				'label'     => __( 'Book button icon', 'doctorpilot' ),
+				'type'      => \Elementor\Controls_Manager::ICONS,
+				'default'   => array( 'value' => 'far fa-calendar-check', 'library' => 'fa-regular' ),
+				'condition' => $this->icon_condition( 'book_icon', 'elementor' ),
 			)
 		);
+
+		$this->register_pixfort_icon( 'book_icon' );
 
 		$this->add_control(
 			'call_text',
@@ -183,14 +203,19 @@ final class PageHeader extends AbstractWidget {
 			)
 		);
 
+		$this->register_icon_source( 'call_icon', __( 'Call button icon', 'doctorpilot' ) );
+
 		$this->add_control(
 			'call_icon',
 			array(
-				'label'   => __( 'Call button icon', 'doctorpilot' ),
-				'type'    => \Elementor\Controls_Manager::ICONS,
-				'default' => array( 'value' => 'fas fa-phone', 'library' => 'fa-solid' ),
+				'label'     => __( 'Call button icon', 'doctorpilot' ),
+				'type'      => \Elementor\Controls_Manager::ICONS,
+				'default'   => array( 'value' => 'fas fa-phone', 'library' => 'fa-solid' ),
+				'condition' => $this->icon_condition( 'call_icon', 'elementor' ),
 			)
 		);
+
+		$this->register_pixfort_icon( 'call_icon' );
 
 		$this->add_control(
 			'heading_certs',
@@ -213,15 +238,19 @@ final class PageHeader extends AbstractWidget {
 			)
 		);
 
+		$this->register_icon_source( 'cert_icon', __( 'Certification icon', 'doctorpilot' ), array( 'show_certs' => 'yes' ) );
+
 		$this->add_control(
 			'cert_icon',
 			array(
 				'label'     => __( 'Certification icon', 'doctorpilot' ),
 				'type'      => \Elementor\Controls_Manager::ICONS,
 				'default'   => array( 'value' => 'fas fa-award', 'library' => 'fa-solid' ),
-				'condition' => array( 'show_certs' => 'yes' ),
+				'condition' => $this->icon_condition( 'cert_icon', 'elementor', array( 'show_certs' => 'yes' ) ),
 			)
 		);
+
+		$this->register_pixfort_icon( 'cert_icon', array( 'show_certs' => 'yes' ) );
 
 		$this->end_controls_section();
 
@@ -245,7 +274,7 @@ final class PageHeader extends AbstractWidget {
 				'fields_options' => array(
 					'background'     => array( 'default' => 'gradient' ),
 					'color'          => array( 'default' => '#136888' ),
-					'color_b'        => array( 'default' => '#0E4E63' ),
+					'color_b'        => array( 'default' => '#1a4f74' ),
 					'gradient_angle' => array( 'default' => array( 'unit' => 'deg', 'size' => 120 ) ),
 				),
 			)
@@ -326,9 +355,13 @@ final class PageHeader extends AbstractWidget {
 			array(
 				'label'      => __( 'Icon size', 'doctorpilot' ),
 				'type'       => \Elementor\Controls_Manager::SLIDER,
-				'size_units' => array( 'px' ),
-				'range'      => array( 'px' => array( 'min' => 8, 'max' => 32 ) ),
-				'default'    => array( 'unit' => 'px', 'size' => 16 ),
+				'size_units' => array( 'px', 'em', 'rem' ),
+				'range'      => array(
+					'px'  => array( 'min' => 8, 'max' => 32 ),
+					'em'  => array( 'min' => 0.5, 'max' => 4, 'step' => 0.1 ),
+					'rem' => array( 'min' => 0.5, 'max' => 4, 'step' => 0.1 ),
+				),
+				'default'    => array( 'unit' => 'em', 'size' => 1 ),
 				'selectors'  => array( $icon => 'width: {{SIZE}}{{UNIT}}; height: {{SIZE}}{{UNIT}}; font-size: {{SIZE}}{{UNIT}};' ),
 			)
 		);
@@ -418,9 +451,13 @@ final class PageHeader extends AbstractWidget {
 			array(
 				'label'      => __( 'Icon size', 'doctorpilot' ),
 				'type'       => \Elementor\Controls_Manager::SLIDER,
-				'size_units' => array( 'px' ),
-				'range'      => array( 'px' => array( 'min' => 8, 'max' => 40 ) ),
-				'default'    => array( 'unit' => 'px', 'size' => 20 ),
+				'size_units' => array( 'px', 'em', 'rem' ),
+				'range'      => array(
+					'px'  => array( 'min' => 8, 'max' => 40 ),
+					'em'  => array( 'min' => 0.5, 'max' => 4, 'step' => 0.1 ),
+					'rem' => array( 'min' => 0.5, 'max' => 4, 'step' => 0.1 ),
+				),
+				'default'    => array( 'unit' => 'em', 'size' => 1 ),
 				'selectors'  => array( '{{WRAPPER}} .dp-hero__btn .dp-hero__ico, {{WRAPPER}} .dp-hero__btn i, {{WRAPPER}} .dp-hero__btn svg' => 'width: {{SIZE}}{{UNIT}}; height: {{SIZE}}{{UNIT}}; font-size: {{SIZE}}{{UNIT}};' ),
 			)
 		);
@@ -933,8 +970,9 @@ final class PageHeader extends AbstractWidget {
 		$this->start_controls_section(
 			'section_badge',
 			array(
-				'label' => __( 'Photo badge', 'doctorpilot' ),
-				'tab'   => \Elementor\Controls_Manager::TAB_STYLE,
+				'label'     => __( 'Photo badge', 'doctorpilot' ),
+				'tab'       => \Elementor\Controls_Manager::TAB_STYLE,
+				'condition' => array( 'show_photo_badge' => 'yes' ),
 			)
 		);
 
@@ -1085,14 +1123,17 @@ final class PageHeader extends AbstractWidget {
 		} else {
 			echo '<span class="dp-hero__placeholder" aria-hidden="true"></span>';
 		}
-		// The photo badge shows the international text when the flag is set,
-		// otherwise the primary specialty.
-		if ( $view['international'] ) {
-			$badge = '' !== (string) ( $settings['badge_international_text'] ?? '' )
-				? (string) $settings['badge_international_text']
-				: __( 'International doctor', 'doctorpilot' );
-		} else {
-			$badge = $view['specialty'];
+		// The photo badge is opt-in. When enabled it shows the international text
+		// when the flag is set, otherwise the primary specialty.
+		$badge = '';
+		if ( 'yes' === (string) ( $settings['show_photo_badge'] ?? '' ) ) {
+			if ( $view['international'] ) {
+				$badge = '' !== (string) ( $settings['badge_international_text'] ?? '' )
+					? (string) $settings['badge_international_text']
+					: __( 'International doctor', 'doctorpilot' );
+			} else {
+				$badge = $view['specialty'];
+			}
 		}
 		if ( '' !== $badge ) {
 			$allowed_pos = array( 'top-left', 'top-right', 'bottom-left', 'bottom-right' );
@@ -1124,10 +1165,12 @@ final class PageHeader extends AbstractWidget {
 		echo '</div>';
 
 		if ( 'yes' === (string) ( $settings['show_certs'] ?? 'yes' ) && array() !== $view['certs'] ) {
+			$cert_icon = $this->icon_markup( $settings, 'cert_icon', 'dp-hero__ico', 14 );
+
 			echo '<ul class="dp-hero__tags">';
 			foreach ( $view['certs'] as $cert ) {
 				echo '<li class="dp-hero__chip">';
-				$this->render_cert_icon( $settings['cert_icon'] ?? array() );
+				$this->render_cert_icon( $cert_icon );
 				echo '<span>' . esc_html( $cert ) . '</span>';
 				echo '</li>';
 			}
@@ -1143,13 +1186,13 @@ final class PageHeader extends AbstractWidget {
 					esc_url( $view['book_url'] ),
 					$view['book_target'] // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Constant, safe attribute string.
 				);
-				$this->render_button_icon( $settings['book_icon'] ?? array(), 'icon_calendar' );
+				$this->render_button_icon( $this->icon_markup( $settings, 'book_icon', 'dp-hero__ico', 18 ), 'icon_calendar' );
 				echo '<span>' . esc_html( $book_label ) . '</span></a>';
 			}
 			if ( '' !== $view['tel'] ) {
 				$call_label = '' !== (string) ( $settings['call_text'] ?? '' ) ? (string) $settings['call_text'] : __( 'Call Now', 'doctorpilot' );
 				printf( '<a class="dp-hero__btn dp-hero__btn--ghost" href="tel:%1$s">', esc_attr( $view['tel'] ) );
-				$this->render_button_icon( $settings['call_icon'] ?? array(), 'icon_phone' );
+				$this->render_button_icon( $this->icon_markup( $settings, 'call_icon', 'dp-hero__ico', 18 ), 'icon_phone' );
 				echo '<span>' . esc_html( $call_label ) . '</span></a>';
 			}
 			echo '</div>';
@@ -1179,10 +1222,12 @@ final class PageHeader extends AbstractWidget {
 			}
 		}
 
-		// Role: first leadership entry (string for line input, array for legacy
-		// rows), falling back to the primary specialty.
-		$role = '';
-		if ( ! empty( $data['leadership'] ) && is_array( $data['leadership'] ) ) {
+		// Role: the doctor's Headline (post excerpt) is the authored job title,
+		// so it wins. It falls back to the first leadership entry (string for
+		// line input, array for legacy rows), then the primary specialty, so a
+		// doctor with no headline reads exactly as before.
+		$role = trim( (string) ( $data['headline'] ?? '' ) );
+		if ( '' === $role && ! empty( $data['leadership'] ) && is_array( $data['leadership'] ) ) {
 			$first = reset( $data['leadership'] );
 			if ( is_string( $first ) ) {
 				$role = $first;
@@ -1277,15 +1322,16 @@ final class PageHeader extends AbstractWidget {
 	}
 
 	/**
-	 * Render a certification chip icon: the editor-chosen Elementor icon when set,
-	 * otherwise the built-in inline award SVG.
+	 * Render a certification chip icon: the icon the editor chose when there is
+	 * one, otherwise the built-in inline award SVG.
 	 *
-	 * @param mixed $icon The ICONS control value.
+	 * @param string $icon Resolved icon markup.
 	 * @return void
 	 */
-	private function render_cert_icon( $icon ): void {
-		if ( is_array( $icon ) && '' !== (string) ( $icon['value'] ?? '' ) ) {
-			\Elementor\Icons_Manager::render_icon( $icon, array( 'aria-hidden' => 'true', 'class' => 'dp-hero__ico' ) );
+	private function render_cert_icon( string $icon ): void {
+		if ( '' !== $icon ) {
+			// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Icons_Manager or pixfort SVG markup.
+			echo $icon;
 			return;
 		}
 
@@ -1303,16 +1349,17 @@ final class PageHeader extends AbstractWidget {
 	}
 
 	/**
-	 * Render a button icon: the editor-chosen Elementor icon when set, otherwise
-	 * the built-in inline SVG fallback.
+	 * Render a button icon: the icon the editor chose when there is one,
+	 * otherwise the built-in inline SVG fallback.
 	 *
-	 * @param mixed  $icon     The ICONS control value.
+	 * @param string $icon     Resolved icon markup.
 	 * @param string $fallback Name of the fallback icon method.
 	 * @return void
 	 */
-	private function render_button_icon( $icon, string $fallback ): void {
-		if ( is_array( $icon ) && '' !== (string) ( $icon['value'] ?? '' ) ) {
-			\Elementor\Icons_Manager::render_icon( $icon, array( 'aria-hidden' => 'true', 'class' => 'dp-hero__ico' ) );
+	private function render_button_icon( string $icon, string $fallback ): void {
+		if ( '' !== $icon ) {
+			// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Icons_Manager or pixfort SVG markup.
+			echo $icon;
 			return;
 		}
 

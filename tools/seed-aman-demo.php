@@ -124,7 +124,6 @@ wp_set_object_terms( $dp_id, $dp_treatments, 'doctorpilot_treatment' );
 update_post_meta( $dp_id, $dp_prefix . 'external_source_id', $dp_source_key );
 update_post_meta( $dp_id, $dp_prefix . 'review_status', 'needs_review' );
 update_post_meta( $dp_id, $dp_prefix . 'prefix', 'dr' );
-update_post_meta( $dp_id, $dp_prefix . 'credentials', 'MD, MRCP, FRCR, EMBA' );
 update_post_meta( $dp_id, $dp_prefix . 'gender', 'male' );
 update_post_meta( $dp_id, $dp_prefix . 'years_experience', 15 );
 update_post_meta( $dp_id, $dp_prefix . 'legacy_url', 'https://amanhospital.org/doctor/ali-a-haydar/' );

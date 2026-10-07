@@ -54,6 +54,17 @@ final class Settings {
 	private const ALLOWED_TARGETS = array( '_self', '_blank' );
 
 	/**
+	 * Booking methods a site default may name.
+	 *
+	 * Mirrors the providers `BookingResolver` registers. A method outside this
+	 * list would leave every inheriting doctor with no provider and therefore no
+	 * button, so the default is enum-checked rather than merely key-sanitized.
+	 *
+	 * @var array<int, string>
+	 */
+	private const ALLOWED_BOOKING_METHODS = array( 'external_url', 'phone', 'enquiry' );
+
+	/**
 	 * Register the setting with WordPress.
 	 *
 	 * @return void
@@ -87,6 +98,9 @@ final class Settings {
 				// 0 = native template; otherwise an Elementor template/page ID
 				// rendered on single-doctor views.
 				'single_doctor_template'    => 0,
+				// 0 = unset; otherwise the published page the Doctor Search
+				// Index widget links department, specialty and symptom entries to.
+				'search_page_id'            => 0,
 			),
 			'search'  => array(
 				'minimum_characters' => 2,
@@ -95,9 +109,17 @@ final class Settings {
 				'cache_ttl_seconds'  => 300,
 			),
 			'booking' => array(
-				'default_type'   => 'external_url',
-				'default_label'  => 'Book Appointment',
-				'default_target' => '_self',
+				'default_type'   => 'enquiry',
+				// Blank, not 'Book Appointment': a non-empty value here overrides
+				// every method's own wording, which would rename "Call to book"
+				// and "Request an appointment" on every site that never chose it.
+				'default_label'  => '',
+				// `_blank` because that is what the External URL provider has
+				// always hard-coded. The key existed but was never read or
+				// exposed, so no site ever actually chose the old `_self`.
+				'default_target' => '_blank',
+				'default_url'    => '',
+				'default_phone'  => '',
 			),
 			'design'  => array(
 				'card_radius' => '8px',
@@ -141,6 +163,66 @@ final class Settings {
 	}
 
 	/**
+	 * Permalink of the page the Doctor Search Index widget sends people to when
+	 * they pick a department, specialty or symptom.
+	 *
+	 * With no page configured — or when the chosen one has since been deleted or
+	 * unpublished — this falls back to the doctor archive, which renders the same
+	 * search header and filtered grid natively. So the index widget links
+	 * somewhere real out of the box, and a site only sets the option when it
+	 * wants its own designed page to win instead.
+	 *
+	 * @return string Permalink, or '' when neither a page nor the archive resolves.
+	 */
+	public static function search_page_url(): string {
+		$settings = self::get();
+		$page_id  = (int) ( $settings['general']['search_page_id'] ?? 0 );
+
+		if ( $page_id > 0 ) {
+			$page = get_post( $page_id );
+			if ( $page instanceof \WP_Post && 'publish' === $page->post_status ) {
+				// get_permalink() returns false for a post it cannot resolve.
+				$url = get_permalink( $page );
+				if ( is_string( $url ) && '' !== $url ) {
+					return $url;
+				}
+			}
+		}
+
+		$archive = get_post_type_archive_link( \BrainStudioz\DoctorPilot\PostTypes\DoctorPostType::POST_TYPE );
+
+		return is_string( $archive ) ? $archive : '';
+	}
+
+	/**
+	 * Print the General section's "Search page" row for the settings screen.
+	 *
+	 * Lives here beside the setting's default and sanitizer so the three stay in
+	 * step; the settings screen calls it where the other page/template pickers
+	 * are rendered.
+	 *
+	 * @return void
+	 */
+	public static function render_search_page_field(): void {
+		$settings = self::get();
+		$page_id  = (int) ( $settings['general']['search_page_id'] ?? 0 );
+
+		echo '<tr><th scope="row"><label for="dp-search-page">' . esc_html__( 'Search page', 'doctorpilot' ) . '</label></th><td>';
+		wp_dropdown_pages(
+			array(
+				'name'              => self::OPTION_KEY . '[general][search_page_id]',
+				'id'                => 'dp-search-page',
+				'selected'          => $page_id,
+				'post_status'       => 'publish',
+				'show_option_none'  => __( '— Not set —', 'doctorpilot' ),
+				'option_none_value' => '0',
+			)
+		);
+		echo '<p class="description">' . esc_html__( 'Where the Doctor Search Index widget sends people when they pick a department, specialty or symptom. Leave it unset and those entries link to the current page instead.', 'doctorpilot' ) . '</p>';
+		echo '</td></tr>';
+	}
+
+	/**
 	 * Sanitize and validate an incoming settings array.
 	 *
 	 * Unknown keys are dropped; each value is clamped to a safe range or enum.
@@ -167,6 +249,7 @@ final class Settings {
 		$clean['general']['default_sort']              = self::enum( $general['default_sort'] ?? $current['general']['default_sort'], self::ALLOWED_SORTS, 'relevance' );
 		$clean['general']['placeholder_attachment_id'] = max( 0, (int) ( $general['placeholder_attachment_id'] ?? 0 ) );
 		$clean['general']['single_doctor_template']    = max( 0, (int) ( $general['single_doctor_template'] ?? $current['general']['single_doctor_template'] ) );
+		$clean['general']['search_page_id']            = absint( $general['search_page_id'] ?? $current['general']['search_page_id'] );
 
 		// Search.
 		$clean['search']['minimum_characters'] = self::clamp_int( $search['minimum_characters'] ?? $current['search']['minimum_characters'], 1, 5, 2 );
@@ -175,9 +258,11 @@ final class Settings {
 		$clean['search']['enabled_filters']    = self::sanitize_filters( $search['enabled_filters'] ?? $current['search']['enabled_filters'] );
 
 		// Booking.
-		$clean['booking']['default_type']   = sanitize_key( (string) ( $booking['default_type'] ?? 'external_url' ) );
-		$clean['booking']['default_label']  = sanitize_text_field( (string) ( $booking['default_label'] ?? 'Book Appointment' ) );
-		$clean['booking']['default_target'] = self::enum( $booking['default_target'] ?? '_self', self::ALLOWED_TARGETS, '_self' );
+		$clean['booking']['default_type']   = self::enum( $booking['default_type'] ?? $current['booking']['default_type'], self::ALLOWED_BOOKING_METHODS, 'enquiry' );
+		$clean['booking']['default_label']  = sanitize_text_field( (string) ( $booking['default_label'] ?? $current['booking']['default_label'] ) );
+		$clean['booking']['default_target'] = self::enum( $booking['default_target'] ?? $current['booking']['default_target'], self::ALLOWED_TARGETS, '_blank' );
+		$clean['booking']['default_url']    = esc_url_raw( (string) ( $booking['default_url'] ?? $current['booking']['default_url'] ?? '' ), array( 'http', 'https' ) );
+		$clean['booking']['default_phone']  = self::sanitize_phone( $booking['default_phone'] ?? $current['booking']['default_phone'] ?? '' );
 
 		// Design.
 		$clean['design']['card_radius'] = sanitize_text_field( (string) ( $design['card_radius'] ?? '8px' ) );
@@ -185,7 +270,7 @@ final class Settings {
 
 		// Privacy.
 		$clean['privacy']['analytics_enabled']        = ! empty( $privacy['analytics_enabled'] );
-		$clean['privacy']['analytics_retention_days'] = self::clamp_int( $privacy['analytics_retention_days'] ?? 90, 1, 3650, 90 );
+		$clean['privacy']['analytics_retention_days'] = self::clamp_int( $privacy['analytics_retention_days'] ?? $current['privacy']['analytics_retention_days'], 1, 3650, 90 );
 
 		// Data. The destructive uninstall flag is only writable by a manager.
 		$clean['data']['delete_on_uninstall'] = current_user_can( Capabilities::MANAGE )
@@ -224,6 +309,21 @@ final class Settings {
 		}
 
 		return $defaults;
+	}
+
+	/**
+	 * Keep only the characters a dialable number can contain.
+	 *
+	 * Matches the per-doctor `phone` sanitizer so a global fallback and a
+	 * doctor's own number are stored identically.
+	 *
+	 * @param mixed $value Raw phone value.
+	 * @return string
+	 */
+	private static function sanitize_phone( $value ): string {
+		$value = is_scalar( $value ) ? (string) $value : '';
+
+		return trim( (string) preg_replace( '/[^0-9+()\-\s]/', '', $value ) );
 	}
 
 	/**

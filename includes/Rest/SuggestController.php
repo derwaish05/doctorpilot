@@ -12,6 +12,7 @@ namespace BrainStudioz\DoctorPilot\Rest;
 use BrainStudioz\DoctorPilot\Admin\Settings;
 use BrainStudioz\DoctorPilot\Application\Search\SuggestionService;
 use BrainStudioz\DoctorPilot\Support\ErrorFactory;
+use BrainStudioz\DoctorPilot\Support\Multilingual;
 use BrainStudioz\DoctorPilot\Support\RateLimiter;
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -46,10 +47,17 @@ final class SuggestController {
 				'callback'            => array( $this, 'suggest' ),
 				'permission_callback' => array( RouteRegistry::class, 'allow_public' ),
 				'args'                => array(
-					'q' => array(
+					'q'    => array(
 						'type'              => 'string',
 						'required'          => true,
 						'sanitize_callback' => 'sanitize_text_field',
+					),
+					// Autocomplete has to answer in the same language as the
+					// directory it feeds, or a visitor gets Arabic results from
+					// an English suggestion list. See DoctorsController.
+					'lang' => array(
+						'type'     => 'string',
+						'required' => false,
 					),
 				),
 			)
@@ -70,6 +78,10 @@ final class SuggestController {
 				429
 			);
 		}
+
+		// Same reasoning as DoctorsController: establish language before anything
+		// reads a term or a post.
+		Multilingual::switch_language( (string) $request->get_param( 'lang' ) );
 
 		$settings  = Settings::get();
 		$limit     = (int) ( $settings['search']['suggestion_limit'] ?? 8 );

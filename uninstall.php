@@ -79,6 +79,7 @@ function bstdz_doctorpilot_uninstall_site(): void {
 		'doctorpilot_proc',
 		'doctorpilot_pub',
 		'doctorpilot_cert',
+		'doctorpilot_mem',
 		'doctorpilot_faq',
 	);
 

@@ -39,9 +39,6 @@
 		language: [
 			{ tag: 'circle', attrs: { cx: '12', cy: '12', r: '9' } },
 			{ tag: 'path', attrs: { d: 'M3 12h18M12 3a15 15 0 0 1 0 18a15 15 0 0 1 0-18' } }
-		],
-		check: [
-			{ tag: 'path', attrs: { d: 'M20 6 9 17l-5-5' } }
 		]
 	};
 
@@ -182,6 +179,10 @@
 		this.moreBtn = root.querySelector( '.dp-dir__more' );
 		this.filters = root.querySelector( '[data-dp-collapsible]' );
 		this.restBase = root.getAttribute( 'data-rest' ) || '';
+
+		// Language of the page this widget is on. Empty on a single-language
+		// site, in which case it is never sent.
+		this.lang = root.getAttribute( 'data-lang' ) || '';
 		this.layout = root.getAttribute( 'data-layout' ) || 'grid';
 		this.columns = root.getAttribute( 'data-columns' ) || '3';
 		this.perPage = parseInt( root.getAttribute( 'data-per-page' ), 10 ) || 12;
@@ -197,7 +198,6 @@
 		this.cardClasses = root.getAttribute( 'data-card-classes' ) || 'dp-card';
 		this.listStyle = root.getAttribute( 'data-list-style' ) || 'rows';
 		this.metaIcons = root.getAttribute( 'data-meta-icons' ) !== '0';
-		this.badgeAvail = root.getAttribute( 'data-badge-avail' ) === '1';
 		this.clamp = parseInt( root.getAttribute( 'data-clamp' ), 10 ) || 0;
 
 		// Card parts switched off in the widget, as a lookup. Stored as the
@@ -209,6 +209,17 @@
 			var name = part.trim();
 			if ( name ) {
 				this.hiddenParts[ name ] = true;
+			}
+		}, this );
+
+		// Opt-in parts, listed the other way round: absent means off. The
+		// department line is one, because a card that has never shown it must
+		// not start showing it just because a filter changed.
+		this.shownParts = {};
+		( root.getAttribute( 'data-card-show' ) || '' ).split( ',' ).forEach( function ( part ) {
+			var name = part.trim();
+			if ( name ) {
+				this.shownParts[ name ] = true;
 			}
 		}, this );
 
@@ -335,7 +346,9 @@
 					if ( azItem.classList.contains( 'is-empty' ) ) {
 						return;
 					}
-					var value = azItem.getAttribute( 'data-dp-letter' );
+					// The "all" entry's value is '', so this clears the filter
+					// through the same toggle every other letter uses.
+					var value = azItem.getAttribute( 'data-dp-letter' ) || '';
 					self.letter = self.letter === value ? '' : value;
 					self.applyFilters();
 					self.pushState();
@@ -625,12 +638,16 @@
 		} );
 
 		Array.prototype.forEach.call( panel.querySelectorAll( '.dp-dir__az-item' ), function ( item ) {
-			var value = item.getAttribute( 'data-dp-letter' );
-			var active = !! letter && value === letter;
-			// The active letter always stays clickable, even once the query has
-			// emptied it: it is the only control that can release itself, and
-			// `is-empty` makes it unclickable.
-			var has = reachable[ value ] === true || active;
+			var value = item.getAttribute( 'data-dp-letter' ) || '';
+			// Compared as equals rather than truthy, so the "all" entry — whose
+			// value is the empty string, like "no letter" — lights up when
+			// nothing is filtered, the way an "All" option in a select does.
+			var active = value === letter;
+			// The all entry is never empty: it clears the filter rather than
+			// matching rows. Neither is the active letter, even once the query
+			// has emptied it — it is the only control that can release itself,
+			// and `is-empty` makes it unclickable.
+			var has = '' === value || reachable[ value ] === true || active;
 
 			item.classList.toggle( 'is-active', active );
 			item.classList.toggle( 'is-empty', ! has );
@@ -744,6 +761,10 @@
 		query.per_page = perPage;
 		delete query.letter;
 
+		if ( this.lang ) {
+			query.lang = this.lang;
+		}
+
 		return fetch( this.restBase + '/doctors?' + toQuery( query ), {
 			signal: this.controller ? this.controller.signal : undefined,
 			headers: { Accept: 'application/json' }
@@ -841,6 +862,45 @@
 	};
 
 	/**
+	 * Whether an opt-in card part was switched on.
+	 *
+	 * Mirrors the `$dp_opt()` closure in `templates/card-doctor.php`: an
+	 * unlisted part is absent, the opposite of `showPart`.
+	 */
+	Directory.prototype.optPart = function ( part ) {
+		return !! this.shownParts[ part ];
+	};
+
+	/**
+	 * Resolve the specialty and department lines a card should print.
+	 *
+	 * Mirrors the block of the same name in `templates/card-doctor.php`. The two
+	 * lines are resolved together because the department can supply either one
+	 * and must never supply both: when it has a line of its own the specialty
+	 * line stops falling back to it, so a doctor with no specialty gets one
+	 * department row rather than two.
+	 *
+	 * @return {{specialty: string, department: string}}
+	 */
+	Directory.prototype.cardLines = function ( card ) {
+		var specialty = ( card.primary_specialty && card.primary_specialty.name ) || '';
+		var department = ( card.primary_department && card.primary_department.name ) || '';
+
+		var departmentLine = this.optPart( 'department' ) ? department : '';
+		var specialtyLine = '';
+
+		if ( this.showPart( 'specialty' ) ) {
+			specialtyLine = specialty;
+
+			if ( ! specialtyLine && ! departmentLine && this.showPart( 'specialty_fallback' ) ) {
+				specialtyLine = department;
+			}
+		}
+
+		return { specialty: specialtyLine, department: departmentLine };
+	};
+
+	/**
 	 * Build a full doctor card, mirroring `templates/card-doctor.php`.
 	 */
 	Directory.prototype.renderCard = function ( card ) {
@@ -888,12 +948,6 @@
 			intlRail.appendChild( this.textEl( 'span', 'dp-badge dp-badge--international', strings.international ) );
 			media.appendChild( intlRail );
 		}
-		if ( this.badgeAvail && card.accepting_new_patients ) {
-			var availRail = document.createElement( 'div' );
-			availRail.className = 'dp-card__badges dp-card__badges--bottom';
-			availRail.appendChild( this.textEl( 'span', 'dp-badge dp-badge--availability', strings.acceptingNew ) );
-			media.appendChild( availRail );
-		}
 
 		// Appended last so the badge rails above can still be built and simply
 		// discarded with the media block they live in.
@@ -922,14 +976,14 @@
 		}
 		body.appendChild( heading );
 
-		if ( card.credentials && this.showPart( 'credentials' ) ) {
-			body.appendChild( this.textEl( 'p', 'dp-card__credentials', card.credentials ) );
+		var lines = this.cardLines( card );
+		if ( lines.specialty ) {
+			body.appendChild( this.textEl( 'p', 'dp-card__specialty', lines.specialty ) );
 		}
-
-		var specialty = ( card.primary_specialty && card.primary_specialty.name ) ||
-			( card.primary_department && card.primary_department.name ) || '';
-		if ( specialty && this.showPart( 'specialty' ) ) {
-			body.appendChild( this.textEl( 'p', 'dp-card__specialty', specialty ) );
+		if ( lines.department ) {
+			body.appendChild(
+				this.textEl( 'p', 'dp-card__specialty dp-card__department', lines.department )
+			);
 		}
 
 		var headline = String( card.headline == null ? '' : card.headline ).trim();
@@ -950,9 +1004,6 @@
 			meta.appendChild( this.metaRow( 'language', card.languages.map( function ( lang ) {
 				return lang.name;
 			} ).join( ', ' ), '' ) );
-		}
-		if ( card.accepting_new_patients && this.showPart( 'accepting' ) ) {
-			meta.appendChild( this.metaRow( 'check', strings.acceptingNew, 'dp-accepting' ) );
 		}
 		if ( meta.childNodes.length ) {
 			body.appendChild( meta );
@@ -1047,9 +1098,15 @@
 		link.className = 'dp-dir__row-name';
 		article.appendChild( link );
 
-		var meta = ( card.primary_specialty && card.primary_specialty.name ) ||
-			( card.primary_department && card.primary_department.name ) || '';
-		if ( meta && this.showPart( 'specialty' ) ) {
+		// A row has one line where the card has two, so the two are joined —
+		// the same rule `templates/row-doctor.php` applies. Collapsing to the
+		// first non-empty one instead would make the Department switch a no-op
+		// for every doctor who has a specialty.
+		var rowLines = this.cardLines( card );
+		var meta = [ rowLines.specialty, rowLines.department ]
+			.filter( function ( line ) { return !! line; } )
+			.join( strings.metaSeparator || ' · ' );
+		if ( meta ) {
 			article.appendChild( this.textEl( 'p', 'dp-dir__row-meta', meta ) );
 		}
 

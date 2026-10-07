@@ -42,8 +42,10 @@ final class EnquiryProvider implements BookingProviderInterface {
 	 * {@inheritDoc}
 	 */
 	public function resolve( int $doctor_id, ?int $location_idx = null ) {
-		$label = (string) get_post_meta( $doctor_id, FieldRegistry::META_PREFIX . 'booking_label', true );
-		$label = '' !== $label ? $label : __( 'Request an appointment', 'doctorpilot' );
+		$label = BookingDefaults::label(
+			(string) get_post_meta( $doctor_id, FieldRegistry::META_PREFIX . 'booking_label', true ),
+			__( 'Request an appointment', 'doctorpilot' )
+		);
 
 		return new BookingCta( 'enquiry', $label, '#doctorpilot-enquiry', '_self' );
 	}

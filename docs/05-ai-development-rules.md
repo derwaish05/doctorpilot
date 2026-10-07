@@ -115,6 +115,7 @@ Security is mandatory and never Pro-gated.
 - Use design tokens for shared defaults; widget settings override global DoctorPilot tokens.
 - Omit empty sections and inaccessible placeholder controls.
 - Never store canonical doctor content in Elementor widget settings/document JSON.
+- Theme icon libraries are an optional extra, never a dependency. Every icon control keeps its Elementor `ICONS` control; a companion `<icon>_pix` control (pixfort's own selector) is registered only when `pixfort-core` is active, and `AbstractWidget::icon_markup()` prefers a chosen pixfort icon, falls back to the Elementor icon, and returns an empty string when neither is set. Never swap an existing icon control's type — the saved value would be orphaned.
 
 ## 8. Accessibility requirements
 

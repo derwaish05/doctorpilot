@@ -9,6 +9,8 @@ declare( strict_types=1 );
 
 namespace BrainStudioz\DoctorPilot\Infrastructure\Cache;
 
+use BrainStudioz\DoctorPilot\Support\Multilingual;
+
 use BrainStudioz\DoctorPilot\Domain\Search\SearchRequest;
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -48,10 +50,19 @@ final class SearchCache {
 	 * @return string
 	 */
 	public static function key( SearchRequest $request, string $kind ): string {
+		/*
+		 * Locale *and* language code. `get_locale()` is filtered by every
+		 * multilingual plugin, so it already separates most languages — but two
+		 * WPML languages can share one WordPress locale (a regional variant
+		 * mapped to the same `.mo`), and those two would then collide on one
+		 * cache entry. The language code costs nothing on a single-language
+		 * site, where it is an empty string.
+		 */
 		$parts = array(
 			self::API_VERSION,
 			CacheGeneration::current(),
 			get_locale(),
+			Multilingual::current_language(),
 			$kind,
 			$request->signature(),
 		);

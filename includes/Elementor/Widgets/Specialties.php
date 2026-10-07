@@ -103,14 +103,19 @@ final class Specialties extends AbstractWidget {
 			)
 		);
 
+		$this->register_icon_source( 'icon', __( 'Icon', 'doctorpilot' ) );
+
 		$this->add_control(
 			'icon',
 			array(
-				'label'   => __( 'Icon', 'doctorpilot' ),
-				'type'    => \Elementor\Controls_Manager::ICONS,
-				'default' => array( 'value' => 'far fa-check-circle', 'library' => 'fa-regular' ),
+				'label'     => __( 'Icon', 'doctorpilot' ),
+				'type'      => \Elementor\Controls_Manager::ICONS,
+				'default'   => array( 'value' => 'far fa-check-circle', 'library' => 'fa-regular' ),
+				'condition' => $this->icon_condition( 'icon', 'elementor' ),
 			)
 		);
+
+		$this->register_pixfort_icon( 'icon' );
 
 		$repeater = new \Elementor\Repeater();
 		$repeater->add_control(
@@ -307,6 +312,7 @@ final class Specialties extends AbstractWidget {
 			array(
 				'label'     => __( 'Color', 'doctorpilot' ),
 				'type'      => \Elementor\Controls_Manager::COLOR,
+				'default'   => '#000000',
 				'selectors' => array( $selector => 'color: {{VALUE}};' ),
 			)
 		);
@@ -363,10 +369,17 @@ final class Specialties extends AbstractWidget {
 			array(
 				'label'      => __( 'Size', 'doctorpilot' ),
 				'type'       => \Elementor\Controls_Manager::SLIDER,
-				'size_units' => array( 'px' ),
-				'range'      => array( 'px' => array( 'min' => 10, 'max' => 48 ) ),
-				'default'    => array( 'unit' => 'px', 'size' => 18 ),
-				'selectors'  => array( $icon => 'font-size: {{SIZE}}{{UNIT}};' ),
+				'size_units' => array( 'px', 'em', 'rem' ),
+				'range'      => array(
+					'px'  => array( 'min' => 10, 'max' => 48 ),
+					'em'  => array( 'min' => 0.5, 'max' => 4, 'step' => 0.1 ),
+					'rem' => array( 'min' => 0.5, 'max' => 4, 'step' => 0.1 ),
+				),
+				'default'    => array( 'unit' => 'em', 'size' => 1 ),
+				'selectors'  => array(
+					$icon                            => 'font-size: {{SIZE}}{{UNIT}};',
+					$icon . ' svg, ' . $icon . ' i'  => 'width: {{SIZE}}{{UNIT}}; height: {{SIZE}}{{UNIT}};',
+				),
 			)
 		);
 
@@ -434,14 +447,13 @@ final class Specialties extends AbstractWidget {
 
 		$this->render_heading( $settings );
 
+		$icon = $this->icon_markup( $settings, 'icon' );
+
 		echo '<ul class="dp-scope">';
 		foreach ( $labels as $label ) {
 			echo '<li class="dp-scope__item">';
-			echo '<span class="dp-scope__icon" aria-hidden="true">';
-			if ( is_array( $settings['icon'] ?? null ) && '' !== (string) ( $settings['icon']['value'] ?? '' ) ) {
-				\Elementor\Icons_Manager::render_icon( $settings['icon'], array( 'aria-hidden' => 'true' ) );
-			}
-			echo '</span>';
+			// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Icons_Manager or pixfort SVG markup.
+			echo '<span class="dp-scope__icon" aria-hidden="true">' . $icon . '</span>';
 			echo '<span class="dp-scope__label">' . esc_html( $label ) . '</span>';
 			echo '</li>';
 		}

@@ -121,13 +121,6 @@
 		h3.appendChild( link );
 		body.appendChild( h3 );
 
-		if ( card.credentials ) {
-			var cred = document.createElement( 'p' );
-			cred.className = 'dp-card__credentials';
-			cred.textContent = card.credentials;
-			body.appendChild( cred );
-		}
-
 		var specialty = ( card.primary_specialty && card.primary_specialty.name ) ||
 			( card.primary_department && card.primary_department.name ) || '';
 		if ( specialty ) {

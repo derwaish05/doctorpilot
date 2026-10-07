@@ -123,7 +123,7 @@ final class CandidateRepository {
 	}
 
 	/**
-	 * Build the meta_query from gender/accepting/online/international filters.
+	 * Build the meta_query from gender/online/international filters.
 	 *
 	 * @param SearchRequest $request Search request.
 	 * @return array<int|string, mixed>
@@ -135,13 +135,6 @@ final class CandidateRepository {
 			$clauses[] = array(
 				'key'   => FieldRegistry::META_PREFIX . 'gender',
 				'value' => $request->gender(),
-			);
-		}
-
-		if ( true === $request->accepting_new() ) {
-			$clauses[] = array(
-				'key'   => FieldRegistry::META_PREFIX . 'accepting_new_patients',
-				'value' => '1',
 			);
 		}
 

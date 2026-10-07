@@ -22,7 +22,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 final class BookingCta {
 
 	/**
-	 * CTA type: external_url|phone|enquiry|bookpilot.
+	 * CTA type: external_url|phone|enquiry.
 	 *
 	 * @var string
 	 */

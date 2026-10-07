@@ -140,7 +140,7 @@
 	margin-bottom: 5px;
 }
 
-/* Multi-column field rows (Prefix · First · Last, Credentials · Gender). */
+/* Multi-column field rows (Prefix · First · Last, Gender). */
 .dp-editor .dp-grid {
 	display: grid;
 	gap: 14px;
@@ -333,7 +333,7 @@
 	text-decoration: none;
 }
 
-/* Checkbox "flag" rows (featured, accepting new patients). */
+/* Checkbox "flag" rows (featured, international). */
 .dp-editor .dp-flag {
 	display: flex;
 	align-items: flex-start;
@@ -461,6 +461,15 @@
 	flex-wrap: wrap;
 	gap: 12px 14px;
 	align-items: flex-start;
+}
+
+/* A single-record field — the practice location — reuses the row's field layout
+   without the repeater chrome: no drag gutter, no numbering, no Remove. */
+.dp-editor .dp-single {
+	padding: 14px;
+	background: #f6f7f7;
+	border: 1px solid #dcdcde;
+	border-radius: 4px;
 }
 
 .dp-editor .dp-row-field {

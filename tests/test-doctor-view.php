@@ -55,7 +55,6 @@ final class Test_DoctorPilot_DoctorView extends WP_UnitTestCase {
 				'post_title'  => 'Ali A. Haydar',
 			)
 		);
-		update_post_meta( $id, FieldRegistry::META_PREFIX . 'credentials', 'MD, FRCR' );
 		update_post_meta( $id, FieldRegistry::META_PREFIX . 'license_number', 'SECRET-123' );
 		update_post_meta( $id, FieldRegistry::META_PREFIX . 'prefix', 'dr' );
 
@@ -64,7 +63,9 @@ final class Test_DoctorPilot_DoctorView extends WP_UnitTestCase {
 
 		$this->assertIsArray( $card );
 		$this->assertSame( 'Dr. Ali A. Haydar', $card['name'] );
-		$this->assertSame( 'MD, FRCR', $card['credentials'] );
+		// Removed under ADR-0024: the key is gone from the card contract,
+		// so a consumer reading it gets a warning rather than a stale value.
+		$this->assertArrayNotHasKey( 'credentials', $card );
 		$encoded = wp_json_encode( $card );
 		$this->assertStringNotContainsString( 'SECRET-123', (string) $encoded );
 	}

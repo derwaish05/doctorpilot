@@ -77,6 +77,19 @@ final class ExperienceTimeline extends AbstractWidget {
 		);
 
 		$this->add_control(
+			'design',
+			array(
+				'label'   => __( 'Design', 'doctorpilot' ),
+				'type'    => \Elementor\Controls_Manager::SELECT,
+				'default' => 'timeline',
+				'options' => array(
+					'timeline'  => __( 'Timeline', 'doctorpilot' ),
+					'checklist' => __( 'Checklist', 'doctorpilot' ),
+				),
+			)
+		);
+
+		$this->add_control(
 			'source',
 			array(
 				'label'   => __( 'Show', 'doctorpilot' ),
@@ -90,14 +103,19 @@ final class ExperienceTimeline extends AbstractWidget {
 			)
 		);
 
+		$this->register_icon_source( 'node_icon', __( 'Node icon', 'doctorpilot' ), array( 'design' => 'timeline' ) );
+
 		$this->add_control(
 			'node_icon',
 			array(
-				'label'   => __( 'Node icon', 'doctorpilot' ),
-				'type'    => \Elementor\Controls_Manager::ICONS,
-				'default' => array( 'value' => 'fas fa-graduation-cap', 'library' => 'fa-solid' ),
+				'label'     => __( 'Node icon', 'doctorpilot' ),
+				'type'      => \Elementor\Controls_Manager::ICONS,
+				'default'   => array( 'value' => 'fas fa-graduation-cap', 'library' => 'fa-solid' ),
+				'condition' => $this->icon_condition( 'node_icon', 'elementor', array( 'design' => 'timeline' ) ),
 			)
 		);
+
+		$this->register_pixfort_icon( 'node_icon', array( 'design' => 'timeline' ) );
 
 		$this->add_control(
 			'meta_show',
@@ -109,13 +127,42 @@ final class ExperienceTimeline extends AbstractWidget {
 			)
 		);
 
+		$this->register_icon_source( 'meta_icon', __( 'Organization icon', 'doctorpilot' ), array( 'meta_show' => 'yes', 'design' => 'timeline' ) );
+
 		$this->add_control(
 			'meta_icon',
 			array(
 				'label'     => __( 'Organization icon', 'doctorpilot' ),
 				'type'      => \Elementor\Controls_Manager::ICONS,
 				'default'   => array( 'value' => 'far fa-building', 'library' => 'fa-regular' ),
-				'condition' => array( 'meta_show' => 'yes' ),
+				'condition' => $this->icon_condition( 'meta_icon', 'elementor', array( 'meta_show' => 'yes', 'design' => 'timeline' ) ),
+			)
+		);
+
+		$this->register_pixfort_icon( 'meta_icon', array( 'meta_show' => 'yes', 'design' => 'timeline' ) );
+
+		$this->register_icon_source( 'list_icon', __( 'List icon', 'doctorpilot' ), array( 'design' => 'checklist' ) );
+
+		$this->add_control(
+			'list_icon',
+			array(
+				'label'       => __( 'List icon', 'doctorpilot' ),
+				'type'        => \Elementor\Controls_Manager::ICONS,
+				'description' => __( 'Leave empty for the built-in check mark.', 'doctorpilot' ),
+				'condition'   => $this->icon_condition( 'list_icon', 'elementor', array( 'design' => 'checklist' ) ),
+			)
+		);
+
+		$this->register_pixfort_icon( 'list_icon', array( 'design' => 'checklist' ) );
+
+		$this->add_control(
+			'list_separator',
+			array(
+				'label'       => __( 'Separator', 'doctorpilot' ),
+				'type'        => \Elementor\Controls_Manager::TEXT,
+				'default'     => '–',
+				'description' => __( 'Sits between the entry and its organization on the same line.', 'doctorpilot' ),
+				'condition'   => array( 'design' => 'checklist', 'meta_show' => 'yes' ),
 			)
 		);
 
@@ -127,6 +174,7 @@ final class ExperienceTimeline extends AbstractWidget {
 		$this->register_rail_style();
 		$this->register_card_style();
 		$this->register_text_style();
+		$this->register_list_style();
 	}
 
 	/**
@@ -138,8 +186,9 @@ final class ExperienceTimeline extends AbstractWidget {
 		$this->start_controls_section(
 			'section_rail_style',
 			array(
-				'label' => __( 'Rail', 'doctorpilot' ),
-				'tab'   => \Elementor\Controls_Manager::TAB_STYLE,
+				'label'     => __( 'Rail', 'doctorpilot' ),
+				'tab'       => \Elementor\Controls_Manager::TAB_STYLE,
+				'condition' => array( 'design' => 'timeline' ),
 			)
 		);
 
@@ -148,7 +197,7 @@ final class ExperienceTimeline extends AbstractWidget {
 			array(
 				'label'     => __( 'Node background', 'doctorpilot' ),
 				'type'      => \Elementor\Controls_Manager::COLOR,
-				'default'   => '#E6F4EE',
+				'default'   => '#e9f6f0',
 				'selectors' => array( '{{WRAPPER}} .dp-timeline' => '--dp-tl-node-bg: {{VALUE}};' ),
 			)
 		);
@@ -180,7 +229,7 @@ final class ExperienceTimeline extends AbstractWidget {
 			array(
 				'label'     => __( 'Line color', 'doctorpilot' ),
 				'type'      => \Elementor\Controls_Manager::COLOR,
-				'default'   => '#BFE3D5',
+				'default'   => '#bfe3d5',
 				'selectors' => array( '{{WRAPPER}} .dp-timeline' => '--dp-tl-line: {{VALUE}};' ),
 			)
 		);
@@ -221,8 +270,9 @@ final class ExperienceTimeline extends AbstractWidget {
 		$this->start_controls_section(
 			'section_card_style',
 			array(
-				'label' => __( 'Card', 'doctorpilot' ),
-				'tab'   => \Elementor\Controls_Manager::TAB_STYLE,
+				'label'     => __( 'Card', 'doctorpilot' ),
+				'tab'       => \Elementor\Controls_Manager::TAB_STYLE,
+				'condition' => array( 'design' => 'timeline' ),
 			)
 		);
 
@@ -321,8 +371,9 @@ final class ExperienceTimeline extends AbstractWidget {
 		$this->start_controls_section(
 			'section_text_style',
 			array(
-				'label' => __( 'Text', 'doctorpilot' ),
-				'tab'   => \Elementor\Controls_Manager::TAB_STYLE,
+				'label'     => __( 'Text', 'doctorpilot' ),
+				'tab'       => \Elementor\Controls_Manager::TAB_STYLE,
+				'condition' => array( 'design' => 'timeline' ),
 			)
 		);
 
@@ -342,6 +393,7 @@ final class ExperienceTimeline extends AbstractWidget {
 			array(
 				'label'     => __( 'Color', 'doctorpilot' ),
 				'type'      => \Elementor\Controls_Manager::COLOR,
+				'default'   => '#000000',
 				'selectors' => array( '{{WRAPPER}} .dp-timeline__title' => 'color: {{VALUE}};' ),
 			)
 		);
@@ -362,7 +414,100 @@ final class ExperienceTimeline extends AbstractWidget {
 			array(
 				'label'     => __( 'Color', 'doctorpilot' ),
 				'type'      => \Elementor\Controls_Manager::COLOR,
+				'default'   => '#000000',
 				'selectors' => array( '{{WRAPPER}} .dp-timeline__meta' => 'color: {{VALUE}};' ),
+			)
+		);
+
+		$this->end_controls_section();
+	}
+
+	/**
+	 * Checklist style controls. These target the shared `dp-stats__ach*` classes,
+	 * so the checklist matches the achievement lists elsewhere on the profile.
+	 *
+	 * @return void
+	 */
+	private function register_list_style(): void {
+		$this->start_controls_section(
+			'section_list_style',
+			array(
+				'label'     => __( 'List', 'doctorpilot' ),
+				'tab'       => \Elementor\Controls_Manager::TAB_STYLE,
+				'condition' => array( 'design' => 'checklist' ),
+			)
+		);
+
+		$this->add_responsive_control(
+			'list_item_gap',
+			array(
+				'label'      => __( 'Item gap', 'doctorpilot' ),
+				'type'       => \Elementor\Controls_Manager::SLIDER,
+				'size_units' => array( 'px' ),
+				'range'      => array( 'px' => array( 'min' => 0, 'max' => 40 ) ),
+				'selectors'  => array( '{{WRAPPER}} .dp-stats__ach' => 'gap: {{SIZE}}{{UNIT}};' ),
+			)
+		);
+		$this->add_responsive_control(
+			'list_columns',
+			array(
+				'label'          => __( 'Columns', 'doctorpilot' ),
+				'type'           => \Elementor\Controls_Manager::SELECT,
+				'default'        => '1',
+				'mobile_default' => '1',
+				'options'        => array( '1' => '1', '2' => '2', '3' => '3' ),
+				'selectors'      => array( '{{WRAPPER}} .dp-stats__ach' => 'grid-template-columns: repeat({{VALUE}}, minmax(0, 1fr));' ),
+			)
+		);
+		$this->add_group_control(
+			\Elementor\Group_Control_Typography::get_type(),
+			array( 'name' => 'list_item_typography', 'selector' => '{{WRAPPER}} .dp-stats__ach-text' )
+		);
+		$this->add_control(
+			'list_item_color',
+			array(
+				'label'     => __( 'Text color', 'doctorpilot' ),
+				'type'      => \Elementor\Controls_Manager::COLOR,
+				'default'   => '#000000',
+				'selectors' => array( '{{WRAPPER}} .dp-stats__ach-text' => 'color: {{VALUE}};' ),
+			)
+		);
+
+		$this->add_control( 'list_icon_style', array( 'label' => __( 'Icon', 'doctorpilot' ), 'type' => \Elementor\Controls_Manager::HEADING, 'separator' => 'before' ) );
+		$this->add_control(
+			'list_icon_color',
+			array(
+				'label'     => __( 'Color', 'doctorpilot' ),
+				'type'      => \Elementor\Controls_Manager::COLOR,
+				'selectors' => array( '{{WRAPPER}} .dp-stats__ach-icon' => 'color: {{VALUE}};' ),
+			)
+		);
+		$this->add_responsive_control(
+			'list_icon_size',
+			array(
+				'label'      => __( 'Size', 'doctorpilot' ),
+				'type'       => \Elementor\Controls_Manager::SLIDER,
+				'size_units' => array( 'px', 'em', 'rem' ),
+				'range'      => array(
+					'px'  => array( 'min' => 10, 'max' => 32 ),
+					'em'  => array( 'min' => 0.5, 'max' => 4, 'step' => 0.1 ),
+					'rem' => array( 'min' => 0.5, 'max' => 4, 'step' => 0.1 ),
+				),
+				'default'    => array( 'unit' => 'em', 'size' => 1 ),
+				'selectors'  => array(
+					'{{WRAPPER}} .dp-stats__ach-icon'     => 'font-size: {{SIZE}}{{UNIT}};',
+					'{{WRAPPER}} .dp-stats__ach-icon svg, {{WRAPPER}} .dp-stats__ach-icon i' => 'width: {{SIZE}}{{UNIT}}; height: {{SIZE}}{{UNIT}};',
+				),
+			)
+		);
+		$this->add_responsive_control(
+			'list_icon_gap',
+			array(
+				'label'      => __( 'Gap after icon', 'doctorpilot' ),
+				'type'       => \Elementor\Controls_Manager::SLIDER,
+				'size_units' => array( 'px' ),
+				'range'      => array( 'px' => array( 'min' => 0, 'max' => 32 ) ),
+				'selectors'  => array( '{{WRAPPER}} .dp-stats__ach-item' => 'gap: {{SIZE}}{{UNIT}};' ),
 			)
 		);
 
@@ -414,6 +559,14 @@ final class ExperienceTimeline extends AbstractWidget {
 
 		$this->render_heading( $settings );
 
+		if ( 'checklist' === (string) ( $settings['design'] ?? 'timeline' ) ) {
+			$this->render_checklist( $settings, $items, $show_meta );
+			return;
+		}
+
+		$node_icon = $this->icon_markup( $settings, 'node_icon' );
+		$meta_icon = $this->icon_markup( $settings, 'meta_icon' );
+
 		echo '<ul class="dp-timeline">';
 		foreach ( $items as $item ) {
 			if ( ! is_array( $item ) ) {
@@ -425,21 +578,16 @@ final class ExperienceTimeline extends AbstractWidget {
 
 			echo '<li class="dp-timeline__item">';
 
-			echo '<span class="dp-timeline__node" aria-hidden="true">';
-			if ( is_array( $settings['node_icon'] ?? null ) && '' !== (string) ( $settings['node_icon']['value'] ?? '' ) ) {
-				\Elementor\Icons_Manager::render_icon( $settings['node_icon'], array( 'aria-hidden' => 'true' ) );
-			}
-			echo '</span>';
+			// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Icons_Manager or pixfort SVG markup.
+			echo '<span class="dp-timeline__node" aria-hidden="true">' . $node_icon . '</span>';
 
 			echo '<div class="dp-timeline__card">';
 			if ( '' !== $title ) {
 				echo '<div class="dp-timeline__title">' . esc_html( $title ) . '</div>';
 			}
 			if ( $show_meta && '' !== $meta ) {
-				echo '<div class="dp-timeline__meta">';
-				if ( is_array( $settings['meta_icon'] ?? null ) && '' !== (string) ( $settings['meta_icon']['value'] ?? '' ) ) {
-					\Elementor\Icons_Manager::render_icon( $settings['meta_icon'], array( 'aria-hidden' => 'true' ) );
-				}
+				// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Icons_Manager or pixfort SVG markup.
+				echo '<div class="dp-timeline__meta">' . $meta_icon;
 				echo '<span>' . esc_html( $meta ) . '</span>';
 				echo '</div>';
 			}
@@ -448,6 +596,65 @@ final class ExperienceTimeline extends AbstractWidget {
 			echo '</li>';
 		}
 		echo '</ul>';
+	}
+
+	/**
+	 * The checklist design: one icon-marked line per entry, using the same
+	 * `dp-stats__ach*` markup as the achievement lists so both styles stay in
+	 * step.
+	 *
+	 * @param array<string, mixed> $settings  Widget settings.
+	 * @param array<int, mixed>    $items     Resolved entries.
+	 * @param bool                 $show_meta Whether to append the organization.
+	 * @return void
+	 */
+	private function render_checklist( array $settings, array $items, bool $show_meta ): void {
+		$icon = $this->list_icon_markup( $settings );
+		$sep  = trim( (string) ( $settings['list_separator'] ?? '' ) );
+
+		echo '<div class="dp-stats dp-stats--list">';
+		echo '<div class="dp-stats__section">';
+		echo '<ul class="dp-stats__ach">';
+
+		foreach ( $items as $item ) {
+			if ( ! is_array( $item ) ) {
+				continue;
+			}
+
+			$title = trim( (string) ( $item['primary'] ?? $item['title'] ?? '' ) );
+			$meta  = $show_meta ? $this->meta_line( $item ) : '';
+			$line  = $this->checklist_line( $title, $meta, $sep );
+
+			if ( '' === $line ) {
+				continue;
+			}
+
+			echo '<li class="dp-stats__ach-item">';
+			echo '<span class="dp-stats__ach-icon" aria-hidden="true">' . $icon . '</span>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Icons_Manager markup or the inline SVG fallback.
+			echo '<span class="dp-stats__ach-text">' . esc_html( $line ) . '</span>';
+			echo '</li>';
+		}
+
+		echo '</ul>';
+		echo '</div>';
+		echo '</div>';
+	}
+
+	/**
+	 * Join an entry and its organization onto one line, tolerating an empty
+	 * separator or an entry that carries only one of the two.
+	 *
+	 * @param string $title Entry title.
+	 * @param string $meta  Organization line.
+	 * @param string $sep   Separator.
+	 * @return string
+	 */
+	private function checklist_line( string $title, string $meta, string $sep ): string {
+		if ( '' === $title || '' === $meta ) {
+			return '' !== $title ? $title : $meta;
+		}
+
+		return '' !== $sep ? $title . ' ' . $sep . ' ' . $meta : $title . ' ' . $meta;
 	}
 
 	/**

@@ -87,9 +87,9 @@ final class HeadingBlock extends AbstractWidget {
 		$this->content_layout_controls();
 
 		$this->style_wrapper_controls();
-		$this->register_text_style( 'heading', __( 'Heading', 'doctorpilot' ), '{{WRAPPER}} .dp-ah__heading' );
+		$this->register_text_style( 'heading', __( 'Heading', 'doctorpilot' ), '{{WRAPPER}} .dp-ah__heading', '#136888' );
 		$this->register_text_style( 'subheading', __( 'Subheading', 'doctorpilot' ), '{{WRAPPER}} .dp-ah__subheading' );
-		$this->register_text_style( 'description', __( 'Description', 'doctorpilot' ), '{{WRAPPER}} .dp-ah__description' );
+		$this->register_text_style( 'description', __( 'Description', 'doctorpilot' ), '{{WRAPPER}} .dp-ah__description', '#000000' );
 		$this->style_line_controls();
 	}
 
@@ -455,9 +455,10 @@ final class HeadingBlock extends AbstractWidget {
 	 * @param string $id       Element id (heading|subheading|description).
 	 * @param string $label    Section label.
 	 * @param string $selector The element's CSS selector.
+	 * @param string $color    Default text colour, or '' to inherit the stylesheet's.
 	 * @return void
 	 */
-	private function register_text_style( string $id, string $label, string $selector ): void {
+	private function register_text_style( string $id, string $label, string $selector, string $color = '' ): void {
 		$this->start_controls_section(
 			'section_style_' . $id,
 			array(
@@ -491,6 +492,7 @@ final class HeadingBlock extends AbstractWidget {
 			array(
 				'label'     => __( 'Text color', 'doctorpilot' ),
 				'type'      => \Elementor\Controls_Manager::COLOR,
+				'default'   => $color,
 				'selectors' => array( $selector => 'color: {{VALUE}};' ),
 			)
 		);
@@ -588,7 +590,7 @@ final class HeadingBlock extends AbstractWidget {
 			array(
 				'label'     => __( 'Color', 'doctorpilot' ),
 				'type'      => \Elementor\Controls_Manager::COLOR,
-				'default'   => '#E6E9EE',
+				'default'   => '#e3eaf1',
 				'selectors' => array( '{{WRAPPER}} .dp-ah' => '--dp-ah-line-color: {{VALUE}};' ),
 			)
 		);

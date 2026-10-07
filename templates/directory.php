@@ -12,7 +12,7 @@
  * Expects $data with keys: settings, request, indexes, selected, cards, result,
  * active_index, letter, query, layout, search_on, index_modes, index_params,
  * modes, filters, facets, sort_labels, mode_labels, filter_labels, default_sort,
- * uid, rest_base, per_page, is_editor.
+ * uid, rest_base, lang, per_page, is_editor.
  *
  * Override by copying to your theme as doctorpilot/directory.php.
  *
@@ -58,8 +58,20 @@ foreach ( $dp_request->taxonomy_filters() as $dp_tax => $dp_slugs ) {
 }
 
 $dp_active_count = count( (array) ( $dp_result['active_filters'] ?? array() ) );
-$dp_letters      = array_merge( array( '#' ), range( 'A', 'Z' ) );
 $dp_query        = (string) ( $data['query'] ?? '' );
+
+/*
+ * The letter row as value => label. The first entry's value is the empty string
+ * — the value "no letter is active" already carries — so choosing it clears the
+ * filter rather than selecting a twenty-seventh bucket, and it is the entry
+ * highlighted when nothing is applied. Its label is translatable so a site can
+ * spell it "All"; '#' is the default because every other button in the row is
+ * one glyph wide.
+ */
+$dp_letters = array( '' => _x( '#', 'A–Z index: show every entry', 'doctorpilot' ) );
+foreach ( range( 'A', 'Z' ) as $dp_alpha ) {
+	$dp_letters[ (string) $dp_alpha ] = (string) $dp_alpha;
+}
 
 // A browse index owns its parameter, so the More Filters row must not render a
 // second control for it: the same value settable from two places is a state the
@@ -143,6 +155,7 @@ $dp_state_url = static function ( array $args ): string {
 	id="<?php echo esc_attr( $dp_uid ); ?>"
 	data-dp-directory
 	data-rest="<?php echo esc_url( (string) $data['rest_base'] ); ?>"
+	data-lang="<?php echo esc_attr( (string) ( $data['lang'] ?? '' ) ); ?>"
 	data-layout="<?php echo esc_attr( $dp_layout ); ?>"
 	data-columns="<?php echo esc_attr( (string) $dp_columns ); ?>"
 	data-per-page="<?php echo esc_attr( (string) $data['per_page'] ); ?>"
@@ -153,15 +166,16 @@ $dp_state_url = static function ( array $args ): string {
 	data-letter="<?php echo esc_attr( $dp_letter ); ?>"
 	data-card-classes="<?php echo esc_attr( (string) ( $data['card_classes'] ?? 'dp-card' ) ); ?>"
 	data-list-style="<?php echo esc_attr( (string) ( $dp_settings['list_style'] ?? 'rows' ) ); ?>"
-	data-badge-avail="<?php echo ! empty( $data['badge_avail'] ) ? '1' : '0'; ?>"
 	<?php if ( '' !== (string) ( $data['legacy_style'] ?? '' ) ) : ?>
 		style="<?php echo esc_attr( (string) $data['legacy_style'] ); ?>"
 	<?php endif; ?>
 	data-meta-icons="<?php echo ( ! isset( $data['meta_icons'] ) || $data['meta_icons'] ) ? '1' : '0'; ?>"
 	data-clamp="<?php echo esc_attr( (string) (int) ( $data['clamp'] ?? 0 ) ); ?>"
-	<?php /* Hidden card parts, so cards rebuilt client-side after a filter change
-	         match the ones rendered here. Empty when nothing is hidden. */ ?>
+	<?php /* Card parts switched off, and opt-in parts switched on, so cards
+	         rebuilt client-side after a filter change match the ones rendered
+	         here. Both are empty for a card left at its defaults. */ ?>
 	data-card-hide="<?php echo esc_attr( (string) ( $data['hidden_parts'] ?? '' ) ); ?>"
+	data-card-show="<?php echo esc_attr( (string) ( $data['shown_parts'] ?? '' ) ); ?>"
 >
 
 	<?php if ( $dp_search || array() !== $dp_filters ) : ?>
@@ -306,8 +320,8 @@ $dp_state_url = static function ( array $args ): string {
 								</select>
 							</div>
 							<?php
-						elseif ( in_array( $dp_filter, array( 'accepting_new', 'online' ), true ) ) :
-							$dp_checked = 'accepting_new' === $dp_filter ? $dp_request->accepting_new() : $dp_request->online();
+						elseif ( 'online' === $dp_filter ) :
+							$dp_checked = $dp_request->online();
 							?>
 							<div class="dp-dir__field dp-dir__field--toggle">
 								<label class="dp-dir__toggle" for="<?php echo esc_attr( $dp_field_id ); ?>">
@@ -397,14 +411,21 @@ $dp_state_url = static function ( array $args ): string {
 
 					<?php if ( ! empty( $dp_index['az'] ) ) : ?>
 						<nav class="dp-dir__az" aria-label="<?php esc_attr_e( 'Filter by first letter', 'doctorpilot' ); ?>">
-							<?php foreach ( $dp_letters as $dp_index_letter ) : ?>
-								<?php $dp_has = in_array( $dp_index_letter, $dp_available, true ); ?>
+							<?php foreach ( $dp_letters as $dp_index_letter => $dp_index_label ) : ?>
+								<?php
+								$dp_index_letter = (string) $dp_index_letter;
+								// The "all" entry clears the filter rather than
+								// selecting a bucket, so it is always available and
+								// its link drops the parameter instead of toggling it.
+								$dp_all = '' === $dp_index_letter;
+								$dp_has = $dp_all || in_array( $dp_index_letter, $dp_available, true );
+								?>
 								<a
 									class="dp-dir__az-item<?php echo $dp_has ? '' : ' is-empty'; ?><?php echo $dp_letter === $dp_index_letter ? ' is-active' : ''; ?>"
-									href="<?php echo $dp_state_url( array( 'letter' => $dp_letter === $dp_index_letter ? null : $dp_index_letter ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in the closure. ?>"
-									data-dp-letter="<?php echo esc_attr( (string) $dp_index_letter ); ?>"
+									href="<?php echo $dp_state_url( array( 'letter' => ( $dp_all || $dp_letter === $dp_index_letter ) ? null : $dp_index_letter ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in the closure. ?>"
+									data-dp-letter="<?php echo esc_attr( $dp_index_letter ); ?>"
 									<?php echo $dp_has ? '' : 'aria-disabled="true"'; ?>
-								><?php echo esc_html( (string) $dp_index_letter ); ?></a>
+								><?php echo esc_html( (string) $dp_index_label ); ?></a>
 							<?php endforeach; ?>
 						</nav>
 					<?php endif; ?>

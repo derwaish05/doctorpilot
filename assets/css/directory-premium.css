@@ -7,8 +7,11 @@
  * every other widget keep their existing appearance.
  *
  * Everything visual here resolves through a CSS custom property with a
- * built-in fallback. Elementor controls set the property on `{{WRAPPER}}`;
- * when a control is untouched the fallback supplies the premium default.
+ * built-in fallback. Elementor controls set the property on `{{WRAPPER}}
+ * .dp-dir` — the same element §1 declares the defaults on, because a property
+ * declared on an element beats one inherited from an ancestor and a control
+ * written to the wrapper alone would never survive the trip down. When a
+ * control is untouched the fallback supplies the premium default.
  * That is what makes an unstyled widget look finished, and it is also why
  * saved widgets from before this release keep rendering — an absent setting
  * simply means the fallback applies.
@@ -21,25 +24,21 @@
  * ---------------------------------------------------------------------- */
 
 .dp-dir {
-	/* Palette. Deep medical teal on soft blue-grey, dark navy text. */
-	--dp-accent: #136888;
-	--dp-ink: #0b2942;
-	--dp-ink-muted: #5a6f82;
-	--dp-line: #e3eaf1;
-	--dp-surface: #f5f8fb;
-	--dp-card-bg: #ffffff;
-	--dp-positive: #0f766e;
+	/* Palette. One definition, on :root at the top of `frontend.css`, which
+	   loads alongside this sheet everywhere the widget renders. The local copy
+	   that used to sit here shadowed it with stale values; it is gone so the
+	   two cannot drift. Only the widget's own tokens are declared below. */
 
 	/* Card box. */
 	--dpc-bg: var(--dp-card-bg);
 	--dpc-border-width: 1px;
 	--dpc-border-color: var(--dp-line);
-	--dpc-radius: 16px;
+	--dpc-radius: var(--dp-radius-lg);
 	--dpc-pad: 20px;
 	--dpc-gap: 8px;
-	--dpc-shadow: 0 1px 2px rgba(11, 41, 66, 0.04), 0 10px 26px -14px rgba(11, 41, 66, 0.20);
-	--dpc-shadow-hover: 0 2px 4px rgba(11, 41, 66, 0.06), 0 20px 44px -18px rgba(11, 41, 66, 0.30);
-	--dpc-transition: 240ms;
+	--dpc-shadow: var(--dp-shadow-sm);
+	--dpc-shadow-hover: var(--dp-shadow-md);
+	--dpc-transition: var(--dp-transition);
 	--dpc-hover-lift: -4px;
 	--dpc-hover-scale: 1;
 
@@ -47,7 +46,7 @@
 	--dpc-media-ratio: 4 / 5;
 	--dpc-media-fit: cover;
 	--dpc-media-pos: center top;
-	--dpc-media-bg: #eaf1f7;
+	--dpc-media-bg: var(--dp-surface-alt);
 	--dpc-media-radius: 0px;
 	--dpc-media-zoom: 1.06;
 	--dpc-overlay: transparent;
@@ -57,38 +56,35 @@
 	--dpc-name-color: var(--dp-ink);
 	--dpc-name-hover: var(--dp-accent);
 	--dpc-headline-color: var(--dp-ink-muted);
-	--dpc-cred-color: var(--dp-ink-muted);
 	--dpc-spec-color: var(--dp-accent);
-	--dpc-meta-color: #48627a;
+	--dpc-meta-color: var(--dp-ink-muted);
 	--dpc-meta-icon: var(--dp-accent);
 
 	/* Badges. */
-	--dpb-radius: 999px;
+	--dpb-radius: var(--dp-radius-pill);
 	--dpb-pad: 4px 10px;
 	--dpb-gap: 6px;
 	--dpb-offset-x: 12px;
 	--dpb-offset-y: 12px;
-	--dpb-featured-bg: #0b2942;
-	--dpb-featured-color: #ffffff;
-	--dpb-intl-bg: #0f766e;
-	--dpb-intl-color: #ffffff;
-	--dpb-avail-bg: #e7f5f1;
-	--dpb-avail-color: #0b5f52;
+	--dpb-featured-bg: var(--dp-ink);
+	--dpb-featured-color: var(--dp-on-accent);
+	--dpb-intl-bg: var(--dp-positive);
+	--dpb-intl-color: var(--dp-on-accent);
 
 	/* Buttons. */
-	--dpbtn-radius: 10px;
+	--dpbtn-radius: var(--dp-radius);
 	--dpbtn-pad: 10px 16px;
 	--dpbtn-gap: 8px;
 	--dpbtn-icon-gap: 6px;
 	--dpbtn-primary-bg: var(--dp-accent);
-	--dpbtn-primary-color: #ffffff;
+	--dpbtn-primary-color: var(--dp-on-accent);
 	--dpbtn-primary-border: var(--dp-accent);
-	--dpbtn-primary-bg-hover: #0f5670;
-	--dpbtn-primary-color-hover: #ffffff;
+	--dpbtn-primary-bg-hover: var(--dp-accent-hover);
+	--dpbtn-primary-color-hover: var(--dp-on-accent);
 	--dpbtn-secondary-bg: transparent;
 	--dpbtn-secondary-color: var(--dp-accent);
-	--dpbtn-secondary-border: #cfe0ea;
-	--dpbtn-secondary-bg-hover: #eef5f9;
+	--dpbtn-secondary-border: var(--dp-line);
+	--dpbtn-secondary-bg-hover: var(--dp-surface-alt);
 	--dpbtn-secondary-color-hover: var(--dp-accent);
 }
 
@@ -206,14 +202,14 @@
 	justify-content: center;
 	width: 100%;
 	height: 100%;
-	background: linear-gradient(150deg, #eef4f9 0%, #dce8f1 100%);
+	background: linear-gradient(150deg, var(--dp-surface-alt) 0%, var(--dp-line) 100%);
 }
 
 .dp-dir .dp-card__initials {
 	font-size: clamp(22px, 2.4vw, 34px);
 	font-weight: 600;
 	letter-spacing: 0.04em;
-	color: #7d98ae;
+	color: var(--dp-ink-muted);
 	text-transform: uppercase;
 	line-height: 1;
 }
@@ -236,12 +232,6 @@
 
 .dp-dir .dp-card__badges--end { justify-content: flex-end; }
 
-/* Availability sits at the foot of the image so it never collides with the
-   Featured and International rails along the top. */
-.dp-dir .dp-card__badges--bottom {
-	top: auto;
-	bottom: var(--dpb-offset-y);
-}
 
 .dp-dir .dp-card__badges .dp-badge {
 	position: static;
@@ -268,10 +258,6 @@
 	color: var(--dpb-intl-color);
 }
 
-.dp-dir .dp-badge--availability {
-	background: var(--dpb-avail-bg);
-	color: var(--dpb-avail-color);
-}
 
 .dp-dir .dp-badge svg { width: 12px; height: 12px; flex: none; }
 
@@ -312,15 +298,6 @@
 	font-weight: 500;
 	line-height: 1.45;
 	color: var(--dpc-headline-color);
-}
-
-.dp-dir .dp-card__credentials {
-	margin: 0;
-	font-size: 12.5px;
-	font-weight: 500;
-	letter-spacing: 0.03em;
-	text-transform: uppercase;
-	color: var(--dpc-cred-color);
 }
 
 .dp-dir .dp-card__specialty {
@@ -385,7 +362,6 @@
 
 .dp-dir .dp-meta__value { min-width: 0; overflow-wrap: anywhere; }
 
-.dp-dir .dp-card__meta .dp-accepting { color: var(--dp-positive); font-weight: 600; }
 
 /* -------------------------------------------------------------------------
  * 8. Actions
@@ -455,21 +431,28 @@
 /* -------------------------------------------------------------------------
  * 9. Presets
  *
- * A preset only re-points tokens. Any control the user touches writes the
- * same token on `{{WRAPPER}}`, which is a higher-specificity origin, so an
- * explicit choice always beats its preset.
+ * A preset only re-points tokens, on the same element as the defaults above.
+ * Any control the user touches writes the same token to `{{WRAPPER}} .dp-dir`,
+ * which is the same element at a higher specificity, so an explicit choice
+ * always beats its preset.
+ *
+ * The controls have to target the element rather than the Elementor wrapper.
+ * A custom property declared on an element beats one inherited from an
+ * ancestor no matter how specific the ancestor's selector is, so a token
+ * written to the wrapper alone would reach `.dp-dir` and be overwritten here
+ * before any card could read it.
  * ---------------------------------------------------------------------- */
 
 /* Classic — the pre-upgrade appearance, kept as a restore path. */
 .dp-dir--preset-classic {
-	--dpc-radius: 8px;
+	--dpc-radius: var(--dp-radius);
 	--dpc-pad: 14px;
 	--dpc-gap: 6px;
 	--dpc-shadow: none;
-	--dpc-shadow-hover: 0 6px 18px -10px rgba(11, 41, 66, 0.28);
+	--dpc-shadow-hover: 0 6px 18px -10px rgba(var(--dp-shadow-ink), 0.28);
 	--dpc-hover-lift: 0px;
 	--dpc-media-zoom: 1;
-	--dpbtn-radius: 6px;
+	--dpbtn-radius: var(--dp-radius-sm);
 	--dpc-name-color: var(--dp-accent);
 }
 
@@ -481,9 +464,9 @@
 /* Elevated — borderless, floating. */
 .dp-dir--preset-elevated {
 	--dpc-border-width: 0px;
-	--dpc-radius: 18px;
-	--dpc-shadow: 0 2px 6px rgba(11, 41, 66, 0.05), 0 18px 40px -18px rgba(11, 41, 66, 0.28);
-	--dpc-shadow-hover: 0 4px 10px rgba(11, 41, 66, 0.07), 0 30px 60px -20px rgba(11, 41, 66, 0.36);
+	--dpc-radius: var(--dp-radius-lg);
+	--dpc-shadow: var(--dp-shadow-md);
+	--dpc-shadow-hover: 0 4px 10px rgba(var(--dp-shadow-ink), 0.07), 0 30px 60px -20px rgba(var(--dp-shadow-ink), 0.36);
 	--dpc-hover-lift: -6px;
 }
 
@@ -491,15 +474,15 @@
 .dp-dir--preset-minimal {
 	--dpc-bg: transparent;
 	--dpc-border-width: 0px;
-	--dpc-radius: 12px;
+	--dpc-radius: var(--dp-radius);
 	--dpc-shadow: none;
 	--dpc-shadow-hover: none;
 	--dpc-hover-lift: 0px;
 	--dpc-pad: 14px 0 0;
-	--dpc-media-radius: 12px;
+	--dpc-media-radius: var(--dp-radius);
 	--dpc-media-zoom: 1;
 	--dpbtn-secondary-border: transparent;
-	--dpbtn-secondary-bg: #eef5f9;
+	--dpbtn-secondary-bg: var(--dp-surface-alt);
 }
 
 .dp-dir--preset-minimal .dp-card { overflow: visible; }
@@ -508,19 +491,18 @@
 /* Image overlay — content sits over a full-bleed portrait. */
 .dp-dir--preset-overlay {
 	--dpc-media-ratio: 3 / 4;
-	--dpc-overlay: linear-gradient(to top, rgba(4, 20, 34, 0.88) 0%, rgba(4, 20, 34, 0.45) 38%, rgba(4, 20, 34, 0) 68%);
-	--dpc-overlay-hover: linear-gradient(to top, rgba(4, 20, 34, 0.92) 0%, rgba(4, 20, 34, 0.55) 44%, rgba(4, 20, 34, 0.08) 74%);
-	--dpc-name-color: #ffffff;
-	--dpc-name-hover: #cfe8f2;
+	--dpc-overlay: linear-gradient(to top, rgba(var(--dp-shadow-ink), 0.88) 0%, rgba(var(--dp-shadow-ink), 0.45) 38%, rgba(var(--dp-shadow-ink), 0) 68%);
+	--dpc-overlay-hover: linear-gradient(to top, rgba(var(--dp-shadow-ink), 0.92) 0%, rgba(var(--dp-shadow-ink), 0.55) 44%, rgba(var(--dp-shadow-ink), 0.08) 74%);
+	--dpc-name-color: var(--dp-on-accent);
+	--dpc-name-hover: var(--dp-line-strong);
 	--dpc-headline-color: rgba(255, 255, 255, 0.82);
-	--dpc-cred-color: rgba(255, 255, 255, 0.72);
-	--dpc-spec-color: #9fd8ea;
+	--dpc-spec-color: var(--dp-bar-bg);
 	--dpc-meta-color: rgba(255, 255, 255, 0.86);
-	--dpc-meta-icon: #9fd8ea;
-	--dpbtn-secondary-color: #ffffff;
+	--dpc-meta-icon: var(--dp-bar-bg);
+	--dpbtn-secondary-color: var(--dp-on-accent);
 	--dpbtn-secondary-border: rgba(255, 255, 255, 0.42);
 	--dpbtn-secondary-bg-hover: rgba(255, 255, 255, 0.14);
-	--dpbtn-secondary-color-hover: #ffffff;
+	--dpbtn-secondary-color-hover: var(--dp-on-accent);
 	--dpc-border-width: 0px;
 }
 
@@ -534,22 +516,21 @@
 	--dpc-overlay-hover: transparent;
 	--dpc-name-color: var(--dp-ink);
 	--dpc-headline-color: var(--dp-ink-muted);
-	--dpc-cred-color: var(--dp-ink-muted);
 	--dpc-spec-color: var(--dp-accent);
-	--dpc-meta-color: #48627a;
+	--dpc-meta-color: var(--dp-ink-muted);
 	--dpc-meta-icon: var(--dp-accent);
 	--dpbtn-secondary-color: var(--dp-accent);
-	--dpbtn-secondary-border: #cfe0ea;
-	--dpbtn-secondary-bg-hover: #eef5f9;
+	--dpbtn-secondary-border: var(--dp-line);
+	--dpbtn-secondary-bg-hover: var(--dp-surface-alt);
 	--dpbtn-secondary-color-hover: var(--dp-accent);
 }
 
 .dp-dir--preset-overlay .dp-card--row .dp-card__media { position: relative; inset: auto; }
 .dp-dir--preset-overlay .dp-card--row .dp-card__body { aspect-ratio: auto; justify-content: center; }
 .dp-dir--preset-overlay .dp-card--row .dp-card__placeholder {
-	background: linear-gradient(150deg, #eef4f9 0%, #dce8f1 100%);
+	background: linear-gradient(150deg, var(--dp-surface-alt) 0%, var(--dp-line) 100%);
 }
-.dp-dir--preset-overlay .dp-card--row .dp-card__initials { color: #7d98ae; }
+.dp-dir--preset-overlay .dp-card--row .dp-card__initials { color: var(--dp-ink-muted); }
 
 .dp-dir--preset-overlay .dp-card:not(.dp-card--row) .dp-card__media {
 	position: absolute;
@@ -572,7 +553,7 @@
 /* The overlay scrim is the only thing making white text legible, so the
    photoless fallback has to be dark rather than the pale default. */
 .dp-dir--preset-overlay .dp-card__placeholder {
-	background: linear-gradient(150deg, #143a52 0%, #0b2942 100%);
+	background: linear-gradient(150deg, rgba(var(--dp-shadow-ink), 0.94) 0%, var(--dp-ink) 100%);
 }
 
 .dp-dir--preset-overlay .dp-card__initials { color: rgba(255, 255, 255, 0.55); }
@@ -584,13 +565,12 @@
 .dp-dir--preset-overlay .dp-card--no-media {
 	--dpc-name-color: var(--dp-ink);
 	--dpc-headline-color: var(--dp-ink-muted);
-	--dpc-cred-color: var(--dp-ink-muted);
 	--dpc-spec-color: var(--dp-accent);
-	--dpc-meta-color: #48627a;
+	--dpc-meta-color: var(--dp-ink-muted);
 	--dpc-meta-icon: var(--dp-accent);
 	--dpbtn-secondary-color: var(--dp-accent);
-	--dpbtn-secondary-border: #cfe0ea;
-	--dpbtn-secondary-bg-hover: #eef5f9;
+	--dpbtn-secondary-border: var(--dp-line);
+	--dpbtn-secondary-bg-hover: var(--dp-surface-alt);
 	--dpbtn-secondary-color-hover: var(--dp-accent);
 }
 
@@ -617,7 +597,7 @@
 /* Compact — denser, smaller portrait. */
 .dp-dir--preset-compact {
 	--dpc-media-ratio: 16 / 10;
-	--dpc-radius: 12px;
+	--dpc-radius: var(--dp-radius);
 	--dpc-pad: 14px;
 	--dpc-gap: 5px;
 	--dpbtn-pad: 8px 12px;
@@ -691,18 +671,18 @@
 	overflow: hidden;
 }
 
-.dp-skel__media { aspect-ratio: var(--dpc-media-ratio); background: #e8eef4; }
+.dp-skel__media { aspect-ratio: var(--dpc-media-ratio); background: var(--dp-line); }
 
 .dp-skel__body { padding: var(--dpc-pad); display: flex; flex-direction: column; gap: 10px; }
 
-.dp-skel__line { height: 11px; border-radius: 6px; background: #e8eef4; }
+.dp-skel__line { height: 11px; border-radius: var(--dp-radius-sm); background: var(--dp-line); }
 .dp-skel__line--lg { height: 16px; width: 72%; }
 .dp-skel__line--sm { width: 45%; }
 .dp-skel__line--btn { height: 36px; border-radius: var(--dpbtn-radius); margin-top: 8px; }
 
 .dp-skel__media,
 .dp-skel__line {
-	background-image: linear-gradient(90deg, #e8eef4 0%, #f4f8fb 50%, #e8eef4 100%);
+	background-image: linear-gradient(90deg, var(--dp-line) 0%, var(--dp-surface) 50%, var(--dp-line) 100%);
 	background-size: 200% 100%;
 	animation: dp-skel-shimmer 1.4s ease-in-out infinite;
 }
@@ -718,10 +698,40 @@
  * 12. Accessibility
  * ---------------------------------------------------------------------- */
 
-.dp-dir :focus-visible {
+/* One blanket ring used to sit here, covering every focusable node in the
+ * widget. It had to go. `border-radius` in a `:focus-visible` rule does not
+ * round the outline — it overwrites the element's own radius — so focusing a
+ * pill select or the pill search field squared it off to 6px, and the 2px
+ * offset then floated a rounded rectangle around a round control. On every
+ * control it touched it read as a rendering fault rather than a state.
+ *
+ * Focus is now stated per control, in the shape that control already has.
+ * Removed rather than retuned because a rule this broad cannot know whether the
+ * thing it is outlining is a pill, a tile, or a bare link.
+ */
+
+/* Bordered controls take the state on their own border: nothing is added,
+ * nothing moves, and the pill stays a pill. */
+.dp-dir__select:focus-visible {
+	outline: 0;
+	border-color: var(--dp-accent);
+}
+
+/* Controls with no border of their own keep an outline, but a tight one — no
+ * offset, no radius override — so it traces the pill or tile exactly and reads
+ * as a thicker edge rather than a box floating outside it.
+ *
+ * Kept, not dropped: these are the widget's only remaining keyboard targets
+ * without a focus style of their own, and a page whose controls give no sign of
+ * where the keyboard is cannot be navigated without a mouse. */
+.dp-dir__more:focus-visible,
+.dp-dir__clear:focus-visible,
+.dp-dir__submit:focus-visible,
+.dp-dir__az-item:focus-visible,
+.dp-dir__toggle input:focus-visible,
+.dp-dir__pagination .page-numbers:focus-visible {
 	outline: 2px solid var(--dp-accent);
-	outline-offset: 2px;
-	border-radius: 4px;
+	outline-offset: 0;
 }
 
 .dp-sr-only {

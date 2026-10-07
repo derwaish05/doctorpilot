@@ -26,16 +26,26 @@ if ( ! defined( 'ABSPATH' ) ) {
  * visitor. Omission is the only version of the setting that is true for
  * everyone.
  *
- * The map below is the single source of truth for part names. `templates/
+ * The two maps below are the single source of truth for part names. `templates/
  * card-doctor.php` reads the resolved flags from `$data['parts']`; `assets/js/
- * directory.js` reads the inverse — the hidden part names — from the
- * `data-card-hide` attribute on the directory root. The two renderers must
- * agree, or the first client-side refresh would silently bring hidden content
- * back.
+ * directory.js` reads the part names it must act on from `data-card-hide` and
+ * `data-card-show` on the directory root. The two renderers must agree, or the
+ * first client-side refresh would silently bring hidden content back.
  *
- * Every control defaults to `yes`, and Elementor supplies control defaults to
- * instances saved before a control existed, so adding this section leaves every
- * existing widget rendering exactly as it did.
+ * Parts come in two kinds, and the difference is entirely about what happens
+ * when a flag is *absent* — from a widget saved before the control existed, from
+ * the `[doctorpilot_directory]` shortcode, or from a theme template override
+ * that passes nothing but `$card`:
+ *
+ * - Default-on parts (`card_element_map()`) are visible unless named in
+ *   `data-card-hide`. Absence means "render it", which is what keeps a stale
+ *   cached attribute from blanking a card.
+ * - Default-off parts (`card_optional_element_map()`) are hidden unless named
+ *   in `data-card-show`. Absence means "leave it out", because a part that has
+ *   never appeared on a page must not start appearing there on upgrade.
+ *
+ * Between the two, adding a control to this section never changes what an
+ * existing page renders.
  */
 trait CardElementControls {
 
@@ -45,6 +55,13 @@ trait CardElementControls {
 	 * Declared as a method rather than a constant because trait constants
 	 * require PHP 8.2 and this plugin supports older runtimes.
 	 *
+	 * `specialty_fallback` is the one entry that is not a part of the card. It
+	 * rides the same map because it needs exactly what a part needs — a boolean
+	 * that survives the trip to the JavaScript renderer and defaults to true
+	 * when absent. Giving it a second transport would mean a second attribute,
+	 * a second defaulting rule and a second chance for the two renderers to
+	 * disagree.
+	 *
 	 * @return array<string, string>
 	 */
 	private function card_element_map(): array {
@@ -52,14 +69,33 @@ trait CardElementControls {
 			'image'               => 'image_show',
 			'badge_featured'      => 'badge_featured_show',
 			'badge_international' => 'badge_international_show',
-			'credentials'         => 'credentials_show',
 			'specialty'           => 'specialty_show',
+			'specialty_fallback'  => 'specialty_fallback',
+			// Named `bio` for the doctor's Headline since 0.1.0. The name is the
+			// contract between this map, the PHP template and the JavaScript
+			// renderer, and `bio_show` is stored in already-built pages, so both
+			// stay as they are — only the panel label reads "Headline".
 			'bio'                 => 'bio_show',
 			'experience'          => 'experience_show',
 			'languages'           => 'languages_show',
-			'accepting'           => 'accepting_show',
 			'profile_button'      => 'profile_button_show',
 			'booking_button'      => 'booking_button_show',
+		);
+	}
+
+	/**
+	 * Opt-in card part name => Elementor setting key.
+	 *
+	 * These render only when switched on. The department line is opt-in because
+	 * the card has always shown one line here, not two: a site that already
+	 * displays a specialty must not silently grow a department under it the
+	 * moment this control ships.
+	 *
+	 * @return array<string, string>
+	 */
+	private function card_optional_element_map(): array {
+		return array(
+			'department' => 'department_show',
 		);
 	}
 
@@ -81,7 +117,7 @@ trait CardElementControls {
 			'card_elements_note',
 			array(
 				'type'            => Controls_Manager::RAW_HTML,
-				'raw'             => esc_html__( 'Turn any part of the card off. A hidden part is removed from the page, not just visually hidden, so it never reaches a screen reader or a search engine. The doctor name always shows — it is the card’s link to the profile.', 'doctorpilot' ),
+				'raw'             => esc_html__( 'Decide what the card shows. A part switched off is removed from the page, not just visually hidden, so it never reaches a screen reader or a search engine. The doctor name always shows — it is the card’s link to the profile.', 'doctorpilot' ),
 				'content_classes' => 'elementor-descriptor',
 			)
 		);
@@ -120,34 +156,48 @@ trait CardElementControls {
 		);
 
 		$this->add_control(
-			'credentials_show',
+			'specialty_show',
 			array(
-				'label'        => __( 'Credentials', 'doctorpilot' ),
+				'label'        => __( 'Primary specialty', 'doctorpilot' ),
 				'type'         => Controls_Manager::SWITCHER,
 				'return_value' => 'yes',
 				'default'      => 'yes',
 				'separator'    => 'before',
-				'description'  => __( 'The qualifications line, for example “MD, MRCP, FRCR”.', 'doctorpilot' ),
+				'description'  => __( 'The doctor’s primary specialty, for example “Interventional Cardiology”.', 'doctorpilot' ),
 			)
 		);
 
 		$this->add_control(
-			'specialty_show',
+			'specialty_fallback',
 			array(
-				'label'        => __( 'Specialty or department', 'doctorpilot' ),
+				'label'        => __( 'Fall back to department', 'doctorpilot' ),
 				'type'         => Controls_Manager::SWITCHER,
 				'return_value' => 'yes',
 				'default'      => 'yes',
+				'condition'    => array( 'specialty_show' => 'yes' ),
+				'description'  => __( 'When a doctor has no specialty recorded, put their department on that line instead of leaving it blank. Switch this off to show the specialty and nothing else.', 'doctorpilot' ),
+			)
+		);
+
+		$this->add_control(
+			'department_show',
+			array(
+				'label'        => __( 'Department', 'doctorpilot' ),
+				'type'         => Controls_Manager::SWITCHER,
+				'return_value' => 'yes',
+				'default'      => '',
+				'description'  => __( 'Adds the department as its own line, below the specialty. Off by default, because the card has always shown one line here rather than two.', 'doctorpilot' ),
 			)
 		);
 
 		$this->add_control(
 			'bio_show',
 			array(
-				'label'        => __( 'Short bio', 'doctorpilot' ),
+				'label'        => __( 'Headline', 'doctorpilot' ),
 				'type'         => Controls_Manager::SWITCHER,
 				'return_value' => 'yes',
 				'default'      => 'yes',
+				'description'  => __( 'The doctor’s Headline — the one line under their name, for example “Consultant Interventional Radiologist”.', 'doctorpilot' ),
 			)
 		);
 
@@ -166,16 +216,6 @@ trait CardElementControls {
 			'languages_show',
 			array(
 				'label'        => __( 'Languages', 'doctorpilot' ),
-				'type'         => Controls_Manager::SWITCHER,
-				'return_value' => 'yes',
-				'default'      => 'yes',
-			)
-		);
-
-		$this->add_control(
-			'accepting_show',
-			array(
-				'label'        => __( '“Accepting new patients” row', 'doctorpilot' ),
 				'type'         => Controls_Manager::SWITCHER,
 				'return_value' => 'yes',
 				'default'      => 'yes',
@@ -204,6 +244,7 @@ trait CardElementControls {
 		);
 
 		$this->end_controls_section();
+		$this->end_controls_section();
 	}
 
 	/**
@@ -223,6 +264,13 @@ trait CardElementControls {
 			$parts[ $part ] = 'yes' === ( $settings[ $key ] ?? 'yes' );
 		}
 
+		// Opt-in parts take the opposite default: absent means off, so a widget
+		// saved before the control existed keeps rendering the card it always
+		// did rather than gaining a line.
+		foreach ( $this->card_optional_element_map() as $part => $key ) {
+			$parts[ $part ] = 'yes' === ( $settings[ $key ] ?? '' );
+		}
+
 		return $parts;
 	}
 
@@ -239,13 +287,42 @@ trait CardElementControls {
 	 */
 	protected function card_hidden_parts( array $parts ): string {
 		$hidden = array();
+		$optional = $this->card_optional_element_map();
 
 		foreach ( $parts as $part => $visible ) {
-			if ( ! $visible ) {
+			// Opt-in parts travel in the other attribute. Naming one here as
+			// well would be harmless but redundant, and it would make the two
+			// lists look like they disagreed.
+			if ( ! $visible && ! isset( $optional[ $part ] ) ) {
 				$hidden[] = (string) $part;
 			}
 		}
 
 		return implode( ',', $hidden );
+	}
+
+	/**
+	 * The opt-in part names that are switched on, for the `data-card-show`
+	 * attribute the JavaScript card renderer reads.
+	 *
+	 * The mirror image of `card_hidden_parts()`: these parts are absent from the
+	 * card unless they are named, so the attribute lists what to add rather than
+	 * what to remove. Both attributes therefore default to empty, and an empty
+	 * pair of attributes describes exactly the card this plugin has always
+	 * rendered.
+	 *
+	 * @param array<string, bool> $parts Resolved part flags.
+	 * @return string Comma-separated opt-in part names, or an empty string.
+	 */
+	protected function card_shown_parts( array $parts ): string {
+		$shown = array();
+
+		foreach ( $this->card_optional_element_map() as $part => $key ) {
+			if ( ! empty( $parts[ $part ] ) ) {
+				$shown[] = (string) $part;
+			}
+		}
+
+		return implode( ',', $shown );
 	}
 }

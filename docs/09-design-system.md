@@ -1,21 +1,25 @@
 # 09 — Design System
 
-Scope note: this document currently covers the **doctor card design token layer** introduced with the premium Doctor Grid / List upgrade. Brand direction, the wider component inventory, motion language, and the icon set are not yet documented here; they are tracked as open work in §7.
+Scope note: §2 is the plugin-wide palette — every widget, every stylesheet. §§1, 3 and 5 cover the **doctor card token layer** from the premium Doctor Grid / List upgrade. Brand direction, the wider component inventory, motion language and the icon set are still open work (§7).
 
 ---
 
 ## 1. Principle: controls set tokens, components read tokens
 
-Every visual control on the Doctor Grid / List widget writes a **CSS custom property on `{{WRAPPER}}`**. No control writes a concrete declaration on a component selector.
+Every visual control on the Doctor Grid / List and Doctor Carousel widgets writes a **CSS custom property on `{{WRAPPER}} .dp-dir`**. No control writes a concrete declaration on a component selector.
 
 ```
-Elementor control  →  {{WRAPPER}} { --dpc-radius: 12px }
+Elementor control  →  {{WRAPPER}} .dp-dir { --dpc-radius: 12px }
+Token default      →  .dp-dir        { --dpc-radius: 16px }
 Component          →  .dp-card { border-radius: var(--dpc-radius, 16px) }
 ```
 
+**The `.dp-dir` in that selector is load-bearing.** The defaults and the presets are declared on the directory root element itself, and a custom property declared on an element always beats one inherited from an ancestor — specificity does not enter into it. A control written to `{{WRAPPER}}` alone reaches `.dp-dir` and is overwritten there before any card can read it, which is exactly the bug fixed in 0.2.1: 46 of 51 card controls did nothing. A new control must target `{{WRAPPER}} .dp-dir`, not `{{WRAPPER}}`.
+
 Three consequences follow, and they are the reason the layer is built this way:
 
-- **Presets cost nothing to add.** A preset is a class that re-points tokens. It never has to out-specify a control, because a control is written at the wrapper and a preset at a class.
+- **Presets cost nothing to add.** A preset is a second class on the same root element that re-points tokens. A control at `{{WRAPPER}} .dp-dir` is (0,2,0) against a preset's (0,1,0), so an explicit choice beats its preset without either side having to know about the other.
+- **Two card-level guards deliberately outrank both.** `.dp-dir--preset-overlay .dp-card--no-media` and `.dp-dir--preset-overlay .dp-card--row` re-declare their tokens on the card, which is a descendant of the element the control writes to, so they win. That is intended — the overlay preset's white type is legible only over the photo's scrim — but it means about ten text and secondary-button colour controls are silently inert in those two configurations. If that ever needs to change, the guard should switch to its own fallback token rather than re-declaring the token the control owns.
 - **One token drives every consumer.** `--dpc-radius` styles the card, its loading skeleton and its overlay together. There is no way for them to drift apart.
 - **An untouched widget still looks finished.** The fallback in the `var()` call is the premium default. "Unstyled" and "default-styled" are the same state.
 
@@ -29,17 +33,59 @@ The token defaults live in `assets/css/directory-premium.css` §1. That file is 
 
 ## 2. Palette
 
+Declared once, on `:root` at the top of `assets/css/frontend.css`. It used to live
+on a handful of widget classes, which is why the widgets that were not on that
+list — the hero, the timeline, the index block — could not see it and re-invented
+each value: before this was consolidated the plugin held **96 distinct colours,
+twelve of them muted greys and eight of them hairlines**. Nothing outside `:root`
+should be a literal colour, radius or shadow. If a rule needs a value that is not
+here, the value is missing from the palette.
+
+### Colour
+
 | Token | Default | Role |
 |---|---|---|
-| `--dp-accent` | `#136888` | Deep medical teal. Primary actions, links, specialty text, metadata icons. |
-| `--dp-ink` | `#0b2942` | Dark navy. Doctor names, metadata labels. |
-| `--dp-ink-muted` | `#5a6f82` | Credentials, headline. |
-| `--dp-line` | `#e3eaf1` | Card borders, dividers. |
-| `--dp-surface` | `#f5f8fb` | Soft blue-grey page surface. |
-| `--dp-card-bg` | `#ffffff` | Card surface. |
-| `--dp-positive` | `#0f766e` | "Accepting new patients". |
+| `--dp-accent` | `#136888` | Deep medical teal. Primary actions, links, headings, focus rings. |
+| `--dp-accent-hover` | `#0f5670` | The teal, darkened, for hover on filled controls. |
+| `--dp-accent-2` | `#16b47f` | The second brand colour: metadata icons, timeline nodes, stat values, the booking button. |
+| `--dp-ink` | `#0d3b5c` | Dark navy. Headings, names, body text on light. |
+| `--dp-ink-soft` | `#1a4f74` | The ink, lifted — the second stop of a navy gradient. |
+| `--dp-ink-muted` | `#5a6f82` | Secondary text: labels, meta lines, organizations. |
+| `--dp-on-accent` | `#ffffff` | Text and icons sitting on accent or ink. |
+| `--dp-card-bg` | `#ffffff` | Card and panel surface. |
+| `--dp-surface` | `#f5f8fb` | Neutral pale surface. |
+| `--dp-surface-alt` | `#eef5f9` | Blue-tinted surface: hovers, inset panels, placeholders. |
+| `--dp-surface-accent` | `#e9f6f0` | Mint tint. Pairs with `--dp-accent-2` behind an icon. |
+| `--dp-line` | `#e3eaf1` | Every hairline: borders, dividers, rules. |
+| `--dp-line-strong` | `#c7e2f5` | The heavier blue hairline, on the search band and its controls. |
+| `--dp-line-accent` | `#bfe3d5` | The mint rule — the timeline's connector. |
+| `--dp-bar-bg` | `--dp-surface-alt` | The search band, shared by the directory toolbar and the index block. An alias, not a colour: both bars read it and nothing else, so they cannot drift apart. The band frames the controls on it rather than competing with them, so it is a tinted surface — never an accent. |
+| `--dp-bar-border` | `--dp-line-strong` | That band's edge. |
+| `--dp-positive` | `#0f766e` | The International badge. |
+| `--dp-danger` | `#b91c1c` | Error text. |
+| `--dp-highlight` | `#fffabf` | The pale yellow on the hero's buttons and badge. |
 
-`--dp-accent` matches the pre-existing `--dp-primary` in `frontend.css` so the card layer does not introduce a second, slightly different teal.
+`--dp-primary` still exists, pointed at `--dp-accent`, because saved Elementor CSS
+and older templates reference it. Do not add new uses.
+
+### Radius — four steps, nothing between them
+
+| Token | Default | Applies to |
+|---|---|---|
+| `--dp-radius-sm` | `6px` | A–Z tiles, chips, small controls, focus-ring corners. |
+| `--dp-radius` | `12px` | Panels, cards, inputs, list rows. |
+| `--dp-radius-lg` | `16px` | Large cards, photos, the booking card. |
+| `--dp-radius-pill` | `999px` | Buttons, badges, tags, the search bar and its tabs. |
+
+### Elevation — one ink, three heights
+
+`--dp-shadow-ink` is an RGB triple (`13, 59, 92`) so a rule can pick its own alpha
+with `rgba(var(--dp-shadow-ink), 0.3)`. `--dp-shadow-sm` is a resting card,
+`--dp-shadow-md` a hover lift, `--dp-shadow-lg` a floating panel or dropdown.
+
+### Motion
+
+`--dp-transition` (`240ms`) is the one duration.
 
 ---
 
@@ -49,7 +95,7 @@ The token defaults live in `assets/css/directory-premium.css` §1. That file is 
 
 **Media** — `--dpc-media-ratio` (4/5), `--dpc-media-fit`, `--dpc-media-pos` (`center top`), `--dpc-media-bg`, `--dpc-media-radius`, `--dpc-media-zoom`, `--dpc-overlay`, `--dpc-overlay-hover`.
 
-**Text** — `--dpc-name-color`, `--dpc-name-hover`, `--dpc-headline-color`, `--dpc-cred-color`, `--dpc-spec-color`, `--dpc-meta-color`, `--dpc-meta-icon`.
+**Text** — `--dpc-name-color`, `--dpc-name-hover`, `--dpc-headline-color`, `--dpc-spec-color`, `--dpc-meta-color`, `--dpc-meta-icon`.
 
 **Badges** — `--dpb-radius`, `--dpb-pad`, `--dpb-gap`, `--dpb-offset-x`, `--dpb-offset-y`, plus `bg`/`color` pairs for `featured`, `intl` and `avail`.
 
@@ -65,13 +111,12 @@ The token defaults live in `assets/css/directory-premium.css` §1. That file is 
 |---|---|---|---|
 | Doctor name | 18px / 1.3 | 650 | `-0.01em` tracking |
 | Headline (job title) | 13.5px / 1.45 | 500 | Optionally line-clamped |
-| Credentials | 12.5px | 500 | Uppercase, `0.03em` tracking |
 | Specialty / department | 13.5px / 1.4 | 600 | Accent colour |
 | Metadata | 13px / 1.45 | 400 | Icon + value rows |
 | Button | 13.5px / 1.2 | 600 | |
 | Badge | 11.5px / 1.4 | 600 | |
 
-Hierarchy is carried by size and weight before colour. The pre-upgrade card ran name 17px against credentials and specialty both at 13px, which is why it read flat.
+Hierarchy is carried by size and weight before colour. The pre-upgrade card ran name 17px against the credentials and specialty lines both at 13px, which is why it read flat. (Credentials was removed under ADR-0024; the observation is kept because it is why the scale looks the way it does.)
 
 ---
 

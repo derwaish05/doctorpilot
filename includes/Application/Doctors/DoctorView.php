@@ -11,6 +11,7 @@ namespace BrainStudioz\DoctorPilot\Application\Doctors;
 
 use BrainStudioz\DoctorPilot\Booking\BookingResolver;
 use BrainStudioz\DoctorPilot\Fields\FieldRegistry;
+use BrainStudioz\DoctorPilot\Support\Multilingual;
 use BrainStudioz\DoctorPilot\Library\DoctorContentResolver;
 use BrainStudioz\DoctorPilot\PostTypes\DoctorPostType;
 use BrainStudioz\DoctorPilot\Taxonomies\Taxonomies;
@@ -76,7 +77,6 @@ final class DoctorView {
 			'slug'                   => $post->post_name,
 			'name'                   => $this->display_name( $post ),
 			'url'                    => (string) get_permalink( $post_id ),
-			'credentials'            => (string) get_post_meta( $post_id, FieldRegistry::META_PREFIX . 'credentials', true ),
 			// The registry labels `post_excerpt` "Headline" and describes it as
 			// the one line under the name on listing cards, so it is the field
 			// a job title belongs in. Added to the card contract here; `full()`
@@ -87,7 +87,6 @@ final class DoctorView {
 			'primary_specialty'      => $this->primary_term( $post_id, FieldRegistry::META_PREFIX . 'primary_specialty_id', Taxonomies::SPECIALTY ),
 			'years_experience'       => (int) get_post_meta( $post_id, FieldRegistry::META_PREFIX . 'years_experience', true ),
 			'languages'              => $this->terms( $post_id, Taxonomies::LANGUAGE ),
-			'accepting_new_patients' => (bool) get_post_meta( $post_id, FieldRegistry::META_PREFIX . 'accepting_new_patients', true ),
 			'is_featured'            => (bool) get_post_meta( $post_id, FieldRegistry::META_PREFIX . 'is_featured', true ),
 			'is_international'        => (bool) get_post_meta( $post_id, FieldRegistry::META_PREFIX . 'is_international', true ),
 			'booking'                => $this->booking_array( $post_id ),
@@ -112,7 +111,7 @@ final class DoctorView {
 			$card,
 			array(
 				'intro'               => (string) $post->post_excerpt,
-				'biography'           => apply_filters( 'the_content', $post->post_content ),
+				'biography'           => $this->rendered_biography( (string) $post->post_content ),
 				'departments'         => $this->terms( $post_id, Taxonomies::DEPARTMENT ),
 				'specialties'         => $this->terms( $post_id, Taxonomies::SPECIALTY ),
 				'symptoms'            => $this->terms( $post_id, Taxonomies::SYMPTOM ),
@@ -122,15 +121,110 @@ final class DoctorView {
 				'procedures'          => ( new DoctorContentResolver() )->resolve( $post_id, 'proc', 'public' ),
 				'leadership'          => $this->repeater( $post_id, FieldRegistry::META_PREFIX . 'leadership_positions' ),
 				'academic_highlights' => $this->repeater( $post_id, FieldRegistry::META_PREFIX . 'academic_highlights' ),
+				'community_outreach'  => $this->string_list( $post_id, FieldRegistry::META_PREFIX . 'community_outreach' ),
+				'community_outreach_title' => (string) get_post_meta( $post_id, FieldRegistry::META_PREFIX . 'community_outreach_title', true ),
+				'healthcare_achievements' => $this->string_list( $post_id, FieldRegistry::META_PREFIX . 'healthcare_achievements' ),
+				'healthcare_achievements_title' => (string) get_post_meta( $post_id, FieldRegistry::META_PREFIX . 'healthcare_achievements_title', true ),
 				'experience'          => ( new DoctorContentResolver() )->resolve( $post_id, 'exp', 'public' ),
 				'education'           => ( new DoctorContentResolver() )->resolve( $post_id, 'edu', 'public' ),
 				'certifications'      => ( new DoctorContentResolver() )->resolve( $post_id, 'cert', 'public' ),
+				'memberships'         => ( new DoctorContentResolver() )->resolve( $post_id, 'mem', 'public' ),
 				'publications'        => ( new DoctorContentResolver() )->resolve( $post_id, 'pub', 'public' ),
 				'faqs'                => ( new DoctorContentResolver() )->resolve( $post_id, 'faq', 'public' ),
 				'locations'           => $this->locations( $post_id ),
 				'online_consultation' => (bool) get_post_meta( $post_id, FieldRegistry::META_PREFIX . 'online_consultation', true ),
 			)
 		);
+	}
+
+	/**
+	 * Guard against re-entering the biography filter pass.
+	 *
+	 * @var bool
+	 */
+	private static bool $rendering_biography = false;
+
+	/**
+	 * Run the biography through `the_content`, with Elementor's builder
+	 * injection suspended, and drop any stylesheet or script the filter chain
+	 * still manages to inject.
+	 *
+	 * **Elementor replaces the content wholesale.** `Elementor\Frontend::apply_builder_in_content()`
+	 * is hooked to `the_content` at priority 9 and does, in effect,
+	 * `$content = $this->get_builder_content( get_the_ID() )` — it discards
+	 * whatever was passed in and substitutes the *entire rendered document* for
+	 * the current post. Calling `the_content` from inside a widget that is part
+	 * of that document therefore renders the document inside itself: the About
+	 * Doctor widget came out containing the Page Header, the breadcrumbs, the
+	 * booking buttons and a second copy of its own heading. Elementor removes
+	 * its own filter for the duration of the nested render, so the recursion
+	 * stops after one level instead of hanging — which is why this looked like a
+	 * display glitch rather than the infinite loop it nearly is.
+	 *
+	 * `remove_content_filter()` / `add_content_filter()` are Elementor's public
+	 * API for exactly this (both since 1.8.0), so the suspension does not depend
+	 * on knowing the callback or the priority. The filter is only restored when
+	 * it was actually registered when we arrived: Elementor removes it during
+	 * its own nested renders, and unconditionally re-adding it there would leave
+	 * the outer content builder-injected when it should not be.
+	 *
+	 * The static guard is the belt to that braces. It costs nothing and it means
+	 * a future Elementor — or any other plugin that renders a document from
+	 * `the_content` — cannot recurse through this method.
+	 *
+	 * The `<style>` strip below stays. It was added for the same filter printing
+	 * the document's compiled CSS inline, which should no longer reach us now
+	 * that the filter is suspended; but consumers escape this string with
+	 * `wp_kses_post()`, which strips a `<style>` tag and keeps its text node, so
+	 * a stylesheet arriving from anywhere else would still render as body copy.
+	 * A biography has no legitimate reason to carry CSS or JS.
+	 *
+	 * @param string $raw Raw post content.
+	 * @return string Rendered biography HTML.
+	 */
+	private function rendered_biography( string $raw ): string {
+		if ( self::$rendering_biography ) {
+			return $raw;
+		}
+
+		self::$rendering_biography = true;
+
+		$frontend = null;
+		$restore  = false;
+
+		if ( did_action( 'elementor/loaded' ) && class_exists( '\\Elementor\\Plugin' ) ) {
+			$instance = \Elementor\Plugin::instance();
+			$frontend = $instance->frontend ?? null;
+
+			if ( $frontend instanceof \Elementor\Frontend ) {
+				$restore = false !== has_filter( 'the_content', array( $frontend, 'apply_builder_in_content' ) );
+
+				if ( $restore ) {
+					$frontend->remove_content_filter();
+				}
+			}
+		}
+
+		try {
+			$html = (string) apply_filters( 'the_content', $raw );
+		} finally {
+			if ( $restore && null !== $frontend ) {
+				$frontend->add_content_filter();
+			}
+
+			self::$rendering_biography = false;
+		}
+
+		// Paired elements, contents included.
+		$clean = preg_replace( '#<(style|script|template)\b[^>]*>.*?</\1\s*>#is', '', $html );
+		if ( null === $clean ) {
+			return $html;
+		}
+
+		// Void elements that can only be a stylesheet or preload directive here.
+		$clean = preg_replace( '#<link\b[^>]*>#i', '', $clean );
+
+		return null === $clean ? $html : $clean;
 	}
 
 	/**
@@ -204,6 +298,15 @@ final class DoctorView {
 		if ( $term_id <= 0 ) {
 			return null;
 		}
+
+		/*
+		 * The stored value is a raw term ID, and a translated doctor carries
+		 * whichever ID the translation plugin copied across — normally the
+		 * source language's. Rendering it unconverted puts an English
+		 * department name on an Arabic card, and publishes it as
+		 * `medicalSpecialty` in the JSON-LD too.
+		 */
+		$term_id = Multilingual::term_id( $term_id, $taxonomy );
 
 		$term = get_term( $term_id, $taxonomy );
 		if ( ! ( $term instanceof \WP_Term ) ) {
