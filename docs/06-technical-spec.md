@@ -542,6 +542,23 @@ renders, and re-adding it there would builder-inject the outer content. A static
 re-entrancy guard backs this up. New code must not call `the_content` without the
 same protection.
 
+**Button link overrides.** `AbstractWidget::link_override( $settings, $key )`
+turns an Elementor URL control into `{ url, target, rel, attrs }`. The URL is
+passed through `esc_url_raw()`, so a disallowed scheme resolves to an empty
+`url` (no override) rather than a link; `is_external` becomes `target="_blank"`
+plus `rel="noopener"`, and `nofollow` is appended to `rel`. Page Header uses it
+for `book_link` and `call_link`; Doctor Grid / List uses it for
+`booking_button_link`, which `CardElementControls::register_card_elements_section( true )`
+registers under the Booking button switch (the carousel and related-doctors card
+pass nothing and get no control). The grid passes the result to
+`templates/directory.php`, which emits `data-booking-url`, `data-booking-target`
+and `data-booking-rel` on the directory root; `templates/card-doctor.php` reads
+`$data['booking_link']` and `assets/js/directory.js` reads the three attributes,
+so a card rebuilt after a filter change points where the server-rendered one
+did. Both renderers fall back to the same label — the doctor's booking label,
+else *Book an Appointment* (`strings.bookNow`) — because a set link renders the
+button for a doctor with no booking CTA of their own.
+
 **Built-in widget heading.** `AbstractWidget` provides an optional eyebrow +
 heading block through three methods: `register_heading_controls()` (call inside
 an open content section), `register_heading_style()` (call at the top level of

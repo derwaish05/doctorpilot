@@ -282,7 +282,20 @@ if ( '' === (string) ( $card['photo']['url'] ?? '' ) ) {
 		// removes the actions row itself rather than leaving its divider and
 		// padding behind.
 		$dp_profile_btn = $dp_show( 'profile_button' ) && '' !== $dp_url;
-		$dp_booking_btn = $dp_show( 'booking_button' ) && ! empty( $card['booking'] ) && ! empty( $card['booking']['url'] );
+
+		// The widget's Booking button link, when set, replaces every doctor's own
+		// destination — and gives a doctor with no booking method a button too.
+		// The JavaScript renderer reads the same value from `data-booking-url`
+		// and falls back to the same label.
+		$dp_book_link  = isset( $data['booking_link'] ) && is_array( $data['booking_link'] ) ? $data['booking_link'] : array();
+		$dp_book_over  = (string) ( $dp_book_link['url'] ?? '' );
+		$dp_book_url   = '' !== $dp_book_over ? $dp_book_over : (string) ( $card['booking']['url'] ?? '' );
+		$dp_book_label = '' !== (string) ( $card['booking']['label'] ?? '' ) ? (string) $card['booking']['label'] : __( 'Book an Appointment', 'doctorpilot' );
+		$dp_book_attrs = '' !== $dp_book_over
+			? (string) ( $dp_book_link['attrs'] ?? '' )
+			: ( '_blank' === (string) ( $card['booking']['target'] ?? '' ) ? ' target="_blank" rel="noopener noreferrer"' : '' );
+
+		$dp_booking_btn = $dp_show( 'booking_button' ) && '' !== $dp_book_url;
 		?>
 
 		<?php if ( $dp_profile_btn || $dp_booking_btn ) : ?>
@@ -297,10 +310,10 @@ if ( '' === (string) ( $card['photo']['url'] ?? '' ) ) {
 			<?php if ( $dp_booking_btn ) : ?>
 				<a
 					class="dp-btn dp-btn--primary"
-					href="<?php echo esc_url( (string) $card['booking']['url'] ); ?>"
-					<?php echo '_blank' === (string) ( $card['booking']['target'] ?? '' ) ? 'target="_blank" rel="noopener noreferrer"' : ''; ?>
+					href="<?php echo esc_url( $dp_book_url ); ?>"
+					<?php echo $dp_book_attrs; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Constant, safe attribute string built above. ?>
 				>
-					<?php echo esc_html( (string) $card['booking']['label'] ); ?>
+					<?php echo esc_html( $dp_book_label ); ?>
 					<span class="dp-sr-only"><?php echo esc_html( sprintf( /* translators: %s: doctor name. */ __( 'with %s', 'doctorpilot' ), $dp_name ) ); ?></span>
 				</a>
 			<?php endif; ?>

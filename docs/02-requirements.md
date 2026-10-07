@@ -144,6 +144,7 @@ Closing the Pro column is a precondition for charging a renewal, not a roadmap p
 - **FR-038 [Free]** Booking configuration is per doctor; unsafe schemes or malformed destinations are rejected.
 - **FR-039 [Pro]** BookPilot and location-aware actions use the booking adapter contract.
 - **FR-040 [Free/Pro]** A provider failure falls back only to a configured safe action; it must not invent availability or silently redirect elsewhere.
+- **FR-040a [Free]** The Page Header's Book and Call buttons and the Doctor Grid / List's Booking button each accept an optional per-widget link that replaces the resolved destination for that widget. A set link renders the button even when the doctor has no booking method or phone. The link is validated with the same scheme rules as booking destinations; an unsafe link yields no override, never a live link.
 
 ### 4.7 Import, export, and migration
 

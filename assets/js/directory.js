@@ -223,6 +223,14 @@
 			}
 		}, this );
 
+		// The widget's Booking button link. When set it replaces every card's
+		// own booking destination, exactly as `card-doctor.php` does on first
+		// paint; target and rel travel alongside so an external link stays
+		// external after a refresh.
+		this.bookingUrl = safeUrl( root.getAttribute( 'data-booking-url' ) );
+		this.bookingTarget = root.getAttribute( 'data-booking-target' ) || '';
+		this.bookingRel = root.getAttribute( 'data-booking-rel' ) || '';
+
 		if ( this.hiddenParts.image ) {
 			this.cardClasses += ' dp-card--no-media';
 		}
@@ -1021,13 +1029,22 @@
 			actions.appendChild( profile );
 		}
 
-		if ( card.booking && safeUrl( card.booking.url ) && this.showPart( 'booking_button' ) ) {
-			var book = this.linkEl( card.booking.url, card.booking.label );
+		var bookUrl = this.bookingUrl || ( card.booking ? safeUrl( card.booking.url ) : '' );
+		if ( bookUrl && this.showPart( 'booking_button' ) ) {
+			var bookLabel = ( card.booking && card.booking.label ) || strings.bookNow || '';
+			var book = this.linkEl( bookUrl, bookLabel );
 			book.className = 'dp-btn dp-btn--primary';
 			if ( strings.bookingWith ) {
 				book.appendChild( this.textEl( 'span', 'dp-sr-only', format( strings.bookingWith, card.name ) ) );
 			}
-			if ( card.booking.target === '_blank' ) {
+			if ( this.bookingUrl ) {
+				if ( this.bookingTarget === '_blank' ) {
+					book.target = '_blank';
+				}
+				if ( this.bookingRel ) {
+					book.rel = this.bookingRel;
+				}
+			} else if ( card.booking.target === '_blank' ) {
 				book.target = '_blank';
 				book.rel = 'noopener noreferrer';
 			}

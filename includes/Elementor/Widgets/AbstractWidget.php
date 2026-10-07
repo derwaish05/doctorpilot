@@ -613,6 +613,71 @@ abstract class AbstractWidget extends Widget_Base {
 	}
 
 	/**
+	 * Resolve an optional link override from an Elementor URL control.
+	 *
+	 * A button that normally points at doctor data — the booking destination,
+	 * the phone number — can be sent somewhere else by the editor. The URL goes
+	 * through `esc_url_raw()`, so a `javascript:` or otherwise disallowed scheme
+	 * resolves to no override rather than to a live link, while `tel:`,
+	 * `mailto:`, in-page anchors and relative paths all pass. The control's
+	 * "open in new window" and "nofollow" switches become the usual `target`
+	 * and `rel` attributes.
+	 *
+	 * @param array<string, mixed> $settings Widget settings.
+	 * @param string               $key      URL control ID.
+	 * @return array{url: string, target: string, rel: string, attrs: string}
+	 *         `url` is empty when the control is blank or unsafe. `attrs` is the
+	 *         target/rel pair as a ready-to-print attribute string with a leading
+	 *         space, or empty.
+	 */
+	protected function link_override( array $settings, string $key ): array {
+		$none = array(
+			'url'    => '',
+			'target' => '',
+			'rel'    => '',
+			'attrs'  => '',
+		);
+
+		$raw = is_array( $settings[ $key ] ?? null ) ? $settings[ $key ] : array();
+		$url = trim( (string) ( $raw['url'] ?? '' ) );
+
+		if ( '' === $url ) {
+			return $none;
+		}
+
+		$url = esc_url_raw( $url );
+
+		if ( '' === $url ) {
+			return $none;
+		}
+
+		$target = ! empty( $raw['is_external'] ) ? '_blank' : '';
+		$rel    = array();
+
+		if ( '' !== $target ) {
+			$rel[] = 'noopener';
+		}
+		if ( ! empty( $raw['nofollow'] ) ) {
+			$rel[] = 'nofollow';
+		}
+
+		$attrs = '';
+		if ( '' !== $target ) {
+			$attrs .= ' target="_blank"';
+		}
+		if ( array() !== $rel ) {
+			$attrs .= ' rel="' . esc_attr( implode( ' ', $rel ) ) . '"';
+		}
+
+		return array(
+			'url'    => $url,
+			'target' => $target,
+			'rel'    => implode( ' ', $rel ),
+			'attrs'  => $attrs,
+		);
+	}
+
+	/**
 	 * Add a responsive columns control to the current controls section.
 	 *
 	 * @param int                $default   Default column count.

@@ -7,6 +7,19 @@ versioning.
 ## [Unreleased]
 
 ### Added
+- **Button links on the Page Header and the Doctor Grid / List.** The Page
+  Header's Book and Call buttons each take an optional link, and the Doctor Grid
+  / List's Booking button takes one in its Card elements section, under the
+  Booking button switch. Left blank, nothing changes: Book goes to the doctor's
+  booking destination, Call dials their phone number, and a card's Booking
+  button goes wherever that doctor's booking method points. Set a link and the
+  button goes there instead — an appointment form page, a `tel:` number, a page
+  anchor — with the usual open-in-new-window and nofollow switches. A button
+  with a link set shows even for a doctor who has no booking method or phone
+  number, which is the point: the page decides. Links go through the same
+  scheme check as booking destinations, so an unsafe one is dropped rather than
+  rendered, and cards the grid rebuilds after a filter change keep the link the
+  page rendered with.
 - **`/doctors/` is now a working search page on its own.** The doctor archive
   renders the same search bar, tabs, A–Z row and filtered grid the Doctor Grid /
   List widget renders — through the same assembly, not a copy of it — so a link

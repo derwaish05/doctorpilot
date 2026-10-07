@@ -180,6 +180,17 @@ final class PageHeader extends AbstractWidget {
 			)
 		);
 
+		$this->add_control(
+			'book_link',
+			array(
+				'label'       => __( 'Book button link', 'doctorpilot' ),
+				'type'        => \Elementor\Controls_Manager::URL,
+				'placeholder' => 'https://',
+				'dynamic'     => array( 'active' => true ),
+				'description' => __( 'Leave blank to use the doctor’s booking destination. Set a link to send this button somewhere else, such as an appointment form page. The button then shows even for a doctor with no booking method.', 'doctorpilot' ),
+			)
+		);
+
 		$this->register_icon_source( 'book_icon', __( 'Book button icon', 'doctorpilot' ) );
 
 		$this->add_control(
@@ -200,6 +211,17 @@ final class PageHeader extends AbstractWidget {
 				'label'   => __( 'Call button text', 'doctorpilot' ),
 				'type'    => \Elementor\Controls_Manager::TEXT,
 				'default' => __( 'Call Now', 'doctorpilot' ),
+			)
+		);
+
+		$this->add_control(
+			'call_link',
+			array(
+				'label'       => __( 'Call button link', 'doctorpilot' ),
+				'type'        => \Elementor\Controls_Manager::URL,
+				'placeholder' => 'tel:',
+				'dynamic'     => array( 'active' => true ),
+				'description' => __( 'Leave blank to call the doctor’s phone number. Set a link — a tel: number, a contact page — to send this button somewhere else. The button then shows even for a doctor with no phone number.', 'doctorpilot' ),
 			)
 		);
 
@@ -1177,7 +1199,7 @@ final class PageHeader extends AbstractWidget {
 			echo '</ul>';
 		}
 
-		if ( '' !== $view['book_url'] || '' !== $view['tel'] ) {
+		if ( '' !== $view['book_url'] || '' !== $view['call_url'] ) {
 			echo '<div class="dp-hero__actions">';
 			if ( '' !== $view['book_url'] ) {
 				$book_label = '' !== (string) ( $settings['book_text'] ?? '' ) ? (string) $settings['book_text'] : $view['book_label'];
@@ -1189,9 +1211,13 @@ final class PageHeader extends AbstractWidget {
 				$this->render_button_icon( $this->icon_markup( $settings, 'book_icon', 'dp-hero__ico', 18 ), 'icon_calendar' );
 				echo '<span>' . esc_html( $book_label ) . '</span></a>';
 			}
-			if ( '' !== $view['tel'] ) {
+			if ( '' !== $view['call_url'] ) {
 				$call_label = '' !== (string) ( $settings['call_text'] ?? '' ) ? (string) $settings['call_text'] : __( 'Call Now', 'doctorpilot' );
-				printf( '<a class="dp-hero__btn dp-hero__btn--ghost" href="tel:%1$s">', esc_attr( $view['tel'] ) );
+				printf(
+					'<a class="dp-hero__btn dp-hero__btn--ghost" href="%1$s"%2$s>',
+					esc_url( $view['call_url'] ),
+					$view['call_attrs'] // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Constant, safe attribute string.
+				);
 				$this->render_button_icon( $this->icon_markup( $settings, 'call_icon', 'dp-hero__ico', 18 ), 'icon_phone' );
 				echo '<span>' . esc_html( $call_label ) . '</span></a>';
 			}
@@ -1278,6 +1304,20 @@ final class PageHeader extends AbstractWidget {
 		$tel_source = '' !== $phone ? $phone : ( 0 === strpos( $book_url, 'tel:' ) ? substr( $book_url, 4 ) : '' );
 		$tel        = preg_replace( '/[^0-9+]/', '', $tel_source );
 
+		// The widget's own destinations, when the editor set them. The Book link
+		// replaces the doctor's booking destination outright, so it also gives a
+		// doctor with no booking method a working button; the Call link replaces
+		// the tel: link built from the phone number above.
+		$book_link = $this->link_override( $settings, 'book_link' );
+		if ( '' !== $book_link['url'] ) {
+			$book_url    = $book_link['url'];
+			$book_target = $book_link['attrs'];
+		}
+
+		$call_link  = $this->link_override( $settings, 'call_link' );
+		$call_url   = '' !== $call_link['url'] ? $call_link['url'] : ( '' !== (string) $tel ? 'tel:' . $tel : '' );
+		$call_attrs = $call_link['attrs'];
+
 		$photo     = is_array( $data['photo'] ?? null ) ? $data['photo'] : array();
 		$photo_url = (string) ( $photo['url'] ?? '' );
 
@@ -1296,6 +1336,8 @@ final class PageHeader extends AbstractWidget {
 			'book_url'      => $book_url,
 			'book_label'    => $book_label,
 			'book_target'   => $book_target,
+			'call_url'      => $call_url,
+			'call_attrs'    => $call_attrs,
 			'photo_url'     => $photo_url,
 			'photo_alt'     => '' !== (string) ( $photo['alt'] ?? '' ) ? (string) $photo['alt'] : (string) ( $data['name'] ?? '' ),
 			'archive'       => (string) get_post_type_archive_link( DoctorPostType::POST_TYPE ),

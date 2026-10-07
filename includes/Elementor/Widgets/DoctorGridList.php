@@ -208,7 +208,7 @@ final class DoctorGridList extends AbstractWidget {
 	protected function register_controls(): void {
 		$this->register_layout_section();
 		$this->register_card_design_controls();
-		$this->register_card_elements_section();
+		$this->register_card_elements_section( true );
 		$this->register_search_section();
 
 		$this->register_heading_style();
@@ -905,6 +905,10 @@ final class DoctorGridList extends AbstractWidget {
 			'parts'         => $card_parts,
 			'hidden_parts'  => $this->card_hidden_parts( $card_parts ),
 			'shown_parts'   => $this->card_shown_parts( $card_parts ),
+			// The widget's Booking button link, resolved once for the PHP card
+			// template and for the `data-booking-*` attributes the script reads
+			// when it rebuilds cards after a filter change.
+			'booking_link'  => $this->link_override( $settings, 'booking_button_link' ),
 		);
 
 		$this->render_heading( $settings );

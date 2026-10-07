@@ -176,6 +176,12 @@ $dp_state_url = static function ( array $args ): string {
 	         here. Both are empty for a card left at its defaults. */ ?>
 	data-card-hide="<?php echo esc_attr( (string) ( $data['hidden_parts'] ?? '' ) ); ?>"
 	data-card-show="<?php echo esc_attr( (string) ( $data['shown_parts'] ?? '' ) ); ?>"
+	<?php /* The widget's Booking button link, so cards rebuilt client-side point
+	         where the ones rendered here do. All three are empty when the editor
+	         set none. */ ?>
+	data-booking-url="<?php echo esc_attr( (string) ( $data['booking_link']['url'] ?? '' ) ); ?>"
+	data-booking-target="<?php echo esc_attr( (string) ( $data['booking_link']['target'] ?? '' ) ); ?>"
+	data-booking-rel="<?php echo esc_attr( (string) ( $data['booking_link']['rel'] ?? '' ) ); ?>"
 >
 
 	<?php if ( $dp_search || array() !== $dp_filters ) : ?>

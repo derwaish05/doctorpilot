@@ -105,9 +105,13 @@ trait CardElementControls {
 	 * Content tab, not Style: these switchers decide what exists, not how it
 	 * looks.
 	 *
+	 * @param bool $booking_link Whether to offer a link control under the Booking
+	 *                           button switch. The Doctor Grid / List passes true;
+	 *                           the carousel and the related-doctors card keep
+	 *                           each doctor's own destination.
 	 * @return void
 	 */
-	protected function register_card_elements_section(): void {
+	protected function register_card_elements_section( bool $booking_link = false ): void {
 		$this->start_controls_section(
 			'section_card_elements',
 			array( 'label' => __( 'Card elements', 'doctorpilot' ) )
@@ -243,7 +247,20 @@ trait CardElementControls {
 			)
 		);
 
-		$this->end_controls_section();
+		if ( $booking_link ) {
+			$this->add_control(
+				'booking_button_link',
+				array(
+					'label'       => __( 'Booking button link', 'doctorpilot' ),
+					'type'        => Controls_Manager::URL,
+					'placeholder' => 'https://',
+					'dynamic'     => array( 'active' => true ),
+					'condition'   => array( 'booking_button_show' => 'yes' ),
+					'description' => __( 'Leave blank to use each doctor’s own booking destination. Set a link to send every card’s booking button there instead, such as an appointment form page. The button then shows on every card, including doctors with no booking method.', 'doctorpilot' ),
+				)
+			);
+		}
+
 		$this->end_controls_section();
 	}
 

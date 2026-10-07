@@ -142,6 +142,8 @@ final class DirectoryAssets {
 			'profileFor'    => __( 'for %s', 'doctorpilot' ),
 			/* translators: %s: doctor name. Appended, visually hidden, to a booking button. */
 			'bookingWith'   => __( 'with %s', 'doctorpilot' ),
+			/* translators: booking button label when the doctor has no label of their own. Must match the one in templates/card-doctor.php. */
+			'bookNow'       => __( 'Book an Appointment', 'doctorpilot' ),
 		);
 	}
 
