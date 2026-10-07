@@ -20,14 +20,36 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Registers the card design, image, badge, metadata and button style controls.
  *
- * Every control writes a CSS custom property on `{{WRAPPER}}` rather than a
- * concrete declaration on a component selector. Three things follow from that.
- * A preset can re-point the same token without fighting specificity, because an
- * explicit control is written at the wrapper and a preset only sets a class-level
- * default. A single token drives every component that reads it, so a radius set
- * once applies to the card, its skeleton and its overlay together. And an
- * unstyled widget renders from the fallback baked into the stylesheet, which is
- * what lets a freshly dropped widget look finished.
+ * Every control writes a CSS custom property rather than a concrete declaration
+ * on a component selector. A single token drives every component that reads it,
+ * so a radius set once applies to the card, its skeleton and its overlay
+ * together, and an unstyled widget renders from the stylesheet's own defaults,
+ * which is what lets a freshly dropped widget look finished.
+ *
+ * **The target is `{{WRAPPER}} .dp-dir`, not `{{WRAPPER}}`, and that matters.**
+ * `directory-premium.css` declares the token defaults on `.dp-dir` and the
+ * presets on `.dp-dir--preset-*` — both of which land on the directory root
+ * element itself. A custom property declared on an element always beats one
+ * inherited from an ancestor, whatever the ancestor's specificity, so a control
+ * written to the Elementor wrapper is silently ignored: the value reaches
+ * `.dp-dir`, which then overwrites it for every descendant that reads it.
+ * Writing to `{{WRAPPER}} .dp-dir` puts the control on the same element as the
+ * defaults, at a higher specificity than either the default or a preset, so an
+ * explicit choice wins over both. Every widget using this trait renders a
+ * `.dp-dir` root — `templates/directory.php` and `templates/carousel-doctor.php`
+ * in both of its display modes — and a widget that stopped doing so would lose
+ * the stylesheet's defaults as well, so the two cannot drift apart silently.
+ *
+ * Two configurations are exempt, and knowingly so. The overlay preset's
+ * `.dp-card--no-media` and `.dp-card--row` blocks re-declare their tokens on the
+ * card, which is a descendant of `.dp-dir`, so the same rule that used to defeat
+ * this whole trait now protects a legibility guard: white type never lands on a
+ * card with no photo behind it. The cost is that roughly ten text and
+ * secondary-button colour controls are inert under Image overlay when the photo
+ * is switched off or the widget is an image-card list, with nothing in the panel
+ * to say so beyond the preset's own description. Fixing that properly means
+ * giving the guard its own fallback token instead of re-declaring the token the
+ * control owns; it is not worth doing blind.
  *
  * All controls are additive: no pre-existing setting key is reused or
  * repurposed, so Elementor's stored settings for existing instances survive and
@@ -78,7 +100,7 @@ trait CardDesignControls {
 					'overlay'  => __( 'Image overlay', 'doctorpilot' ),
 					'compact'  => __( 'Compact', 'doctorpilot' ),
 				),
-				'description' => __( 'A starting point. Any style control you set below overrides the preset. Choose Classic to restore the pre-upgrade card appearance.', 'doctorpilot' ),
+				'description' => __( 'A starting point. Any style control you set below overrides the preset. Choose Classic to restore the pre-upgrade card appearance. Image overlay is the one exception: on a card with no photo, and in an image-card list, it forces its own dark text colours so white type never lands on a white card — your text colour controls are ignored in those two cases.', 'doctorpilot' ),
 			)
 		);
 
@@ -90,7 +112,7 @@ trait CardDesignControls {
 				'size_units' => array( 'px', 'rem' ),
 				'range'      => array( 'px' => array( 'min' => 0, 'max' => 80 ) ),
 				'selectors'  => array(
-					'{{WRAPPER}}' => '--dpc-col-gap: {{SIZE}}{{UNIT}};',
+					'{{WRAPPER}} .dp-dir' => '--dpc-col-gap: {{SIZE}}{{UNIT}};',
 				),
 			)
 		);
@@ -103,7 +125,7 @@ trait CardDesignControls {
 				'size_units' => array( 'px', 'rem' ),
 				'range'      => array( 'px' => array( 'min' => 0, 'max' => 80 ) ),
 				'selectors'  => array(
-					'{{WRAPPER}}' => '--dpc-row-gap: {{SIZE}}{{UNIT}};',
+					'{{WRAPPER}} .dp-dir' => '--dpc-row-gap: {{SIZE}}{{UNIT}};',
 				),
 			)
 		);
@@ -115,26 +137,6 @@ trait CardDesignControls {
 				'type'        => Controls_Manager::SWITCHER,
 				'default'     => '',
 				'description' => __( 'Adds a cover link to the profile. The name, buttons and badges stay separately focusable, so keyboard users keep every stop.', 'doctorpilot' ),
-			)
-		);
-
-		$this->add_control(
-			'badge_availability_show',
-			array(
-				'label'       => __( 'Show availability badge', 'doctorpilot' ),
-				'type'        => Controls_Manager::SWITCHER,
-				'default'     => '',
-				'description' => __( 'Adds an "Accepting new patients" badge over the image for doctors who are. Off by default, because the same fact already appears in the metadata list.', 'doctorpilot' ),
-				/*
-				 * The badge lives inside the image block, so with no image there
-				 * is nothing for this switch to do and a live control that
-				 * changes nothing is worse than a hidden one. `image_show` is
-				 * registered by `CardElementControls`; every widget using this
-				 * trait uses that one too, which the condition depends on —
-				 * Elementor reads a missing key as an unmet condition and would
-				 * hide this control permanently.
-				 */
-				'condition'   => array( 'image_show' => 'yes' ),
 			)
 		);
 
@@ -191,7 +193,7 @@ trait CardDesignControls {
 					'%'  => array( 'min' => 10, 'max' => 60 ),
 				),
 				'selectors'  => array(
-					'{{WRAPPER}}' => '--dpc-list-media-w: {{SIZE}}{{UNIT}};',
+					'{{WRAPPER}} .dp-dir' => '--dpc-list-media-w: {{SIZE}}{{UNIT}};',
 				),
 				'condition'  => array(
 					'layout'     => 'list',
@@ -222,7 +224,7 @@ trait CardDesignControls {
 			array(
 				'label'     => __( 'Background', 'doctorpilot' ),
 				'type'      => Controls_Manager::COLOR,
-				'selectors' => array( '{{WRAPPER}}' => '--dpc-bg: {{VALUE}};' ),
+				'selectors' => array( '{{WRAPPER}} .dp-dir' => '--dpc-bg: {{VALUE}};' ),
 			)
 		);
 
@@ -231,7 +233,7 @@ trait CardDesignControls {
 			array(
 				'label'     => __( 'Border color', 'doctorpilot' ),
 				'type'      => Controls_Manager::COLOR,
-				'selectors' => array( '{{WRAPPER}}' => '--dpc-border-color: {{VALUE}};' ),
+				'selectors' => array( '{{WRAPPER}} .dp-dir' => '--dpc-border-color: {{VALUE}};' ),
 			)
 		);
 
@@ -242,7 +244,7 @@ trait CardDesignControls {
 				'type'       => Controls_Manager::SLIDER,
 				'size_units' => array( 'px' ),
 				'range'      => array( 'px' => array( 'min' => 0, 'max' => 8 ) ),
-				'selectors'  => array( '{{WRAPPER}}' => '--dpc-border-width: {{SIZE}}px;' ),
+				'selectors'  => array( '{{WRAPPER}} .dp-dir' => '--dpc-border-width: {{SIZE}}px;' ),
 			)
 		);
 
@@ -253,7 +255,7 @@ trait CardDesignControls {
 				'type'       => Controls_Manager::SLIDER,
 				'size_units' => array( 'px', 'rem' ),
 				'range'      => array( 'px' => array( 'min' => 0, 'max' => 48 ) ),
-				'selectors'  => array( '{{WRAPPER}}' => '--dpc-radius: {{SIZE}}{{UNIT}};' ),
+				'selectors'  => array( '{{WRAPPER}} .dp-dir' => '--dpc-radius: {{SIZE}}{{UNIT}};' ),
 			)
 		);
 
@@ -264,7 +266,7 @@ trait CardDesignControls {
 				'type'       => Controls_Manager::DIMENSIONS,
 				'size_units' => array( 'px', 'em', 'rem' ),
 				'selectors'  => array(
-					'{{WRAPPER}}' => '--dpc-pad: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+					'{{WRAPPER}} .dp-dir' => '--dpc-pad: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
 				),
 			)
 		);
@@ -276,7 +278,7 @@ trait CardDesignControls {
 				'type'       => Controls_Manager::SLIDER,
 				'size_units' => array( 'px', 'rem' ),
 				'range'      => array( 'px' => array( 'min' => 0, 'max' => 32 ) ),
-				'selectors'  => array( '{{WRAPPER}}' => '--dpc-gap: {{SIZE}}{{UNIT}};' ),
+				'selectors'  => array( '{{WRAPPER}} .dp-dir' => '--dpc-gap: {{SIZE}}{{UNIT}};' ),
 			)
 		);
 
@@ -285,7 +287,7 @@ trait CardDesignControls {
 			array(
 				'label'       => __( 'Divider above buttons', 'doctorpilot' ),
 				'type'        => Controls_Manager::COLOR,
-				'selectors'   => array( '{{WRAPPER}}' => '--dpc-actions-rule: {{VALUE}};' ),
+				'selectors'   => array( '{{WRAPPER}} .dp-dir' => '--dpc-actions-rule: {{VALUE}};' ),
 				'description' => __( 'Leave empty for no divider.', 'doctorpilot' ),
 			)
 		);
@@ -331,7 +333,7 @@ trait CardDesignControls {
 				'type'       => Controls_Manager::SLIDER,
 				'size_units' => array( 'px' ),
 				'range'      => array( 'px' => array( 'min' => -24, 'max' => 0 ) ),
-				'selectors'  => array( '{{WRAPPER}}' => '--dpc-hover-lift: {{SIZE}}px;' ),
+				'selectors'  => array( '{{WRAPPER}} .dp-dir' => '--dpc-hover-lift: {{SIZE}}px;' ),
 			)
 		);
 
@@ -341,7 +343,7 @@ trait CardDesignControls {
 				'label'     => __( 'Scale', 'doctorpilot' ),
 				'type'      => Controls_Manager::SLIDER,
 				'range'     => array( 'px' => array( 'min' => 1, 'max' => 1.08, 'step' => 0.01 ) ),
-				'selectors' => array( '{{WRAPPER}}' => '--dpc-hover-scale: {{SIZE}};' ),
+				'selectors' => array( '{{WRAPPER}} .dp-dir' => '--dpc-hover-scale: {{SIZE}};' ),
 			)
 		);
 
@@ -355,7 +357,7 @@ trait CardDesignControls {
 				'type'        => Controls_Manager::SLIDER,
 				'separator'   => 'before',
 				'range'       => array( 'px' => array( 'min' => 0, 'max' => 800, 'step' => 10 ) ),
-				'selectors'   => array( '{{WRAPPER}}' => '--dpc-transition: {{SIZE}}ms;' ),
+				'selectors'   => array( '{{WRAPPER}} .dp-dir' => '--dpc-transition: {{SIZE}}ms;' ),
 				'description' => __( 'Visitors who ask their system for reduced motion always get an instant transition, whatever is set here.', 'doctorpilot' ),
 			)
 		);
@@ -392,7 +394,7 @@ trait CardDesignControls {
 					'16 / 10' => __( 'Landscape (16:10)', 'doctorpilot' ),
 					'16 / 9'  => __( 'Wide (16:9)', 'doctorpilot' ),
 				),
-				'selectors'   => array( '{{WRAPPER}}' => '--dpc-media-ratio: {{VALUE}};' ),
+				'selectors'   => array( '{{WRAPPER}} .dp-dir' => '--dpc-media-ratio: {{VALUE}};' ),
 				'description' => __( 'The image box always reserves its height, so a missing or slow photo never shifts the layout.', 'doctorpilot' ),
 			)
 		);
@@ -409,7 +411,7 @@ trait CardDesignControls {
 					'fill'       => __( 'Fill', 'doctorpilot' ),
 					'scale-down' => __( 'Scale down', 'doctorpilot' ),
 				),
-				'selectors' => array( '{{WRAPPER}}' => '--dpc-media-fit: {{VALUE}};' ),
+				'selectors' => array( '{{WRAPPER}} .dp-dir' => '--dpc-media-fit: {{VALUE}};' ),
 			)
 		);
 
@@ -426,7 +428,7 @@ trait CardDesignControls {
 					'left center'   => __( 'Left', 'doctorpilot' ),
 					'right center'  => __( 'Right', 'doctorpilot' ),
 				),
-				'selectors'   => array( '{{WRAPPER}}' => '--dpc-media-pos: {{VALUE}};' ),
+				'selectors'   => array( '{{WRAPPER}} .dp-dir' => '--dpc-media-pos: {{VALUE}};' ),
 				'description' => __( 'Top usually frames a portrait head better than centre.', 'doctorpilot' ),
 			)
 		);
@@ -438,7 +440,7 @@ trait CardDesignControls {
 				'type'       => Controls_Manager::SLIDER,
 				'size_units' => array( 'px', '%' ),
 				'range'      => array( 'px' => array( 'min' => 0, 'max' => 48 ) ),
-				'selectors'  => array( '{{WRAPPER}}' => '--dpc-media-radius: {{SIZE}}{{UNIT}};' ),
+				'selectors'  => array( '{{WRAPPER}} .dp-dir' => '--dpc-media-radius: {{SIZE}}{{UNIT}};' ),
 			)
 		);
 
@@ -447,7 +449,7 @@ trait CardDesignControls {
 			array(
 				'label'       => __( 'Placeholder background', 'doctorpilot' ),
 				'type'        => Controls_Manager::COLOR,
-				'selectors'   => array( '{{WRAPPER}}' => '--dpc-media-bg: {{VALUE}};' ),
+				'selectors'   => array( '{{WRAPPER}} .dp-dir' => '--dpc-media-bg: {{VALUE}};' ),
 				'description' => __( 'Shown behind the initials when a doctor has no photo.', 'doctorpilot' ),
 			)
 		);
@@ -458,7 +460,7 @@ trait CardDesignControls {
 				'label'     => __( 'Overlay', 'doctorpilot' ),
 				'type'      => Controls_Manager::COLOR,
 				'separator' => 'before',
-				'selectors' => array( '{{WRAPPER}}' => '--dpc-overlay: {{VALUE}};' ),
+				'selectors' => array( '{{WRAPPER}} .dp-dir' => '--dpc-overlay: {{VALUE}};' ),
 			)
 		);
 
@@ -467,7 +469,7 @@ trait CardDesignControls {
 			array(
 				'label'     => __( 'Overlay on hover', 'doctorpilot' ),
 				'type'      => Controls_Manager::COLOR,
-				'selectors' => array( '{{WRAPPER}}' => '--dpc-overlay-hover: {{VALUE}};' ),
+				'selectors' => array( '{{WRAPPER}} .dp-dir' => '--dpc-overlay-hover: {{VALUE}};' ),
 			)
 		);
 
@@ -477,7 +479,7 @@ trait CardDesignControls {
 				'label'     => __( 'Hover zoom', 'doctorpilot' ),
 				'type'      => Controls_Manager::SLIDER,
 				'range'     => array( 'px' => array( 'min' => 1, 'max' => 1.25, 'step' => 0.01 ) ),
-				'selectors' => array( '{{WRAPPER}}' => '--dpc-media-zoom: {{SIZE}};' ),
+				'selectors' => array( '{{WRAPPER}} .dp-dir' => '--dpc-media-zoom: {{SIZE}};' ),
 			)
 		);
 
@@ -510,11 +512,6 @@ trait CardDesignControls {
 				'selector' => '{{WRAPPER}} .dp-dir .dp-card__headline',
 				'token'    => '--dpc-headline-color',
 			),
-			'cred'     => array(
-				'label'    => __( 'Credentials', 'doctorpilot' ),
-				'selector' => '{{WRAPPER}} .dp-dir .dp-card__credentials',
-				'token'    => '--dpc-cred-color',
-			),
 			'spec'     => array(
 				'label'    => __( 'Specialty / department', 'doctorpilot' ),
 				'selector' => '{{WRAPPER}} .dp-dir .dp-card__specialty',
@@ -542,7 +539,7 @@ trait CardDesignControls {
 				array(
 					'label'     => __( 'Color', 'doctorpilot' ),
 					'type'      => Controls_Manager::COLOR,
-					'selectors' => array( '{{WRAPPER}}' => $element['token'] . ': {{VALUE}};' ),
+					'selectors' => array( '{{WRAPPER}} .dp-dir' => $element['token'] . ': {{VALUE}};' ),
 				)
 			);
 
@@ -552,7 +549,7 @@ trait CardDesignControls {
 					array(
 						'label'     => __( 'Hover color', 'doctorpilot' ),
 						'type'      => Controls_Manager::COLOR,
-						'selectors' => array( '{{WRAPPER}}' => $element['hover'] . ': {{VALUE}};' ),
+						'selectors' => array( '{{WRAPPER}} .dp-dir' => $element['hover'] . ': {{VALUE}};' ),
 					)
 				);
 			}
@@ -571,7 +568,7 @@ trait CardDesignControls {
 			array(
 				'label'     => __( 'Metadata icon color', 'doctorpilot' ),
 				'type'      => Controls_Manager::COLOR,
-				'selectors' => array( '{{WRAPPER}}' => '--dpc-meta-icon: {{VALUE}};' ),
+				'selectors' => array( '{{WRAPPER}} .dp-dir' => '--dpc-meta-icon: {{VALUE}};' ),
 			)
 		);
 
@@ -593,7 +590,7 @@ trait CardDesignControls {
 				'max'         => 8,
 				'default'     => 0,
 				'separator'   => 'before',
-				'selectors'   => array( '{{WRAPPER}}' => '--dp-clamp: {{VALUE}};' ),
+				'selectors'   => array( '{{WRAPPER}} .dp-dir' => '--dp-clamp: {{VALUE}};' ),
 				'description' => __( 'Applies to the headline. Zero leaves text unclamped.', 'doctorpilot' ),
 			)
 		);
@@ -602,7 +599,7 @@ trait CardDesignControls {
 	}
 
 	/**
-	 * Badges: featured, international, availability.
+	 * Badges: featured and international.
 	 *
 	 * @return void
 	 */
@@ -626,11 +623,6 @@ trait CardDesignControls {
 				'bg'    => '--dpb-intl-bg',
 				'color' => '--dpb-intl-color',
 			),
-			'badge_avail'    => array(
-				'label' => __( 'Availability', 'doctorpilot' ),
-				'bg'    => '--dpb-avail-bg',
-				'color' => '--dpb-avail-color',
-			),
 		);
 
 		foreach ( $badges as $key => $badge ) {
@@ -648,7 +640,7 @@ trait CardDesignControls {
 				array(
 					'label'     => __( 'Background', 'doctorpilot' ),
 					'type'      => Controls_Manager::COLOR,
-					'selectors' => array( '{{WRAPPER}}' => $badge['bg'] . ': {{VALUE}};' ),
+					'selectors' => array( '{{WRAPPER}} .dp-dir' => $badge['bg'] . ': {{VALUE}};' ),
 				)
 			);
 
@@ -657,7 +649,7 @@ trait CardDesignControls {
 				array(
 					'label'     => __( 'Text color', 'doctorpilot' ),
 					'type'      => Controls_Manager::COLOR,
-					'selectors' => array( '{{WRAPPER}}' => $badge['color'] . ': {{VALUE}};' ),
+					'selectors' => array( '{{WRAPPER}} .dp-dir' => $badge['color'] . ': {{VALUE}};' ),
 				)
 			);
 		}
@@ -678,7 +670,7 @@ trait CardDesignControls {
 				'type'       => Controls_Manager::SLIDER,
 				'size_units' => array( 'px' ),
 				'range'      => array( 'px' => array( 'min' => 0, 'max' => 999 ) ),
-				'selectors'  => array( '{{WRAPPER}}' => '--dpb-radius: {{SIZE}}px;' ),
+				'selectors'  => array( '{{WRAPPER}} .dp-dir' => '--dpb-radius: {{SIZE}}px;' ),
 			)
 		);
 
@@ -689,7 +681,7 @@ trait CardDesignControls {
 				'type'       => Controls_Manager::DIMENSIONS,
 				'size_units' => array( 'px', 'em' ),
 				'selectors'  => array(
-					'{{WRAPPER}}' => '--dpb-pad: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+					'{{WRAPPER}} .dp-dir' => '--dpb-pad: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
 				),
 			)
 		);
@@ -701,7 +693,7 @@ trait CardDesignControls {
 				'type'       => Controls_Manager::SLIDER,
 				'size_units' => array( 'px' ),
 				'range'      => array( 'px' => array( 'min' => 0, 'max' => 24 ) ),
-				'selectors'  => array( '{{WRAPPER}}' => '--dpb-gap: {{SIZE}}px;' ),
+				'selectors'  => array( '{{WRAPPER}} .dp-dir' => '--dpb-gap: {{SIZE}}px;' ),
 			)
 		);
 
@@ -712,7 +704,7 @@ trait CardDesignControls {
 				'type'       => Controls_Manager::SLIDER,
 				'size_units' => array( 'px' ),
 				'range'      => array( 'px' => array( 'min' => 0, 'max' => 48 ) ),
-				'selectors'  => array( '{{WRAPPER}}' => '--dpb-offset-x: {{SIZE}}px;' ),
+				'selectors'  => array( '{{WRAPPER}} .dp-dir' => '--dpb-offset-x: {{SIZE}}px;' ),
 			)
 		);
 
@@ -723,7 +715,7 @@ trait CardDesignControls {
 				'type'       => Controls_Manager::SLIDER,
 				'size_units' => array( 'px' ),
 				'range'      => array( 'px' => array( 'min' => 0, 'max' => 48 ) ),
-				'selectors'  => array( '{{WRAPPER}}' => '--dpb-offset-y: {{SIZE}}px;' ),
+				'selectors'  => array( '{{WRAPPER}} .dp-dir' => '--dpb-offset-y: {{SIZE}}px;' ),
 			)
 		);
 
@@ -759,7 +751,7 @@ trait CardDesignControls {
 				'type'       => Controls_Manager::DIMENSIONS,
 				'size_units' => array( 'px', 'em' ),
 				'selectors'  => array(
-					'{{WRAPPER}}' => '--dpbtn-pad: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+					'{{WRAPPER}} .dp-dir' => '--dpbtn-pad: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
 				),
 			)
 		);
@@ -771,7 +763,7 @@ trait CardDesignControls {
 				'type'       => Controls_Manager::SLIDER,
 				'size_units' => array( 'px' ),
 				'range'      => array( 'px' => array( 'min' => 0, 'max' => 999 ) ),
-				'selectors'  => array( '{{WRAPPER}}' => '--dpbtn-radius: {{SIZE}}px;' ),
+				'selectors'  => array( '{{WRAPPER}} .dp-dir' => '--dpbtn-radius: {{SIZE}}px;' ),
 			)
 		);
 
@@ -782,7 +774,7 @@ trait CardDesignControls {
 				'type'       => Controls_Manager::SLIDER,
 				'size_units' => array( 'px' ),
 				'range'      => array( 'px' => array( 'min' => 0, 'max' => 32 ) ),
-				'selectors'  => array( '{{WRAPPER}}' => '--dpbtn-gap: {{SIZE}}px;' ),
+				'selectors'  => array( '{{WRAPPER}} .dp-dir' => '--dpbtn-gap: {{SIZE}}px;' ),
 			)
 		);
 
@@ -842,7 +834,7 @@ trait CardDesignControls {
 				array(
 					'label'     => __( 'Background', 'doctorpilot' ),
 					'type'      => Controls_Manager::COLOR,
-					'selectors' => array( '{{WRAPPER}}' => $button['bg'] . ': {{VALUE}};' ),
+					'selectors' => array( '{{WRAPPER}} .dp-dir' => $button['bg'] . ': {{VALUE}};' ),
 				)
 			);
 
@@ -851,7 +843,7 @@ trait CardDesignControls {
 				array(
 					'label'     => __( 'Text color', 'doctorpilot' ),
 					'type'      => Controls_Manager::COLOR,
-					'selectors' => array( '{{WRAPPER}}' => $button['color'] . ': {{VALUE}};' ),
+					'selectors' => array( '{{WRAPPER}} .dp-dir' => $button['color'] . ': {{VALUE}};' ),
 				)
 			);
 
@@ -860,7 +852,7 @@ trait CardDesignControls {
 				array(
 					'label'     => __( 'Border color', 'doctorpilot' ),
 					'type'      => Controls_Manager::COLOR,
-					'selectors' => array( '{{WRAPPER}}' => $button['border'] . ': {{VALUE}};' ),
+					'selectors' => array( '{{WRAPPER}} .dp-dir' => $button['border'] . ': {{VALUE}};' ),
 				)
 			);
 
@@ -876,7 +868,7 @@ trait CardDesignControls {
 				array(
 					'label'     => __( 'Background', 'doctorpilot' ),
 					'type'      => Controls_Manager::COLOR,
-					'selectors' => array( '{{WRAPPER}}' => $button['bg_hover'] . ': {{VALUE}};' ),
+					'selectors' => array( '{{WRAPPER}} .dp-dir' => $button['bg_hover'] . ': {{VALUE}};' ),
 				)
 			);
 
@@ -885,7 +877,7 @@ trait CardDesignControls {
 				array(
 					'label'     => __( 'Text color', 'doctorpilot' ),
 					'type'      => Controls_Manager::COLOR,
-					'selectors' => array( '{{WRAPPER}}' => $button['color_hover'] . ': {{VALUE}};' ),
+					'selectors' => array( '{{WRAPPER}} .dp-dir' => $button['color_hover'] . ': {{VALUE}};' ),
 				)
 			);
 

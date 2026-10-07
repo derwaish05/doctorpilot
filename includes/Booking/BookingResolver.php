@@ -9,6 +9,8 @@ declare( strict_types=1 );
 
 namespace BrainStudioz\DoctorPilot\Booking;
 
+use BrainStudioz\DoctorPilot\Fields\FieldRegistry;
+
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
@@ -16,12 +18,23 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Holds the registered booking providers and resolves a doctor's CTA.
  *
- * Free registers External URL, Phone, and Enquiry providers. Pro can register
- * additional providers (e.g. BookPilot) through the `doctorpilot/booking/providers`
- * filter. Every resolved CTA is revalidated before it is returned; on failure a
- * safe fallback is used rather than a fabricated appointment.
+ * Registers the External URL, Phone and Enquiry providers; add-ons may register
+ * more through the `doctorpilot/booking/providers` filter. A doctor with no
+ * method of their own — or one naming a provider that is no longer installed —
+ * inherits the site default from Settings → Booking. Every resolved CTA is
+ * revalidated before it is returned; on failure the button is hidden rather
+ * than pointed somewhere unintended.
  */
 final class BookingResolver {
+
+	/**
+	 * Booking method meaning "this doctor takes no bookings".
+	 *
+	 * Distinct from an unset method, which inherits the site default.
+	 *
+	 * @var string
+	 */
+	private const OPT_OUT = 'none';
 
 	/**
 	 * Registered providers keyed by id.
@@ -78,7 +91,39 @@ final class BookingResolver {
 			return null;
 		}
 
-		return null;
+		return $this->resolve_default( $doctor_id, $location_idx );
+	}
+
+	/**
+	 * Resolve through the site-wide default method when no provider claimed the
+	 * doctor.
+	 *
+	 * That happens for a doctor who has never had a booking method saved, and
+	 * for one still carrying a method whose provider no longer exists — a
+	 * profile left on `bookpilot` after that provider was removed. Inheriting
+	 * the site default keeps their button working instead of silently dropping
+	 * it. A doctor whose own provider matched and failed never reaches here.
+	 *
+	 * @param int      $doctor_id    Doctor post ID.
+	 * @param int|null $location_idx Optional location index.
+	 * @return BookingCta|null
+	 */
+	private function resolve_default( int $doctor_id, ?int $location_idx ): ?BookingCta {
+		// An explicit opt-out. Without this a doctor who takes no bookings would
+		// inherit the site default and show a button the admin just turned off.
+		if ( self::OPT_OUT === (string) get_post_meta( $doctor_id, FieldRegistry::META_PREFIX . 'booking_method', true ) ) {
+			return null;
+		}
+
+		$provider = $this->providers[ BookingDefaults::method() ] ?? null;
+
+		if ( ! $provider instanceof BookingProviderInterface ) {
+			return null;
+		}
+
+		$cta = $provider->resolve( $doctor_id, $location_idx );
+
+		return $cta instanceof BookingCta && $this->is_safe( $cta ) ? $cta : null;
 	}
 
 	/**

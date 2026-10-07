@@ -78,13 +78,6 @@ final class SearchRequest {
 	private string $gender;
 
 	/**
-	 * Accepting-new-patients filter: true, false, or null (any).
-	 *
-	 * @var bool|null
-	 */
-	private ?bool $accepting_new;
-
-	/**
 	 * Online-consultation filter: true, false, or null (any).
 	 *
 	 * @var bool|null
@@ -95,7 +88,7 @@ final class SearchRequest {
 	 * International filter: true (international only), false (national only),
 	 * or null (any).
 	 *
-	 * Unlike the accepting-new and online filters, both truth values are
+	 * Unlike the online filter, both truth values are
 	 * meaningful here — "national" is a real thing to ask for, not merely the
 	 * absence of a filter — so `false` must survive all the way to the query.
 	 *
@@ -138,7 +131,6 @@ final class SearchRequest {
 	 * @param string                              $mode             Search mode.
 	 * @param array<string, array<int, string>>   $taxonomy_filters Taxonomy filters.
 	 * @param string                              $gender           Gender filter.
-	 * @param bool|null                           $accepting_new    Accepting-new filter.
 	 * @param bool|null                           $online           Online filter.
 	 * @param string                              $sort             Sort.
 	 * @param string                              $view             View.
@@ -152,7 +144,6 @@ final class SearchRequest {
 		string $mode,
 		array $taxonomy_filters,
 		string $gender,
-		?bool $accepting_new,
 		?bool $online,
 		string $sort,
 		string $view,
@@ -166,7 +157,6 @@ final class SearchRequest {
 		$this->taxonomy_filters = $taxonomy_filters;
 		$this->doctors          = $doctors;
 		$this->gender           = $gender;
-		$this->accepting_new    = $accepting_new;
 		$this->online           = $online;
 		$this->sort             = $sort;
 		$this->view             = $view;
@@ -230,15 +220,6 @@ final class SearchRequest {
 	 */
 	public function gender(): string {
 		return $this->gender;
-	}
-
-	/**
-	 * Accepting-new filter.
-	 *
-	 * @return bool|null
-	 */
-	public function accepting_new(): ?bool {
-		return $this->accepting_new;
 	}
 
 	/**
@@ -308,7 +289,6 @@ final class SearchRequest {
 			'tax'  => $this->taxonomy_filters,
 			'doc'  => $this->doctors,
 			'g'    => $this->gender,
-			'an'   => $this->accepting_new,
 			'on'   => $this->online,
 			'intl' => $this->international,
 			's'    => $this->sort,

@@ -34,6 +34,7 @@ final class LibraryPostTypes {
 	public const PROCEDURE    = 'doctorpilot_proc';
 	public const PUBLICATION  = 'doctorpilot_pub';
 	public const CERTIFICATION = 'doctorpilot_cert';
+	public const MEMBERSHIP   = 'doctorpilot_mem';
 	public const FAQ          = 'doctorpilot_faq';
 
 	/**
@@ -65,6 +66,7 @@ final class LibraryPostTypes {
 			self::PROCEDURE,
 			self::PUBLICATION,
 			self::CERTIFICATION,
+			self::MEMBERSHIP,
 			self::FAQ,
 		);
 	}
@@ -166,6 +168,24 @@ final class LibraryPostTypes {
 					'issued_date'    => array( 'label' => __( 'Issued date', 'doctorpilot' ), 'type' => 'text' ),
 					'expiry_date'    => array( 'label' => __( 'Expiry date', 'doctorpilot' ), 'type' => 'text' ),
 					'credential_url' => array( 'label' => __( 'Credential URL', 'doctorpilot' ), 'type' => 'url' ),
+				),
+			),
+			self::MEMBERSHIP  => array(
+				'labels'        => array(
+					'singular' => __( 'Society Membership', 'doctorpilot' ),
+					'plural'   => __( 'Society Memberships', 'doctorpilot' ),
+					'menu'     => __( 'Society Memberships', 'doctorpilot' ),
+				),
+				// The society name IS the post title; the rest is meta. Field set and
+				// labels mirror the doctor's local Society memberships repeater so the
+				// shared and doctor-only forms match.
+				'title_parts'   => array(),
+				'list_subtitle' => 'role',
+				'fields'        => array(
+					'society' => array( 'label' => __( 'Society', 'doctorpilot' ), 'type' => 'text', 'store' => 'title' ),
+					'role'    => array( 'label' => __( 'Role / grade', 'doctorpilot' ), 'type' => 'text' ),
+					'year'    => array( 'label' => __( 'Year', 'doctorpilot' ), 'type' => 'text' ),
+					'url'     => array( 'label' => __( 'URL', 'doctorpilot' ), 'type' => 'url' ),
 				),
 			),
 			self::FAQ         => array(

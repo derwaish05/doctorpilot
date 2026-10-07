@@ -1,12 +1,80 @@
 /* DoctorPilot frontend styles. Scoped to dp- classes to avoid theme conflicts. */
 
-/* Theme primary color, used for buttons, backgrounds, headings, and links. */
+/* ---------------------------------------------------------------------------
+   The palette. One definition, read by every widget.
+
+   These sit on :root rather than on a widget class because they were on one
+   before, and the widgets that were not on the list — the hero, the timeline,
+   the index block — could not see them and re-invented each value as a literal.
+   That is how the plugin ended up with twelve muted greys and eight hairlines.
+   Every name is `--dp-` prefixed, so nothing here can collide with a theme.
+
+   A widget may still override any of these on its own root, and the Elementor
+   style controls do exactly that. Nothing below should be a literal colour: if
+   a rule needs a value that is not here, the value is missing from the palette.
+--------------------------------------------------------------------------- */
+:root {
+	/* Brand. The teal is the primary; the green is the second brand colour that
+	   carries metadata icons, timeline nodes and stat values. */
+	--dp-accent: #136888;
+	--dp-accent-hover: #0f5670;
+	--dp-accent-2: #16b47f;
+
+	/* Text. `--dp-ink` is the dark the directory, the search page and the index
+	   block already use; the doctor cards were the odd ones out. */
+	--dp-ink: #0d3b5c;
+	--dp-ink-soft: #1a4f74;
+	--dp-ink-muted: #5a6f82;
+	--dp-on-accent: #ffffff;
+
+	/* Surfaces. `--dp-surface` is the neutral pale, `--dp-surface-alt` the
+	   blue-tinted one used for hovers and inset panels, `--dp-surface-accent`
+	   the mint tint that pairs with `--dp-accent-2`. */
+	--dp-card-bg: #ffffff;
+	--dp-surface: #f5f8fb;
+	--dp-surface-alt: #eef5f9;
+	--dp-surface-accent: #e9f6f0;
+
+	/* Lines. One hairline for every rule, divider and resting border. */
+	--dp-line: #e3eaf1;
+	--dp-line-strong: #c7e2f5;
+	--dp-line-accent: #bfe3d5;
+
+	/* The search band, shared by the directory toolbar and the index block.
+	   Both read these two tokens and nothing else, so the two bars cannot drift
+	   apart again. The band is a tinted surface, not an accent: it frames the
+	   controls sitting on it rather than competing with them for attention. */
+	--dp-bar-bg: var(--dp-surface-alt);
+	--dp-bar-border: var(--dp-line-strong);
+
+	/* Status. */
+	--dp-positive: #0f766e;
+	--dp-danger: #b91c1c;
+	--dp-highlight: #fffabf;
+
+	/* Radii — four steps. Tiles and small controls, panels, large cards, pill. */
+	--dp-radius-sm: 6px;
+	--dp-radius: 12px;
+	--dp-radius-lg: 16px;
+	--dp-radius-pill: 999px;
+
+	/* Elevation. One shadow ink, three heights. */
+	--dp-shadow-ink: 13, 59, 92;
+	--dp-shadow-sm: 0 1px 2px rgba(var(--dp-shadow-ink), 0.04), 0 10px 26px -14px rgba(var(--dp-shadow-ink), 0.20);
+	--dp-shadow-md: 0 2px 4px rgba(var(--dp-shadow-ink), 0.06), 0 20px 44px -18px rgba(var(--dp-shadow-ink), 0.30);
+	--dp-shadow-lg: 0 18px 40px rgba(var(--dp-shadow-ink), 0.18);
+
+	/* Motion. */
+	--dp-transition: 240ms;
+}
+
+/* Kept because saved Elementor CSS and older templates still reference it. */
 .dp-profile,
 .dp-directory,
 .dp-results,
 .dp-search,
 .dp-hero {
-	--dp-primary: #136888;
+	--dp-primary: var(--dp-accent);
 }
 
 .dp-profile h1,
@@ -41,16 +109,16 @@
 .dp-card {
 	display: flex;
 	flex-direction: column;
-	border: 1px solid #e5e7eb;
-	border-radius: 8px;
+	border: 1px solid var(--dp-line);
+	border-radius: var(--dp-radius);
 	overflow: hidden;
-	background: #fff;
+	background: var(--dp-card-bg);
 }
 
 .dp-card__media {
 	position: relative;
 	aspect-ratio: 4 / 5;
-	background: #f3f4f6;
+	background: var(--dp-surface);
 }
 
 .dp-card__media img {
@@ -64,7 +132,7 @@
 	display: block;
 	width: 100%;
 	height: 100%;
-	background: linear-gradient(135deg, #eef2f7, #e2e8f0);
+	background: linear-gradient(135deg, var(--dp-surface), var(--dp-surface-alt));
 }
 
 .dp-badge {
@@ -73,16 +141,16 @@
 	left: 8px;
 	padding: 2px 8px;
 	font-size: 12px;
-	border-radius: 999px;
-	background: #1d4ed8;
-	color: #fff;
+	border-radius: var(--dp-radius-pill);
+	background: var(--dp-ink);
+	color: var(--dp-on-accent);
 }
 
 /* International card badge sits top-right so it never overlaps Featured. */
 .dp-badge--international {
 	left: auto;
 	right: 8px;
-	background: #0f766e;
+	background: var(--dp-positive);
 }
 
 /* Inline tag used on the profile header. */
@@ -91,9 +159,9 @@
 	padding: 2px 10px;
 	font-size: 13px;
 	line-height: 1.6;
-	border-radius: 999px;
-	background: #e6f4f1;
-	color: #0f766e;
+	border-radius: var(--dp-radius-pill);
+	background: var(--dp-surface-accent);
+	color: var(--dp-positive);
 }
 
 .dp-profile__tags {
@@ -114,10 +182,9 @@
 	line-height: 1.3;
 }
 
-.dp-card__credentials,
 .dp-card__specialty {
 	margin: 0;
-	color: #4b5563;
+	color: var(--dp-ink-muted);
 	font-size: 13px;
 }
 
@@ -126,12 +193,9 @@
 	margin: 4px 0 0;
 	padding: 0;
 	font-size: 13px;
-	color: #374151;
+	color: var(--dp-ink-muted);
 }
 
-.dp-card__meta .dp-accepting {
-	color: #047857;
-}
 
 .dp-card__actions {
 	margin-top: auto;
@@ -143,24 +207,24 @@
 .dp-btn {
 	display: inline-block;
 	padding: 8px 12px;
-	border-radius: 6px;
+	border-radius: var(--dp-radius-sm);
 	font-size: 14px;
 	text-decoration: none;
 	text-align: center;
 }
 
 .dp-btn--primary {
-	background: var(--dp-primary, #136888);
-	color: #fff;
+	background: var(--dp-primary, var(--dp-accent));
+	color: var(--dp-on-accent);
 }
 
 .dp-btn--secondary {
-	background: #f3f4f6;
-	color: #111827;
+	background: var(--dp-surface);
+	color: var(--dp-ink);
 }
 
 .dp-btn:focus {
-	outline: 2px solid var(--dp-primary, #136888);
+	outline: 2px solid var(--dp-primary, var(--dp-accent));
 	outline-offset: 2px;
 }
 
@@ -176,15 +240,10 @@
 
 .dp-profile__photo img {
 	width: 100%;
-	border-radius: 10px;
+	border-radius: var(--dp-radius);
 }
 
 .dp-profile__name {
-	margin: 0 0 4px;
-}
-
-.dp-profile__credentials {
-	color: #4b5563;
 	margin: 0 0 4px;
 }
 
@@ -193,14 +252,14 @@
 }
 
 .dp-profile__section h2 {
-	border-bottom: 2px solid #e5e7eb;
+	border-bottom: 2px solid var(--dp-line);
 	padding-bottom: 6px;
 }
 
 .dp-disclaimer {
-	color: #6b7280;
+	color: var(--dp-ink-muted);
 	font-size: 13px;
-	border-top: 1px solid #e5e7eb;
+	border-top: 1px solid var(--dp-line);
 	padding-top: 12px;
 }
 
@@ -221,8 +280,8 @@
 .dp-search__bar input[type="search"] {
 	flex: 1;
 	padding: 10px 12px;
-	border: 1px solid #cbd5e1;
-	border-radius: 6px;
+	border: 1px solid var(--dp-line);
+	border-radius: var(--dp-radius-sm);
 	font-size: 16px;
 }
 
@@ -234,8 +293,8 @@
 }
 
 .dp-filter-group {
-	border: 1px solid #e5e7eb;
-	border-radius: 8px;
+	border: 1px solid var(--dp-line);
+	border-radius: var(--dp-radius);
 	padding: 12px;
 	margin: 0 0 16px;
 }
@@ -252,7 +311,7 @@
 }
 
 .dp-filter__count {
-	color: #6b7280;
+	color: var(--dp-ink-muted);
 }
 
 .dp-search__toolbar {
@@ -274,7 +333,7 @@
 }
 
 .dp-error {
-	color: #b91c1c;
+	color: var(--dp-danger);
 }
 
 .dp-chips {
@@ -289,8 +348,8 @@
 	align-items: center;
 	gap: 6px;
 	padding: 4px 10px;
-	border-radius: 999px;
-	background: #eef2ff;
+	border-radius: var(--dp-radius-pill);
+	background: var(--dp-surface-alt);
 	font-size: 13px;
 }
 
@@ -314,16 +373,16 @@
 	flex-direction: column;
 	gap: 4px;
 	padding: 18px;
-	border: 1px solid #e5e7eb;
-	border-radius: 8px;
+	border: 1px solid var(--dp-line);
+	border-radius: var(--dp-radius);
 	text-decoration: none;
 	color: inherit;
-	background: #fff;
+	background: var(--dp-card-bg);
 	transition: box-shadow 0.15s ease;
 }
 
 .dp-dept-card:hover {
-	box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+	box-shadow: var(--dp-shadow-md);
 }
 
 .dp-dept-card__name {
@@ -332,7 +391,7 @@
 }
 
 .dp-dept-card__count {
-	color: #6b7280;
+	color: var(--dp-ink-muted);
 	font-size: 13px;
 }
 
@@ -346,7 +405,7 @@
 
 .dp-az-letter {
 	margin: 0 0 6px;
-	border-bottom: 2px solid #e5e7eb;
+	border-bottom: 2px solid var(--dp-line);
 }
 
 .dp-az-group ul {
@@ -382,14 +441,17 @@
    Colors are themeable via CSS variables set by the widget's style controls.
 --------------------------------------------------------------------------- */
 .dp-hero {
-	--dp-accent: var(--dp-primary, #136888);
+	/* `--dp-accent` used to be redefined here from `--dp-primary`. With the
+	   palette on :root and the compatibility block pointing `--dp-primary` back
+	   at `--dp-accent`, redefining it here would be a reference cycle and both
+	   properties would compute to nothing. The hero reads the root value. */
 	position: relative;
 	overflow: hidden;
 	/* Solid fallback only; the Elementor Background control owns the visible
 	   background (defaults to the primary color) and must not be fought by a
 	   base background-image, or a Classic color choice couldn't show through. */
-	background-color: var(--dp-primary, #136888);
-	color: #fff;
+	background-color: var(--dp-primary, var(--dp-accent));
+	color: var(--dp-on-accent);
 	padding: 40px 24px 52px;
 }
 
@@ -420,9 +482,9 @@
 	text-decoration: none;
 }
 
-.dp-hero__crumbs a:hover { color: #fff; }
+.dp-hero__crumbs a:hover { color: var(--dp-on-accent); }
 .dp-hero__sep { margin: 0 8px; opacity: 0.6; }
-.dp-hero__current { color: #fff; }
+.dp-hero__current { color: var(--dp-on-accent); }
 
 .dp-hero__grid {
 	display: grid;
@@ -433,11 +495,11 @@
 
 .dp-hero__photo {
 	position: relative;
-	border-radius: 16px;
+	border-radius: var(--dp-radius-lg);
 	overflow: hidden;
 	/* Soft drop shadow only. The green ring was removed so the widget's Border /
 	   Box Shadow controls don't produce a doubled border. */
-	box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
+	box-shadow: var(--dp-shadow-lg);
 	margin-top: 12px;
 }
 
@@ -453,14 +515,14 @@
 .dp-hero__badge {
 	--dp-badge-offset: 16px;
 	position: absolute;
-	background: #fffabf;
-	color: #136888;
+	background: var(--dp-highlight);
+	color: var(--dp-accent);
 	font-size: 11px;
 	font-weight: 700;
 	letter-spacing: 0.07em;
 	text-transform: uppercase;
 	padding: 7px 14px;
-	border-radius: 8px;
+	border-radius: var(--dp-radius);
 }
 
 /* Badge corner placement (widget "Position" control). Default: bottom-left. */
@@ -474,7 +536,7 @@
 	font-size: clamp(30px, 4vw, 46px);
 	font-weight: 800;
 	line-height: 1.05;
-	color: #fff;
+	color: var(--dp-on-accent);
 }
 
 .dp-hero__role {
@@ -497,7 +559,7 @@
 }
 
 .dp-hero__k { color: rgba(255, 255, 255, 0.6); }
-.dp-hero__v { font-weight: 700; color: #fff; }
+.dp-hero__v { font-weight: 700; color: var(--dp-on-accent); }
 
 .dp-hero__tags {
 	list-style: none;
@@ -513,7 +575,7 @@
 	align-items: center;
 	gap: 7px;
 	border: 1px solid rgba(255, 255, 255, 0.22);
-	border-radius: 999px;
+	border-radius: var(--dp-radius-pill);
 	padding: 7px 15px;
 	font-size: 13px;
 	color: rgba(255, 255, 255, 0.92);
@@ -532,7 +594,7 @@
 	align-items: center;
 	gap: 9px;
 	padding: 14px 28px;
-	border-radius: 999px;
+	border-radius: var(--dp-radius-pill);
 	font-size: 15px;
 	font-weight: 600;
 	text-decoration: none;
@@ -540,16 +602,16 @@
 }
 
 .dp-hero__btn--primary {
-	background: #fffabf;
-	color: #136888;
+	background: var(--dp-highlight);
+	color: var(--dp-accent);
 }
 
 .dp-hero__btn--primary:hover { filter: brightness(0.96); }
 
 .dp-hero__btn--ghost {
-	border: 1px solid #136888;
-	background: #fffabf;
-	color: #136888;
+	border: 1px solid var(--dp-highlight);
+	background: transparent;
+	color: var(--dp-highlight);
 }
 
 .dp-hero__btn--ghost:hover { filter: brightness(0.96); }
@@ -575,8 +637,8 @@
 	letter-spacing: 0.05em;
 	text-transform: uppercase;
 	padding: 6px 11px;
-	border-radius: 8px;
-	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+	border-radius: var(--dp-radius);
+	box-shadow: var(--dp-shadow-sm);
 }
 
 /* ---------------------------------------------------------------------------
@@ -604,7 +666,7 @@
 /* Default styling (overridable per widget via the Style controls). */
 .dp-ah__subheading {
 	margin: 0 0 8px;
-	color: #fffabf;
+	color: var(--dp-accent);
 	font-size: 13px;
 	font-weight: 700;
 	letter-spacing: 0.12em;
@@ -614,7 +676,7 @@
 
 .dp-ah__heading {
 	margin: 0 0 14px;
-	color: #136888;
+	color: var(--dp-accent);
 	font-size: 28px;
 	font-weight: 800;
 	line-height: 1.2;
@@ -622,7 +684,7 @@
 
 .dp-ah__description {
 	margin: 16px 0 0;
-	color: #5a6b7a;
+	color: var(--dp-ink-muted);
 	font-size: 16px;
 	line-height: 1.7;
 }
@@ -644,7 +706,7 @@
 .dp-ah__line {
 	display: inline-block;
 	background: var(--dp-ah-line-color, currentColor);
-	border-radius: 999px;
+	border-radius: var(--dp-radius-pill);
 }
 
 .dp-ah__line--top,
@@ -692,15 +754,15 @@
 	align-items: center;
 	gap: 12px;
 	padding: 16px 18px;
-	border: 1px solid #e6e9ee;
-	border-radius: 12px;
-	background: #fff;
+	border: 1px solid var(--dp-line);
+	border-radius: var(--dp-radius);
+	background: var(--dp-card-bg);
 }
 
 .dp-scope__icon {
 	display: inline-flex;
 	align-items: center;
-	color: #16b47f;
+	color: var(--dp-accent-2);
 	font-size: 18px;
 	flex: 0 0 auto;
 }
@@ -713,7 +775,7 @@
 }
 
 .dp-scope__label {
-	color: #136888;
+	color: var(--dp-accent);
 	font-weight: 700;
 	font-size: 15px;
 	line-height: 1.35;
@@ -730,9 +792,9 @@
 --------------------------------------------------------------------------- */
 .dp-timeline {
 	--dp-tl-node-size: 38px;
-	--dp-tl-node-bg: #e6f4ee;
-	--dp-tl-node-color: #16b47f;
-	--dp-tl-line: #bfe3d5;
+	--dp-tl-node-bg: var(--dp-surface-accent);
+	--dp-tl-node-color: var(--dp-accent-2);
+	--dp-tl-line: var(--dp-line-accent);
 	--dp-tl-item-gap: 22px;
 	list-style: none;
 	margin: 0;
@@ -789,14 +851,14 @@
 }
 
 .dp-timeline__card {
-	border: 1px solid #e6e9ee;
-	border-radius: 12px;
+	border: 1px solid var(--dp-line);
+	border-radius: var(--dp-radius);
 	padding: 16px 22px;
-	background: #fff;
+	background: var(--dp-card-bg);
 }
 
 .dp-timeline__title {
-	color: #136888;
+	color: var(--dp-accent);
 	font-weight: 800;
 	font-size: 17px;
 	line-height: 1.35;
@@ -807,7 +869,7 @@
 	display: flex;
 	align-items: center;
 	gap: 7px;
-	color: #6b7a88;
+	color: var(--dp-ink-muted);
 	font-size: 14px;
 }
 
@@ -848,15 +910,15 @@
 .dp-bcard {
 	position: relative;
 	overflow: hidden;
-	background: linear-gradient(160deg, #0e2a33, #123f4a);
-	color: #fff;
-	border-radius: 18px;
+	background: linear-gradient(160deg, var(--dp-ink), var(--dp-ink-soft));
+	color: var(--dp-on-accent);
+	border-radius: var(--dp-radius-lg);
 	padding: 26px 24px;
 }
 
 .dp-bcard__mark {
 	display: inline-flex;
-	color: #16b47f;
+	color: var(--dp-accent-2);
 	font-size: 20px;
 	margin-bottom: 14px;
 }
@@ -868,7 +930,7 @@
 	margin: 0 0 6px;
 	font-size: 22px;
 	font-weight: 800;
-	color: #fff;
+	color: var(--dp-on-accent);
 	line-height: 1.2;
 }
 
@@ -885,7 +947,7 @@
 	gap: 9px;
 	width: 100%;
 	padding: 14px 18px;
-	border-radius: 999px;
+	border-radius: var(--dp-radius-pill);
 	font-size: 15px;
 	font-weight: 700;
 	text-decoration: none;
@@ -894,9 +956,9 @@
 }
 
 .dp-bcard__btn + .dp-bcard__btn { margin-top: 12px; }
-.dp-bcard__btn--primary { background: #16b47f; color: #fff; }
+.dp-bcard__btn--primary { background: var(--dp-accent-2); color: var(--dp-on-accent); }
 .dp-bcard__btn--primary:hover { filter: brightness(1.05); }
-.dp-bcard__btn--ghost { border-color: rgba(255, 255, 255, 0.35); color: #fff; }
+.dp-bcard__btn--ghost { border-color: rgba(255, 255, 255, 0.35); color: var(--dp-on-accent); }
 .dp-bcard__btn--ghost:hover { background: rgba(255, 255, 255, 0.08); }
 .dp-bcard__btn svg,
 .dp-bcard__btn i { width: 1em; height: 1em; }
@@ -908,9 +970,9 @@
 	list-style: none;
 	margin: 0;
 	padding: 20px 22px;
-	border: 1px solid #e6e9ee;
-	border-radius: 16px;
-	background: #fff;
+	border: 1px solid var(--dp-line);
+	border-radius: var(--dp-radius-lg);
+	background: var(--dp-card-bg);
 	display: flex;
 	flex-direction: column;
 	gap: 18px;
@@ -926,9 +988,9 @@
 	flex: 0 0 auto;
 	width: 34px;
 	height: 34px;
-	border-radius: 10px;
-	background: #e9f6f0;
-	color: #16b47f;
+	border-radius: var(--dp-radius);
+	background: var(--dp-surface-accent);
+	color: var(--dp-accent-2);
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
@@ -944,12 +1006,12 @@
 	font-weight: 700;
 	letter-spacing: 0.08em;
 	text-transform: uppercase;
-	color: #8a97a3;
+	color: var(--dp-ink-muted);
 	margin-bottom: 2px;
 }
 
 .dp-facts__value {
-	color: #136888;
+	color: var(--dp-accent);
 	font-weight: 700;
 	font-size: 15px;
 	word-break: break-word;
@@ -965,7 +1027,7 @@
 	font-weight: 700;
 	letter-spacing: 0.08em;
 	text-transform: uppercase;
-	color: #8a97a3;
+	color: var(--dp-ink-muted);
 	margin: 0 0 16px;
 }
 
@@ -977,34 +1039,96 @@
 
 /* Each stat is its own box, fully styleable via the widget's Item controls. */
 .dp-stats__item {
-	background: #f6f8fb;
-	border: 1px solid #eceff3;
-	border-radius: 14px;
+	background: var(--dp-surface);
+	border: 1px solid var(--dp-line);
+	border-radius: var(--dp-radius);
 	padding: 20px 14px;
 	text-align: center;
 }
 
 .dp-stats__value {
-	color: #16b47f;
+	color: var(--dp-accent-2);
 	font-size: 26px;
 	font-weight: 800;
 	line-height: 1.1;
 }
 
 .dp-stats__label {
-	color: #6b7a88;
+	color: var(--dp-ink-muted);
 	font-size: 13px;
 	line-height: 1.4;
 	margin-top: 2px;
+}
+
+/* Achievement lists under the stat grid. The first one keeps its top margin so
+   it clears the grid; when a doctor has no stats at all the list becomes the
+   first child and the margin would be a stray gap, hence the :first-child
+   reset. */
+.dp-stats__section {
+	margin-top: 40px;
+}
+
+.dp-stats__section:first-child {
+	margin-top: 0;
+}
+
+.dp-stats__section-title {
+	font-size: 20px;
+	font-weight: 700;
+	line-height: 1.3;
+	color: var(--dp-ink);
+	margin: 0 0 16px;
+}
+
+.dp-stats__ach {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	display: grid;
+	gap: 14px;
+}
+
+.dp-stats__ach-item {
+	display: flex;
+	align-items: flex-start;
+	gap: 12px;
+	margin: 0;
+}
+
+.dp-stats__ach-icon {
+	flex: 0 0 auto;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	color: var(--dp-accent-2);
+	font-size: 18px;
+	/* Nudge the glyph onto the first line's optical centre. */
+	margin-top: 2px;
+}
+
+.dp-stats__ach-icon svg,
+.dp-stats__ach-icon i {
+	width: 1em;
+	height: 1em;
+	display: block;
+	fill: currentColor;
+}
+
+.dp-stats__ach-text {
+	color: var(--dp-ink-muted);
+	font-size: 16px;
+	line-height: 1.5;
+	min-width: 0;
+	word-break: break-word;
 }
 
 /* ---------------------------------------------------------------------------
    Certifications widget.
 --------------------------------------------------------------------------- */
 .dp-certs {
-	border: 1px solid #e6e9ee;
-	border-radius: 16px;
-	background: #fff;
+	border: 1px solid var(--dp-line);
+	border-radius: var(--dp-radius-lg);
+	background: var(--dp-card-bg);
 	padding: 22px 24px;
 }
 
@@ -1013,7 +1137,7 @@
 	font-weight: 700;
 	letter-spacing: 0.08em;
 	text-transform: uppercase;
-	color: #8a97a3;
+	color: var(--dp-ink-muted);
 	margin: 0 0 16px;
 }
 
@@ -1034,7 +1158,7 @@
 
 .dp-certs__icon {
 	flex: 0 0 auto;
-	color: #16b47f;
+	color: var(--dp-accent-2);
 	font-size: 15px;
 	line-height: 1.5;
 	display: inline-flex;
@@ -1047,7 +1171,7 @@
 
 .dp-certs__name {
 	display: block;
-	color: #136888;
+	color: var(--dp-accent);
 	font-weight: 700;
 	font-size: 14px;
 	line-height: 1.4;
@@ -1057,14 +1181,14 @@
 
 .dp-certs__org {
 	display: block;
-	color: #8a97a3;
+	color: var(--dp-ink-muted);
 	font-size: 12px;
 	margin-top: 2px;
 }
 
 .dp-certs__dates {
 	display: block;
-	color: #8a97a3;
+	color: var(--dp-ink-muted);
 	font-size: 12px;
 	margin-top: 1px;
 }
@@ -1077,7 +1201,7 @@
 	font-weight: 700;
 	letter-spacing: 0.08em;
 	text-transform: uppercase;
-	color: #16b47f;
+	color: var(--dp-accent-2);
 	margin: 0 0 6px;
 	line-height: 1.4;
 }
@@ -1086,7 +1210,7 @@
 	margin: 0;
 	font-size: 24px;
 	font-weight: 800;
-	color: #136888;
+	color: var(--dp-accent);
 	line-height: 1.2;
 }
 
@@ -1104,7 +1228,7 @@
 	font-weight: 700;
 	letter-spacing: 0.08em;
 	text-transform: uppercase;
-	color: #8a97a3;
+	color: var(--dp-ink-muted);
 	margin: 0 0 14px;
 }
 
@@ -1125,7 +1249,7 @@
 
 .dp-cp__icon {
 	flex: 0 0 auto;
-	color: #16b47f;
+	color: var(--dp-accent-2);
 	font-size: 15px;
 	line-height: 1.5;
 	display: inline-flex;
@@ -1139,7 +1263,7 @@
 
 .dp-cp__name {
 	display: block;
-	color: #136888;
+	color: var(--dp-accent);
 	font-weight: 700;
 	font-size: 15px;
 	line-height: 1.4;
@@ -1149,14 +1273,14 @@
 
 .dp-cp__meta {
 	display: block;
-	color: #8a97a3;
+	color: var(--dp-ink-muted);
 	font-size: 13px;
 	margin-top: 2px;
 }
 
 .dp-cp__desc {
 	display: block;
-	color: #55606a;
+	color: var(--dp-ink-muted);
 	font-size: 13px;
 	line-height: 1.55;
 	margin-top: 4px;
@@ -1179,11 +1303,14 @@
    -------------------------------------------------------------------------*/
 
 .dp-dir {
-	--dp-dir-navy: #0d3b5c;
-	--dp-dir-accent: #136888;
-	--dp-dir-bar-bg: #e3f1fb;
-	--dp-dir-bar-border: #c7e2f5;
-	--dp-dir-muted: #6b7c8a;
+	--dp-dir-navy: var(--dp-ink);
+	--dp-dir-accent: var(--dp-accent);
+	/* The shared band tokens, not a private copy: the index block paints the
+	   same bar, and two search fields on one page that disagree about their
+	   background read as a bug rather than a distinction. */
+	--dp-dir-bar-bg: var(--dp-bar-bg);
+	--dp-dir-bar-border: var(--dp-bar-border);
+	--dp-dir-muted: var(--dp-ink-muted);
 }
 
 /* The widget toggles chrome with the `hidden` attribute, and the flex/grid
@@ -1234,7 +1361,7 @@
 
 .dp-dir__form {
 	background: var(--dp-dir-bar-bg);
-	border-radius: 12px;
+	border-radius: var(--dp-radius);
 	padding: 10px 14px;
 	margin: 0 0 18px;
 }
@@ -1253,9 +1380,9 @@
 	align-items: center;
 	flex: 1 1 240px;
 	max-width: 320px;
-	background: #fff;
+	background: var(--dp-card-bg);
 	border: 1px solid var(--dp-dir-bar-border);
-	border-radius: 999px;
+	border-radius: var(--dp-radius-pill);
 	padding: 0 6px 0 16px;
 }
 
@@ -1269,13 +1396,42 @@
 	color: var(--dp-dir-navy);
 }
 
-.dp-dir__input:focus {
-	outline: 0;
+/* The input must never draw its own ring. It sits inside a pill that already
+   shows the focus state on its border, so a ring here lands as a second, square
+   one nested inside a round one. The blanket `.dp-dir :focus-visible` rule in
+   directory-premium.css was the source of that; it is gone, and this stays as
+   the backstop for the browser default and any theme that styles bare inputs.
+
+   Both `:focus` and `:focus-visible` are listed because a UA sheet targeting
+   the narrower one would slip past a `:focus`-only reset, and all three ring
+   properties are cleared because themes reach for different ones —
+   Bootstrap-derived stylesheets use `box-shadow`, not `outline`. `!important`
+   because those rules cannot be seen or out-specified from here, on a control
+   the plugin owns outright. The accessible indicator is not lost — it moves to
+   the wrap's border, below. */
+.dp-dir .dp-dir__input:focus,
+.dp-dir .dp-dir__input:focus-visible,
+.dp-index .dp-dir__input:focus,
+.dp-index .dp-dir__input:focus-visible {
+	outline: 0 !important;
+	border: 0 !important;
+	box-shadow: none !important;
 }
 
+/* Focus lands on the field's own edge, not on a ring floating outside it. An
+   offset `outline` traced a second pill around the first, which on a control
+   that is already a pill reads as a rendering fault rather than a state.
+   The border is already there and already the right shape, so recolouring it is
+   the entire indicator: nothing is added, nothing moves, nothing reflows.
+
+   Deliberately recoloured rather than removed. A search field that shows no
+   focus state strands anyone driving the page from the keyboard — they lose
+   track of where they are — and WCAG 2.2 AA requires the state to be visible.
+   #136888 against the resting #c7e2f5 is an unmistakable change and clears the
+   3:1 non-text contrast floor against the white field with room to spare. */
 .dp-dir__search:focus-within {
-	outline: 2px solid var(--dp-dir-accent);
-	outline-offset: 2px;
+	outline: 0;
+	border-color: var(--dp-dir-accent);
 }
 
 .dp-dir__submit {
@@ -1303,7 +1459,7 @@
 .dp-dir__mode {
 	display: inline-block;
 	padding: 8px 16px;
-	border-radius: 999px;
+	border-radius: var(--dp-radius-pill);
 	font-size: 14px;
 	font-weight: 600;
 	line-height: 1.2;
@@ -1317,7 +1473,7 @@
 
 .dp-dir__mode-input:checked + .dp-dir__mode {
 	background: var(--dp-dir-navy);
-	color: #fff;
+	color: var(--dp-on-accent);
 }
 
 .dp-dir__mode-input:focus-visible + .dp-dir__mode {
@@ -1340,7 +1496,7 @@
 	align-items: center;
 	gap: 8px;
 	border: 0;
-	border-radius: 999px;
+	border-radius: var(--dp-radius-pill);
 	padding: 10px 18px;
 	font-size: 14px;
 	font-weight: 600;
@@ -1349,7 +1505,7 @@
 
 .dp-dir__more {
 	background: var(--dp-dir-navy);
-	color: #fff;
+	color: var(--dp-on-accent);
 }
 
 .dp-dir__clear {
@@ -1368,9 +1524,9 @@
 	min-width: 20px;
 	height: 20px;
 	padding: 0 5px;
-	border-radius: 999px;
-	background: #2fb39c;
-	color: #fff;
+	border-radius: var(--dp-radius-pill);
+	background: var(--dp-accent-2);
+	color: var(--dp-on-accent);
 	font-size: 12px;
 }
 
@@ -1412,14 +1568,44 @@
 	white-space: nowrap;
 }
 
+/* The arrow is drawn here rather than left to the browser. A native select's
+   arrow is painted by the UA outside the box model — padding does not move it —
+   so on a pill it sat in the curve with no way to pull it back. `appearance:
+   none` drops the UA arrow and a background chevron takes its place, positioned
+   exactly where the straight part of the edge ends.
+
+   The chevron is a data URI rather than a mask so it cannot fail open: a mask
+   that a browser declines to apply leaves a select with no arrow at all, which
+   is worse than one whose colour does not track a theme override. Its shape and
+   stroke match the More Filters chevron, so the bar has one arrow, not two.
+
+   Logical padding, and the position flipped for RTL, because the arrow belongs
+   on the trailing edge in both directions. */
 .dp-dir__select {
+	-webkit-appearance: none;
+	-moz-appearance: none;
+	appearance: none;
 	border: 1px solid var(--dp-dir-bar-border);
-	border-radius: 999px;
-	background: #fff;
-	padding: 7px 14px;
+	border-radius: var(--dp-radius-pill);
+	background-color: var(--dp-card-bg);
+	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%230d3b5c' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+	background-repeat: no-repeat;
+	background-position: right 14px center;
+	background-size: 10px 6px;
+	padding-block: 7px;
+	padding-inline: 14px 32px;
 	font-size: 14px;
 	color: var(--dp-dir-navy);
 	max-width: 220px;
+}
+
+[dir="rtl"] .dp-dir__select {
+	background-position: left 14px center;
+}
+
+/* Edge/IE draw a second arrow of their own next to the background one. */
+.dp-dir__select::-ms-expand {
+	display: none;
 }
 
 .dp-dir__toggle {
@@ -1479,7 +1665,7 @@
 	min-width: 34px;
 	padding: 6px 8px;
 	border: 1px solid var(--dp-dir-bar-border);
-	border-radius: 6px;
+	border-radius: var(--dp-radius-sm);
 	font-size: 14px;
 	font-weight: 600;
 	text-decoration: none;
@@ -1489,7 +1675,7 @@
 .dp-dir__az-item.is-active {
 	background: var(--dp-dir-navy);
 	border-color: var(--dp-dir-navy);
-	color: #fff;
+	color: var(--dp-on-accent);
 }
 
 .dp-dir__az-item.is-empty {
@@ -1521,7 +1707,7 @@
 	   rows from shifting by a pixel when a selection is made. */
 	padding: 4px 10px;
 	border: 1px solid transparent;
-	border-radius: 8px;
+	border-radius: var(--dp-radius);
 }
 
 /* Result rows are not selectable, so they keep the flush list alignment. */
@@ -1559,16 +1745,16 @@
 
 .dp-dir__row.is-selected {
 	border-color: var(--dp-dir-navy);
-	background: #fff;
+	background: var(--dp-card-bg);
 }
 
 .dp-dir__row.is-selected .dp-dir__row-name {
-	color: #128a6e;
+	color: var(--dp-accent-2);
 }
 
 .dp-dir__row-name:focus-visible {
 	outline: 2px solid var(--dp-dir-accent);
-	outline-offset: 3px;
+	outline-offset: 2px;
 }
 
 @media (forced-colors: active) {
@@ -1591,7 +1777,7 @@
 	min-width: 34px;
 	padding: 6px 10px;
 	border: 1px solid var(--dp-dir-bar-border);
-	border-radius: 6px;
+	border-radius: var(--dp-radius-sm);
 	text-decoration: none;
 	color: var(--dp-dir-navy);
 }
@@ -1599,7 +1785,7 @@
 .dp-dir__pagination .page-numbers.current {
 	background: var(--dp-dir-navy);
 	border-color: var(--dp-dir-navy);
-	color: #fff;
+	color: var(--dp-on-accent);
 }
 
 @media (max-width: 782px) {
@@ -1680,7 +1866,7 @@
 	margin: 0;
 	font-size: 13.5px;
 	line-height: 1.45;
-	color: #4b5563;
+	color: var(--dp-ink-muted);
 }
 
 .dp-card__badges {
@@ -1696,7 +1882,6 @@
 
 .dp-card__badges--end { justify-content: flex-end; }
 
-.dp-card__badges--bottom { top: auto; bottom: 8px; }
 
 .dp-card__badges .dp-badge { position: static; }
 
@@ -1710,7 +1895,7 @@
 	font-size: 28px;
 	font-weight: 600;
 	letter-spacing: 0.04em;
-	color: #7d98ae;
+	color: var(--dp-ink-muted);
 	text-transform: uppercase;
 	line-height: 1;
 }
@@ -1725,4 +1910,652 @@
 .dp-card--linked .dp-card__body > *:not(.dp-card__cover) {
 	position: relative;
 	z-index: 2;
+}
+
+/* ---------------------------------------------------------------------------
+   Find a Doctor index widget (`.dp-index`)
+
+   A standalone search + browse block: one bar (search input, mode tabs, an
+   actions slot), an A–Z letter row and multi-column term lists. It renders no
+   results grid.
+
+   The block reuses the directory widget's `.dp-dir__*` classes so it inherits
+   the rules above, but its wrapper is `.dp-index`, not `.dp-dir`, and it does
+   not enqueue `directory-premium.css`. Three consequences drive this section:
+
+     1. The `--dp-dir-*` palette is declared on `.dp-dir`, so every
+        `var(--dp-dir-*)` in the shared rules would resolve to nothing here.
+        The bridge block below re-declares them from the `--dpi-*` tokens.
+     2. The `.dp-dir`-scoped floors — the `[hidden]` guard, the visually hidden
+        mode radios, the `.screen-reader-text` fallback — do not reach it.
+     3. The directory paints its band on `.dp-dir__form`, which this block has
+        no counterpart for, so `.dp-dir__bar` carries the band instead.
+
+   Every colour, radius and spacing is a `--dpi-*` custom property with the
+   existing palette value as its fallback, because the widget's Elementor style
+   controls set those properties on the wrapper. Everything is scoped to
+   `.dp-index`, so the directory and card widgets are untouched.
+   -------------------------------------------------------------------------*/
+
+.dp-index {
+	/* Bar. Same tokens and same panel radius as `.dp-dir__form` — the band is a
+	   container, so it takes the panel step; the pill step belongs to the
+	   controls inside it (input, tabs, actions). */
+	--dpi-bar-bg: var(--dp-bar-bg);
+	--dpi-bar-radius: var(--dp-radius);
+	--dpi-bar-padding: 10px 14px;
+	--dpi-bar-padding-sm: 12px;
+	--dpi-bar-gap: 10px 18px;
+
+	/* Search field */
+	--dpi-input-bg: var(--dp-card-bg);
+	--dpi-input-color: var(--dp-ink);
+	--dpi-input-radius: var(--dp-radius-pill);
+	--dpi-input-max-width: 340px;
+	--dpi-input-border: var(--dp-line-strong);
+	--dpi-submit-color: var(--dp-accent);
+
+	/* Mode tabs */
+	--dpi-mode-color: var(--dp-ink);
+	--dpi-mode-active-color: var(--dp-on-accent);
+	--dpi-mode-active-bg: var(--dp-ink);
+	--dpi-mode-radius: var(--dp-radius-pill);
+
+	/* A–Z row */
+	--dpi-az-color: var(--dp-ink);
+	--dpi-az-border: var(--dp-line-strong);
+	--dpi-az-active-color: var(--dp-on-accent);
+	--dpi-az-active-bg: var(--dp-ink);
+	--dpi-az-radius: var(--dp-radius-sm);
+	--dpi-az-gap: 8px;
+
+	/* Lists */
+	--dpi-row-color: var(--dp-ink);
+	--dpi-row-hover-color: var(--dp-accent);
+	--dpi-rows-gap: 10px 24px;
+
+	/* Actions slot */
+	--dpi-action-bg: transparent;
+	--dpi-action-color: var(--dp-ink);
+	--dpi-action-radius: var(--dp-radius-pill);
+
+	/* Autocomplete panel */
+	--dpi-suggest-bg: var(--dp-card-bg);
+	--dpi-suggest-border: var(--dp-line-strong);
+	--dpi-suggest-radius: var(--dp-radius);
+	--dpi-suggest-max-height: min(60vh, 380px);
+	--dpi-suggest-shadow: var(--dp-shadow-lg);
+	--dpi-suggest-title-color: var(--dp-ink-muted);
+	--dpi-suggest-item-color: var(--dp-ink);
+	--dpi-suggest-item-hover-bg: var(--dp-surface-alt);
+
+	/* Shared */
+	--dpi-accent: var(--dp-accent);
+	--dpi-muted: var(--dp-ink-muted);
+
+	/* Bridge: the inherited `.dp-dir__*` rules read these, and they are only
+	   declared on `.dp-dir`. Re-pointing them at the `--dpi-*` tokens keeps a
+	   control that recolours the block from leaving stray navy behind. */
+	--dp-dir-navy: var(--dpi-mode-color, var(--dp-ink));
+	--dp-dir-accent: var(--dpi-accent, var(--dp-accent));
+	--dp-dir-bar-bg: var(--dpi-bar-bg, var(--dp-bar-bg));
+	--dp-dir-bar-border: var(--dpi-az-border, var(--dp-line-strong));
+	--dp-dir-muted: var(--dpi-muted, var(--dp-ink-muted));
+
+	position: relative;
+}
+
+/* Themes disagree on the box model, and this block is a padded band holding
+   padded children that are sized in percentages — content-box overflows the
+   bar and detaches the suggestion panel from the input's edges. */
+.dp-index,
+.dp-index *,
+.dp-index *::before,
+.dp-index *::after {
+	box-sizing: border-box;
+}
+
+/* Filtering hides rows, letters and the panel with the `hidden` attribute, and
+   the `display` rules below (plus a fair number of theme rules that set
+   `display` on generic children) out-specify the UA `[hidden]` rule. */
+.dp-index [hidden] {
+	display: none !important;
+}
+
+/* The mode tabs are a real radio group styled through their labels. Without
+   this the native radios paint next to every tab — the `.dp-dir` copy of this
+   rule does not reach the block. See the note on `.dp-dir .dp-dir__mode-input`. */
+.dp-index .dp-dir__mode-input {
+	position: absolute !important;
+	width: 1px !important;
+	height: 1px !important;
+	margin: -1px !important;
+	padding: 0 !important;
+	border: 0 !important;
+	overflow: hidden !important;
+	clip: rect(0, 0, 0, 0) !important;
+	clip-path: inset(50%) !important;
+	white-space: nowrap !important;
+	pointer-events: none !important;
+	-webkit-appearance: none !important;
+	-moz-appearance: none !important;
+	appearance: none !important;
+	background: none !important;
+	box-shadow: none !important;
+	opacity: 0 !important;
+}
+
+/* Most themes define `.screen-reader-text`, but the block cannot assume it. */
+.dp-index .screen-reader-text {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	margin: -1px;
+	padding: 0;
+	overflow: hidden;
+	clip: rect(0, 0, 0, 0);
+	white-space: nowrap;
+	border: 0;
+}
+
+/* Bar
+   ------------------------------------------------------------------------- */
+
+.dp-index .dp-dir__bar {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--dpi-bar-gap, 10px 18px);
+	background: var(--dpi-bar-bg, var(--dp-bar-bg));
+	border-radius: var(--dpi-bar-radius, var(--dp-radius-pill));
+	padding: var(--dpi-bar-padding, 10px 14px);
+	margin: 0 0 18px;
+}
+
+/* Search field. The wrap is the flex item and the positioning context for the
+   suggestion panel, so the inherited sizing moves off `.dp-dir__search`. */
+.dp-index__search-wrap {
+	position: relative;
+	flex: 1 1 260px;
+	min-width: 0;
+	max-width: var(--dpi-input-max-width, 340px);
+}
+
+.dp-index .dp-dir__search {
+	display: flex;
+	align-items: center;
+	flex: 1 1 auto;
+	width: 100%;
+	max-width: none;
+	background: var(--dpi-input-bg, var(--dp-card-bg));
+	border: 1px solid var(--dpi-input-border, var(--dp-line-strong));
+	border-radius: var(--dpi-input-radius, var(--dp-radius-pill));
+	padding: 0 6px 0 16px;
+}
+
+/* The shared focus rule above sets `border-color`, but `.dp-index
+   .dp-dir__search` sets the whole `border` shorthand at equal specificity and
+   later in the file, so it would win and the state would never show here. This
+   restates it at a specificity the block's own border cannot out-rank. */
+.dp-index .dp-dir__search:focus-within {
+	outline: 0;
+	border-color: var(--dpi-accent, var(--dp-accent));
+}
+
+.dp-index .dp-dir__input {
+	flex: 1;
+	min-width: 0;
+	border: 0;
+	background: transparent;
+	padding: 10px 0;
+	font-size: 15px;
+	line-height: 1.4;
+	color: var(--dpi-input-color, var(--dp-ink));
+}
+
+.dp-index .dp-dir__submit {
+	flex: none;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 32px;
+	height: 32px;
+	border: 0;
+	border-radius: 50%;
+	background: transparent;
+	color: var(--dpi-submit-color, var(--dp-accent));
+	cursor: pointer;
+}
+
+/* Mode tabs */
+
+.dp-index .dp-dir__modes {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 6px;
+	min-width: 0;
+}
+
+.dp-index .dp-dir__mode {
+	display: inline-block;
+	padding: 8px 16px;
+	border: 0;
+	background: transparent;
+	border-radius: var(--dpi-mode-radius, var(--dp-radius-pill));
+	font: inherit;
+	font-size: 14px;
+	font-weight: 600;
+	line-height: 1.2;
+	color: var(--dpi-mode-color, var(--dp-ink));
+	cursor: pointer;
+}
+
+/* The tabs are buttons here, not radios: this block has no form to submit, and
+   a tab that only reveals a panel is a button. `.is-active` is what the script
+   sets; the `:checked` pair stays for the radio-based directory markup. */
+.dp-index .dp-dir__mode.is-active,
+.dp-index .dp-dir__mode-input:checked + .dp-dir__mode {
+	background: var(--dpi-mode-active-bg, var(--dp-ink));
+	color: var(--dpi-mode-active-color, var(--dp-on-accent));
+}
+
+.dp-index .dp-dir__mode:focus-visible {
+	outline: 2px solid var(--dpi-accent, var(--dp-accent));
+	outline-offset: 2px;
+}
+
+/* A–Z tiles are buttons too. */
+.dp-index .dp-dir__az-item {
+	font: inherit;
+	cursor: pointer;
+}
+
+.dp-index .dp-dir__az-item[disabled] {
+	cursor: default;
+}
+
+/* Actions slot. `margin-inline-start: auto` pins it to the trailing edge with
+   the tabs still centred in what is left. */
+.dp-index .dp-index__actions,
+.dp-index .dp-dir__bar-actions {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	margin-inline-start: auto;
+}
+
+.dp-index .dp-index__action {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	border: 1px solid transparent;
+	border-radius: var(--dpi-action-radius, var(--dp-radius-pill));
+	padding: 9px 18px;
+	background: var(--dpi-action-bg, transparent);
+	color: var(--dpi-action-color, var(--dp-ink));
+	font-size: 14px;
+	font-weight: 600;
+	line-height: 1.2;
+	text-decoration: none;
+	cursor: pointer;
+}
+
+.dp-index .dp-index__action:hover,
+.dp-index .dp-index__action:focus-visible {
+	color: var(--dpi-action-color, var(--dp-ink));
+	border-color: currentColor;
+}
+
+/* Filter row. A form of its own so the controls can submit without JavaScript,
+   but a full-width flex item so it drops onto a second line inside the same
+   band rather than below it — the bar is one object, not two stacked ones. */
+.dp-index .dp-index__filter-form {
+	flex: 1 1 100%;
+	min-width: 0;
+}
+
+/* Dimmed rather than hidden on the tabs its filters cannot act on. A control
+   that vanishes as you switch tabs makes the bar jump and leaves the visitor
+   wondering where it went; one that stays put and greys out says plainly that
+   it belongs to a different tab. */
+.dp-index .dp-index__action[disabled] {
+	opacity: 0.45;
+	cursor: default;
+}
+
+.dp-index .dp-index__action[disabled]:hover {
+	border-color: transparent;
+}
+
+.dp-index--filters-open .dp-dir__chevron {
+	transform: rotate(45deg);
+}
+
+/* A–Z row
+   ------------------------------------------------------------------------- */
+
+.dp-index .dp-dir__az {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--dpi-az-gap, 8px);
+	margin: 0 0 20px;
+}
+
+.dp-index .dp-dir__az-item {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	/* Square tiles: equal min-width and height keep the row from going ragged
+	   when a letter is wider than the rest. */
+	box-sizing: border-box;
+	min-width: 34px;
+	height: 34px;
+	padding: 0 6px;
+	border: 1px solid var(--dpi-az-border, var(--dp-line-strong));
+	border-radius: var(--dpi-az-radius, var(--dp-radius-sm));
+	background: transparent;
+	font-size: 14px;
+	font-weight: 600;
+	line-height: 1;
+	text-decoration: none;
+	color: var(--dpi-az-color, var(--dp-ink));
+}
+
+.dp-index .dp-dir__az-item:hover {
+	border-color: var(--dpi-az-active-bg, var(--dp-ink));
+}
+
+.dp-index .dp-dir__az-item.is-active {
+	background: var(--dpi-az-active-bg, var(--dp-ink));
+	border-color: var(--dpi-az-active-bg, var(--dp-ink));
+	color: var(--dpi-az-active-color, var(--dp-on-accent));
+}
+
+.dp-index .dp-dir__az-item.is-empty,
+.dp-index .dp-dir__az-item[aria-disabled="true"] {
+	opacity: 0.4;
+	pointer-events: none;
+	cursor: default;
+}
+
+/* Lists
+   ---------------------------------------------------------------------------
+   `.dp-cols-N` at the top of this file is declared before `.dp-dir__rows` and
+   carries the same specificity, so source order hands the win to
+   `.dp-dir__rows` and the column count is lost. Restating the columns with the
+   `.dp-index` scope resolves that, and adds the 3- and 5-column steps the
+   unscoped rules never had. */
+
+.dp-index .dp-dir__rows {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+	gap: var(--dpi-rows-gap, 10px 24px);
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.dp-index .dp-dir__rows.dp-cols-1 { grid-template-columns: minmax(0, 1fr); }
+.dp-index .dp-dir__rows.dp-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.dp-index .dp-dir__rows.dp-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.dp-index .dp-dir__rows.dp-cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.dp-index .dp-dir__rows.dp-cols-5 { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.dp-index .dp-dir__rows.dp-cols-6 { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+
+.dp-index .dp-dir__row {
+	min-width: 0;
+	margin: 0;
+	padding: 0;
+	border: 0;
+	list-style: none;
+}
+
+.dp-index .dp-dir__row::marker {
+	content: none;
+}
+
+.dp-index .dp-dir__row-name {
+	display: block;
+	color: var(--dpi-row-color, var(--dp-ink));
+	font-size: 15px;
+	font-weight: 500;
+	line-height: 1.6;
+	text-decoration: none;
+	overflow-wrap: anywhere;
+}
+
+.dp-index .dp-dir__row-name:hover,
+.dp-index .dp-dir__row-name:focus-visible {
+	color: var(--dpi-row-hover-color, var(--dp-accent));
+	text-decoration: underline;
+}
+
+/* Autocomplete panel
+   ---------------------------------------------------------------------------
+   New markup. It floats out of `.dp-index__search-wrap`, directly under the
+   input, over whatever list is behind it. */
+
+.dp-index__suggest {
+	position: absolute;
+	inset-inline: 0;
+	top: calc(100% + 6px);
+	z-index: 60;
+	box-sizing: border-box;
+	max-width: 100vw;
+	max-height: var(--dpi-suggest-max-height, min(60vh, 380px));
+	overflow-y: auto;
+	overscroll-behavior: contain;
+	padding: 6px 0;
+	background: var(--dpi-suggest-bg, var(--dp-card-bg));
+	border: 1px solid var(--dpi-suggest-border, var(--dp-line-strong));
+	border-radius: var(--dpi-suggest-radius, var(--dp-radius));
+	box-shadow: var(--dpi-suggest-shadow, var(--dp-shadow-lg));
+	text-align: start;
+}
+
+/* Belt and braces alongside the block-wide `[hidden]` guard: the panel is the
+   one node whose `display` is set right here. */
+.dp-index__suggest[hidden] {
+	display: none;
+}
+
+.dp-index__suggest-group + .dp-index__suggest-group {
+	border-top: 1px solid var(--dpi-suggest-border, var(--dp-line-strong));
+	margin-top: 6px;
+	padding-top: 6px;
+}
+
+/* The label row. Small, uppercase and muted against the items, so the grouping
+   reads before any single suggestion does. */
+.dp-index__suggest-title {
+	display: flex;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: 12px;
+	margin: 0;
+	padding: 6px 14px;
+	font-size: 11px;
+	font-weight: 700;
+	line-height: 1.4;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+	color: var(--dpi-suggest-title-color, var(--dp-ink-muted));
+}
+
+.dp-index__suggest-all {
+	margin-inline-start: auto;
+	flex: none;
+	font-size: 12px;
+	font-weight: 600;
+	letter-spacing: 0;
+	text-transform: none;
+	text-decoration: none;
+	white-space: nowrap;
+	color: var(--dpi-accent, var(--dp-accent));
+}
+
+.dp-index__suggest-all:hover,
+.dp-index__suggest-all:focus-visible {
+	text-decoration: underline;
+}
+
+.dp-index__suggest-item {
+	display: block;
+	padding: 8px 14px;
+	font-size: 15px;
+	font-weight: 500;
+	line-height: 1.4;
+	text-decoration: none;
+	color: var(--dpi-suggest-item-color, var(--dp-ink));
+	overflow-wrap: anywhere;
+	cursor: pointer;
+}
+
+/* Hover and the keyboard cursor paint the same, so arrowing through the list
+   and moving the pointer over it read as one selection. */
+.dp-index__suggest-item:hover,
+.dp-index__suggest-item:focus-visible,
+.dp-index__suggest-item.is-active {
+	background: var(--dpi-suggest-item-hover-bg, var(--dp-surface-alt));
+	color: var(--dpi-row-hover-color, var(--dp-accent));
+	text-decoration: none;
+}
+
+.dp-index__suggest-empty {
+	margin: 0;
+	padding: 12px 14px;
+	font-size: 14px;
+	line-height: 1.4;
+	color: var(--dpi-muted, var(--dp-ink-muted));
+}
+
+/* Responsive
+   ------------------------------------------------------------------------- */
+
+@media (max-width: 1024px) {
+	.dp-index .dp-dir__rows.dp-cols-4,
+	.dp-index .dp-dir__rows.dp-cols-5,
+	.dp-index .dp-dir__rows.dp-cols-6 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+@media (max-width: 782px) {
+	/* Stacked: the input takes the full width and the tabs get their own row.
+	   A pill radius on a three-row band reads as a lozenge, so it is clamped
+	   unless the widget's control asks for something tighter. */
+	.dp-index .dp-dir__bar {
+		flex-direction: column;
+		align-items: stretch;
+		flex-wrap: nowrap;
+		border-radius: min(var(--dpi-bar-radius, var(--dp-radius-pill)), 22px);
+		padding: var(--dpi-bar-padding-sm, 12px);
+	}
+
+	.dp-index__search-wrap {
+		max-width: none;
+		flex: 1 1 auto;
+	}
+
+	/* The tabs scroll sideways rather than wrapping into a tall stack that
+	   pushes the letters and the lists off the first screen. */
+	.dp-index .dp-dir__modes {
+		flex-wrap: nowrap;
+		overflow-x: auto;
+		overscroll-behavior-x: contain;
+		-webkit-overflow-scrolling: touch;
+		scrollbar-width: none;
+		margin: 0 -4px;
+		padding: 0 4px 2px;
+	}
+
+	.dp-index .dp-dir__modes::-webkit-scrollbar {
+		display: none;
+	}
+
+	.dp-index .dp-dir__mode {
+		flex: none;
+		white-space: nowrap;
+	}
+
+	.dp-index .dp-index__actions,
+	.dp-index .dp-dir__bar-actions {
+		margin-inline-start: 0;
+		justify-content: flex-start;
+	}
+
+	.dp-index .dp-dir__rows.dp-cols-3,
+	.dp-index .dp-dir__rows.dp-cols-4,
+	.dp-index .dp-dir__rows.dp-cols-5,
+	.dp-index .dp-dir__rows.dp-cols-6 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 640px) {
+	.dp-index .dp-dir__rows[class*="dp-cols-"] { grid-template-columns: minmax(0, 1fr); }
+
+	.dp-index .dp-dir__az-item {
+		min-width: 30px;
+		height: 30px;
+		font-size: 13px;
+	}
+
+	/* A long index would push everything below it off a phone screen. */
+	.dp-index .dp-dir__rows {
+		max-height: 60vh;
+		overflow-y: auto;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.dp-index *,
+	.dp-index *::before,
+	.dp-index *::after {
+		transition-duration: 0.01ms !important;
+		animation-duration: 0.01ms !important;
+	}
+}
+
+@media (forced-colors: active) {
+	.dp-index__suggest { border: 1px solid CanvasText; }
+	.dp-index__suggest-item.is-active { forced-color-adjust: none; background: Highlight; color: HighlightText; }
+	.dp-index .dp-dir__az-item.is-active { forced-color-adjust: none; background: Highlight; color: HighlightText; }
+}
+
+/* ---------------------------------------------------------------------------
+   The native doctor archive.
+
+   `templates/archive-doctor.php` renders the directory at the post type's own
+   URL, between the theme's header and footer, with no page builder involved.
+   These rules give it the container and the vertical rhythm a theme would
+   normally supply through its own page template.
+--------------------------------------------------------------------------- */
+.dp-archive__inner {
+	width: 100%;
+	max-width: var(--dp-archive-width, 1240px);
+	margin-inline: auto;
+	padding-inline: var(--dp-archive-gutter, 20px);
+}
+
+/* The band's top padding clears a floating theme header — see the note in
+   archive-doctor.php. A theme that does not need the room can shrink it with
+   `--dp-archive-band-top`. */
+.dp-archive__band {
+	background: var(--dp-surface-alt);
+	padding-block: var(--dp-archive-band-top, clamp(5rem, 11vw, 9rem)) clamp(1.5rem, 3vw, 2.5rem);
+}
+
+.dp-archive__title {
+	margin: 0;
+	color: var(--dp-accent);
+	font-size: clamp(1.75rem, 3vw, 2.5rem);
+	line-height: 1.2;
+}
+
+.dp-archive__intro {
+	margin: 0.75rem 0 0;
+	max-width: 68ch;
+	color: var(--dp-ink-muted);
+}
+
+.dp-archive__body {
+	padding-block: clamp(1.5rem, 3vw, 2.5rem) clamp(2.5rem, 6vw, 4rem);
 }

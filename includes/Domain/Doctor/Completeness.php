@@ -9,6 +9,7 @@ declare( strict_types=1 );
 
 namespace BrainStudioz\DoctorPilot\Domain\Doctor;
 
+use BrainStudioz\DoctorPilot\Booking\BookingResolver;
 use BrainStudioz\DoctorPilot\Fields\FieldRegistry;
 use BrainStudioz\DoctorPilot\Taxonomies\Taxonomies;
 
@@ -35,7 +36,6 @@ final class Completeness {
 		'photo'        => 2,
 		'intro'        => 2,
 		'biography'    => 2,
-		'credentials'  => 1,
 		'department'   => 3,
 		'specialty'    => 3,
 		'experience'   => 1,
@@ -64,7 +64,6 @@ final class Completeness {
 			'photo'       => has_post_thumbnail( $post_id ),
 			'intro'       => '' !== trim( (string) $post->post_excerpt ),
 			'biography'   => '' !== trim( wp_strip_all_tags( (string) $post->post_content ) ),
-			'credentials' => '' !== (string) get_post_meta( $post_id, FieldRegistry::META_PREFIX . 'credentials', true ),
 			'department'  => self::has_terms( $post_id, Taxonomies::DEPARTMENT ),
 			'specialty'   => self::has_terms( $post_id, Taxonomies::SPECIALTY ),
 			'experience'  => (int) get_post_meta( $post_id, FieldRegistry::META_PREFIX . 'years_experience', true ) > 0,
@@ -135,18 +134,11 @@ final class Completeness {
 	 * @return bool
 	 */
 	private static function has_booking( int $post_id ): bool {
-		$method = (string) get_post_meta( $post_id, FieldRegistry::META_PREFIX . 'booking_method', true );
-
-		if ( 'phone' === $method ) {
-			return '' !== (string) get_post_meta( $post_id, FieldRegistry::META_PREFIX . 'booking_phone', true );
-		}
-
-		if ( 'external_url' === $method ) {
-			return '' !== (string) get_post_meta( $post_id, FieldRegistry::META_PREFIX . 'booking_external_url', true );
-		}
-
-		// Enquiry needs no destination of its own.
-		return 'enquiry' === $method;
+		// Ask the resolver rather than re-deriving the rules here. A doctor can
+		// now reach a working button through the site-wide defaults with none of
+		// their own fields filled in, and scoring that as incomplete would have
+		// the admin reporting a gap the visitor cannot see.
+		return null !== ( new BookingResolver() )->resolve_for( $post_id );
 	}
 
 	/**
@@ -161,7 +153,6 @@ final class Completeness {
 			'photo'       => __( 'Photograph', 'doctorpilot' ),
 			'intro'       => __( 'Short introduction', 'doctorpilot' ),
 			'biography'   => __( 'Biography', 'doctorpilot' ),
-			'credentials' => __( 'Credentials', 'doctorpilot' ),
 			'department'  => __( 'Department', 'doctorpilot' ),
 			'specialty'   => __( 'Specialty', 'doctorpilot' ),
 			'experience'  => __( 'Years of experience', 'doctorpilot' ),

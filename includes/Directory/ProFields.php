@@ -36,7 +36,7 @@ final class ProFields {
 	}
 
 	/**
-	 * Add the insurance assignment and BookPilot booking fields.
+	 * Add the insurance assignment field.
 	 *
 	 * @param array<string, array<string, mixed>> $fields Existing registry.
 	 * @return array<string, array<string, mixed>>
@@ -61,31 +61,6 @@ final class ProFields {
 			'elementor'   => true,
 			'label'       => __( 'Accepted insurance', 'doctorpilot' ),
 			'description' => __( 'Insurance providers this doctor accepts (Pro).', 'doctorpilot' ),
-		);
-
-		// Offer BookPilot as a booking method and a per-doctor service field.
-		if ( isset( $fields[ self::META_PREFIX . 'booking_method' ]['options'] ) && is_array( $fields[ self::META_PREFIX . 'booking_method' ]['options'] ) ) {
-			$fields[ self::META_PREFIX . 'booking_method' ]['options']['bookpilot'] = __( 'BookPilot', 'doctorpilot' );
-		}
-
-		$fields[ self::META_PREFIX . 'bookpilot_service_id' ] = array(
-			'key'         => self::META_PREFIX . 'bookpilot_service_id',
-			'group'       => 'booking',
-			'storage'     => 'meta',
-			'taxonomy'    => '',
-			'type'        => 'string',
-			'input'       => 'text',
-			'default'     => '',
-			'sanitize'    => 'text',
-			'public'      => false,
-			'private'     => false,
-			'tier'        => 'pro',
-			'repeater'    => array(),
-			'options'     => array(),
-			'searchable'  => false,
-			'elementor'   => false,
-			'label'       => __( 'BookPilot service ID', 'doctorpilot' ),
-			'description' => __( 'Optional BookPilot service identifier for this doctor (Pro).', 'doctorpilot' ),
 		);
 
 		return $fields;

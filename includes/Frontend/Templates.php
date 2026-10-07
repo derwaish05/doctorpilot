@@ -75,9 +75,12 @@ final class Templates {
 	/**
 	 * Whether the current query is a DoctorPilot taxonomy archive.
 	 *
+	 * Public because the archive template asks the same question when it titles
+	 * the page and bridges the queried term into the directory's filters.
+	 *
 	 * @return bool
 	 */
-	private static function is_doctor_taxonomy(): bool {
+	public static function is_doctor_taxonomy(): bool {
 		$taxonomies = \BrainStudioz\DoctorPilot\Taxonomies\Taxonomies::all();
 
 		foreach ( $taxonomies as $taxonomy ) {

@@ -11,7 +11,7 @@ any stored URL at launch.
 ## 1. Prepare data
 
 - [ ] Export the legacy doctor inventory to CSV with columns including a stable
-      `source_key`, `name`, `credentials`, `department`, `specialty`, `language`,
+      `source_key`, `name`, `department`, `specialty`, `language`,
       `legacy_url` (old path, e.g. `/doctor/ali-a-haydar/`).
 - [ ] Import via **DoctorPilot → Migration → Import** using **Create only** (or
       **Create or update** on re-runs). All doctors import as **drafts / needs
@@ -21,7 +21,7 @@ any stored URL at launch.
 
 Confirm for each doctor, especially **Dr. Ali A. Haydar**:
 
-- [ ] Correct name, specialty, credentials, and pronouns.
+- [ ] Correct name, specialty, and pronouns.
 - [ ] No wrong-doctor content (the importer flags "Dr. Kanso"-style mismatches).
 - [ ] No placeholder counters (e.g. `1+`).
 - [ ] Testimonials/quotes belong to this doctor.

@@ -173,6 +173,14 @@ final class SeoOwner {
 	 * @return bool
 	 */
 	private static function has_search_params(): bool {
+		/*
+		 * `accepting_new` is listed although the filter it named was removed in
+		 * 0.2.1. This is a guard against indexing URLs that already exist — a
+		 * crawler holding `?accepting_new=1` from before the removal now gets
+		 * the full unfiltered directory back, which is exactly the duplicate
+		 * this method exists to keep out of the index. It is a list of query
+		 * strings the site has ever emitted, not a list of filters it honours.
+		 */
 		$keys = array( 'q', 'department', 'specialty', 'symptom', 'language', 'gender', 'accepting_new', 'online', 'sort', 'view' );
 
 		foreach ( $keys as $key ) {

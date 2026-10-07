@@ -40,28 +40,28 @@ final class ExternalUrlProvider implements BookingProviderInterface {
 	 * {@inheritDoc}
 	 */
 	public function resolve( int $doctor_id, ?int $location_idx = null ) {
-		$url = (string) get_post_meta( $doctor_id, FieldRegistry::META_PREFIX . 'booking_external_url', true );
+		// The doctor's own URL wins; blank inherits the site-wide booking page
+		// from Settings → Booking.
+		$url = trim( (string) get_post_meta( $doctor_id, FieldRegistry::META_PREFIX . 'booking_external_url', true ) );
+		if ( '' === $url ) {
+			$url = BookingDefaults::url();
+		}
+
 		$url = esc_url_raw( $url, array( 'http', 'https' ) );
 
 		if ( '' === $url ) {
 			return ErrorFactory::create(
 				ErrorFactory::PROVIDER_UNAVAILABLE,
-				__( 'No booking URL is configured for this doctor.', 'doctorpilot' ),
+				__( 'No booking URL is configured for this doctor or as a site default.', 'doctorpilot' ),
 				422
 			);
 		}
 
-		return new BookingCta( 'external_url', $this->label( $doctor_id ), $url, '_blank' );
-	}
+		$label = BookingDefaults::label(
+			(string) get_post_meta( $doctor_id, FieldRegistry::META_PREFIX . 'booking_label', true ),
+			__( 'Book Appointment', 'doctorpilot' )
+		);
 
-	/**
-	 * Resolve the button label with a safe default.
-	 *
-	 * @param int $doctor_id Doctor post ID.
-	 * @return string
-	 */
-	private function label( int $doctor_id ): string {
-		$label = (string) get_post_meta( $doctor_id, FieldRegistry::META_PREFIX . 'booking_label', true );
-		return '' !== $label ? $label : __( 'Book Appointment', 'doctorpilot' );
+		return new BookingCta( 'external_url', $label, $url, BookingDefaults::target() );
 	}
 }

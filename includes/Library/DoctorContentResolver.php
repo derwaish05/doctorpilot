@@ -9,6 +9,8 @@ declare( strict_types=1 );
 
 namespace BrainStudioz\DoctorPilot\Library;
 
+use BrainStudioz\DoctorPilot\Support\Multilingual;
+
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
@@ -33,6 +35,7 @@ final class DoctorContentResolver {
 		'proc' => '_doctorpilot_proc_ids',
 		'pub'  => '_doctorpilot_pub_ids',
 		'cert' => '_doctorpilot_cert_ids',
+		'mem'  => '_doctorpilot_mem_ids',
 		'faq'  => '_doctorpilot_faq_ids',
 	);
 
@@ -50,6 +53,7 @@ final class DoctorContentResolver {
 		'proc' => '_doctorpilot_procedures',
 		'pub'  => '_doctorpilot_publications',
 		'cert' => '_doctorpilot_certifications',
+		'mem'  => '_doctorpilot_memberships',
 		'faq'  => '_doctorpilot_faqs',
 	);
 
@@ -62,6 +66,7 @@ final class DoctorContentResolver {
 		'proc' => LibraryPostTypes::PROCEDURE,
 		'pub'  => LibraryPostTypes::PUBLICATION,
 		'cert' => LibraryPostTypes::CERTIFICATION,
+		'mem'  => LibraryPostTypes::MEMBERSHIP,
 		'faq'  => LibraryPostTypes::FAQ,
 	);
 
@@ -71,7 +76,7 @@ final class DoctorContentResolver {
 	 * @return array<int, string>
 	 */
 	public static function types(): array {
-		return array( 'exp', 'edu', 'proc', 'pub', 'cert', 'faq' );
+		return array( 'exp', 'edu', 'proc', 'pub', 'cert', 'mem', 'faq' );
 	}
 
 	/**
@@ -125,7 +130,14 @@ final class DoctorContentResolver {
 		$cpt = self::CPT[ $type ];
 
 		foreach ( $ids as $id ) {
-			$post = get_post( $id );
+			/*
+			 * Library records are shared between doctors and linked by post ID.
+			 * A translated doctor keeps the source-language IDs, so without this
+			 * an Arabic profile renders the English certification's title and
+			 * body. Falls back to the original when the record has no
+			 * translation, which is better than dropping the row.
+			 */
+			$post = get_post( Multilingual::post_id( (int) $id, $cpt ) );
 			if ( ! ( $post instanceof \WP_Post ) || $cpt !== $post->post_type ) {
 				continue;
 			}

@@ -91,7 +91,6 @@ final class DoctorFieldTag extends Tag {
 
 		$map = array(
 			'name'             => (string) ( $data['name'] ?? '' ),
-			'credentials'      => (string) ( $data['credentials'] ?? '' ),
 			'intro'            => (string) ( $data['intro'] ?? '' ),
 			'years_experience' => (string) ( $data['years_experience'] ?? '' ),
 		);
@@ -109,7 +108,6 @@ final class DoctorFieldTag extends Tag {
 	private function field_options(): array {
 		$options = array(
 			'name'             => __( 'Name', 'doctorpilot' ),
-			'credentials'      => __( 'Credentials', 'doctorpilot' ),
 			'intro'            => __( 'Short introduction', 'doctorpilot' ),
 			'years_experience' => __( 'Years of experience', 'doctorpilot' ),
 		);

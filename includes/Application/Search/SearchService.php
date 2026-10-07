@@ -94,6 +94,13 @@ final class SearchService {
 		foreach ( $request->taxonomy_filters() as $taxonomy => $slugs ) {
 			$type = $param_by_taxonomy[ $taxonomy ] ?? $taxonomy;
 			foreach ( $slugs as $slug ) {
+				/*
+				 * The slug reaching here has already been resolved into the
+				 * current language by `SearchRequestFactory`, so this lookup
+				 * hits. The fallback to the raw slug remains for a genuinely
+				 * unknown term — a hand-edited URL — where showing what was
+				 * asked for is more useful than showing nothing.
+				 */
 				$term  = get_term_by( 'slug', $slug, $taxonomy );
 				$label = ( $term instanceof \WP_Term ) ? $term->name : $slug;
 				$chips[] = array(
@@ -118,14 +125,6 @@ final class SearchService {
 				'type'  => 'gender',
 				'value' => $request->gender(),
 				'label' => ucfirst( $request->gender() ),
-			);
-		}
-
-		if ( true === $request->accepting_new() ) {
-			$chips[] = array(
-				'type'  => 'accepting_new',
-				'value' => '1',
-				'label' => __( 'Accepting new patients', 'doctorpilot' ),
 			);
 		}
 

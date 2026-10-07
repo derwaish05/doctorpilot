@@ -137,14 +137,14 @@ Each field definition contains:
 
 ```php
 [
-	'key'           => '_doctorpilot_credentials',
+	'key'           => '_doctorpilot_last_name',
 	'group'         => 'profile',
 	'type'          => 'string',
 	'default'       => '',
 	'tier'          => 'free',
 	'public'        => true,
 	'sanitize'      => 'sanitize_text_field',
-	'validate'      => CredentialsRule::class,
+	'validate'      => NameRule::class,
 	'rest_schema'   => [ 'type' => 'string', 'maxLength' => 200 ],
 	'searchable'    => true,
 	'elementor_tag' => true,
@@ -162,10 +162,8 @@ The registry powers admin fields, meta registration, validation, public serializ
 | Short introduction | Post excerpt | `post_excerpt` | Free |
 | Photo | Featured image | thumbnail ID | Free |
 | Prefix | Post meta | `_doctorpilot_prefix` | Free |
-| Credentials | Post meta | `_doctorpilot_credentials` | Free |
 | Gender | Post meta | `_doctorpilot_gender` | Free |
 | Featured | Post meta | `_doctorpilot_is_featured` bool | Free |
-| Accepting new patients | Post meta | `_doctorpilot_accepting_new_patients` bool | Free |
 | International doctor | Post meta | `_doctorpilot_is_international` bool | Free |
 | Years of experience | Post meta | `_doctorpilot_years_experience` non-negative int | Free |
 | Manual order | Post meta | `_doctorpilot_manual_order` bounded non-negative int | Free |
@@ -183,7 +181,7 @@ The registry powers admin fields, meta registration, validation, public serializ
 | Procedures | Array meta | `_doctorpilot_procedures` | Free |
 | Clinical interests | Array meta | `_doctorpilot_clinical_interests` | Free |
 | FAQs | Array meta | `_doctorpilot_faqs` | Free |
-| Location/contact records | Array meta | `_doctorpilot_locations`; max 1 in Free | Free/Pro |
+| Location/contact records | Array meta | `_doctorpilot_locations`; the editor edits the first record only, further records are preserved on save; `doctorpilot/locations/max` caps storage | Free/Pro |
 | Consultation duration | Post meta | `_doctorpilot_consultation_duration_minutes` positive int | Free |
 | Consultation price | Post meta | `_doctorpilot_consultation_price_minor` int plus `_doctorpilot_consultation_currency` ISO code | Free |
 | Booking method/config | Post meta | `_doctorpilot_booking_*` | Free/Pro |
@@ -340,7 +338,7 @@ publicly cached. Bounded `per_page` and `exclude[]` prevent abuse.
 | `mode` | enum `universal` | `name`, `department`, `specialty`, `symptom`, `universal` |
 | `department`, `specialty`, `symptom`, `condition`, `treatment`, `language`, `location`, `insurance` | comma-separated slugs | max 10 values per filter; normalized/sorted; tier rules apply |
 | `doctor` | comma-separated doctor post slugs | max 10; normalized/sorted; restricts candidates to those doctors before scoring |
-| Boolean filters | `0\|1` | accepting-new, online |
+| Boolean filters | `0\|1` | online |
 | `international` | `0\|1` | Tri-state: `1` international only, `0` national only, absent for either. Unlike the other booleans, `0` is a filter rather than a clear, and matches a stored `0` **or** a missing meta row |
 | `gender` | allowed enum | registry-defined |
 | `date` | ISO `YYYY-MM-DD` | Pro; valid site-local date |
@@ -373,13 +371,11 @@ Unknown parameters are ignored or rejected consistently according to controller 
         "width": 640,
         "height": 800
       },
-      "credentials": "MD, MRCP, FRCR, EMBA",
       "primary_department": {"id": 7, "name": "Radiology", "slug": "radiology"},
       "primary_specialty": {"id": 12, "name": "Interventional Radiology", "slug": "interventional-radiology"},
       "years_experience": 15,
       "languages": [{"id": 20, "name": "English", "slug": "english"}],
       "consultation_type": "both",
-      "accepting_new_patients": true,
       "booking": {
         "type": "external_url",
         "label": "Book Appointment",
@@ -462,7 +458,7 @@ Default scoring:
 | Direct symptom assignment | 550 |
 | Symptom-curated specialty/department relationship | 450 |
 | Exact condition/treatment assignment | 400 |
-| Credentials/clinical-interest/search-document match | 250 |
+| Clinical-interest/search-document match | 250 |
 | Featured tie boost | +30 |
 
 Tie order: score descending, featured descending, manual order ascending, normalized name ascending, post ID ascending. Ranking weights may be filtered by code but are not an arbitrary public request parameter.
@@ -534,17 +530,78 @@ install on one that never did.
 
 ### 10.2 Elementor contracts
 
+**`the_content` is not a filter, where Elementor is concerned.** `Elementor\Frontend::apply_builder_in_content()`
+is hooked to `the_content` at priority 9 and replaces the string it is given with
+the whole rendered document for `get_the_ID()`. Any plugin code that calls
+`apply_filters( 'the_content', … )` from inside a widget therefore renders the
+containing document inside that widget. `DoctorView::rendered_biography()` is the
+only place DoctorPilot calls it, and it suspends that one filter for the duration
+via Elementor's public `remove_content_filter()` / `add_content_filter()`, restoring
+it only when it was registered on entry — Elementor drops it during its own nested
+renders, and re-adding it there would builder-inject the outer content. A static
+re-entrancy guard backs this up. New code must not call `the_content` without the
+same protection.
+
+**Button link overrides.** `AbstractWidget::link_override( $settings, $key )`
+turns an Elementor URL control into `{ url, target, rel, attrs }`. The URL is
+passed through `esc_url_raw()`, so a disallowed scheme resolves to an empty
+`url` (no override) rather than a link; `is_external` becomes `target="_blank"`
+plus `rel="noopener"`, and `nofollow` is appended to `rel`. Page Header uses it
+for `book_link` and `call_link`; Doctor Grid / List uses it for
+`booking_button_link`, which `CardElementControls::register_card_elements_section( true )`
+registers under the Booking button switch (the carousel and related-doctors card
+pass nothing and get no control). The grid passes the result to
+`templates/directory.php`, which emits `data-booking-url`, `data-booking-target`
+and `data-booking-rel` on the directory root; `templates/card-doctor.php` reads
+`$data['booking_link']` and `assets/js/directory.js` reads the three attributes,
+so a card rebuilt after a filter change points where the server-rendered one
+did. Both renderers fall back to the same label — the doctor's booking label,
+else *Book an Appointment* (`strings.bookNow`) — because a set link renders the
+button for a doctor with no booking CTA of their own.
+
 **Built-in widget heading.** `AbstractWidget` provides an optional eyebrow +
 heading block through three methods: `register_heading_controls()` (call inside
 an open content section), `register_heading_style()` (call at the top level of
 `register_controls()`; it opens its own section) and `render_heading( $settings )`
 (call in `render()` *after* the widget has confirmed it has content, so an empty
-widget never leaves an orphan heading). Control IDs: `heading_show`,
-`eyebrow_text`, `heading_text`, `heading_tag`, plus the `section_heading_style`
-section. `heading_show` defaults to off, so adding the set to a widget changes
-nothing until an editor enables it. Markup is `.dp-wh` > `.dp-wh__eyebrow` +
-`.dp-wh__title`; the tag is validated against `heading_tags()` and falls back to
-`h2`.
+widget never leaves an orphan heading). Content control IDs: `heading_show`,
+`eyebrow_text`, `heading_text`, `heading_tag`. `heading_show` defaults to off, so
+adding the set to a widget changes nothing until an editor enables it. Markup is
+`.dp-wh` > `.dp-wh__eyebrow` + `.dp-wh__title`; the tag is validated against
+`heading_tags()` and falls back to `h2`.
+
+`register_heading_style()` opens **two** Style-tab sections — `section_eyebrow_style`
+and `section_heading_style` — both conditioned on `heading_show`. Each is built by
+the private `register_wh_part_style()` from one prefix and one selector, so the two
+lines cannot drift apart control by control:
+
+| Control | Eyebrow ID | Heading ID | Applies to |
+|---|---|---|---|
+| Typography (group) | `eyebrow_typography` | `wh_title_typography` | base |
+| Padding | `eyebrow_padding` | `wh_title_padding` | base |
+| Margin | `eyebrow_margin` | `wh_title_margin` | base |
+| Border radius | `eyebrow_radius` | `wh_title_radius` | base |
+| Fit background to text | `eyebrow_inline` | `wh_title_inline` | base (`width: fit-content`) |
+| Transition duration | `eyebrow_transition` | `wh_title_transition` | base |
+| Text color | `eyebrow_color` | `wh_title_color` | Normal tab |
+| Background (group) | `eyebrow_bg` | `wh_title_bg` | Normal tab |
+| Box shadow (group) | `eyebrow_shadow` | `wh_title_shadow` | Normal tab |
+| Text color | `eyebrow_color_hover` | `wh_title_color_hover` | Hover tab (`:hover`) |
+| Background (group) | `eyebrow_bg_hover` | `wh_title_bg_hover` | Hover tab (`:hover`) |
+| Box shadow (group) | `eyebrow_shadow_hover` | `wh_title_shadow_hover` | Hover tab (`:hover`) |
+
+`wh_spacing` stays in the Heading section: it is the margin below the whole
+`.dp-wh` block, not below the heading line.
+
+Both lines are block-level, so a background paints the full column width. "Fit
+background to text" is the opt-out, off by default — no widget carries a
+background yet, so neither default changes an existing page.
+
+`eyebrow_color`, `eyebrow_typography`, `wh_title_color`, `wh_title_typography` and
+`wh_spacing` keep the IDs they were introduced with, and moving a control between
+sections or into a tab preserves its saved value: Elementor stores settings flat,
+by control ID. Renaming one would resolve it to the control default instead and
+silently restyle every page already built.
 
 Every widget registers it except `HeadingBlock`, which is the heading widget and
 already owns `heading_show` / `heading_text`.
@@ -584,7 +641,7 @@ Widgets:
 
 - Doctor Grid/List — card grid or compact list, with an optional search bar,
   browse tabs, collapsible filter row (sort / gender / language / department /
-  specialty / symptom / accepting-new / online), A–Z index, result count, and
+  specialty / symptom / online), A–Z index, result count, and
   pagination. Templates: `directory.php`, `row-doctor.php`, `row-term.php`,
   `card-doctor.php`.
 
@@ -597,12 +654,10 @@ Widgets:
   | `image` | `image_show` |
   | `badge_featured` | `badge_featured_show` |
   | `badge_international` | `badge_international_show` |
-  | `credentials` | `credentials_show` |
   | `specialty` | `specialty_show` |
-  | `bio` | `bio_show` |
+  | `bio` (the Headline; the part name predates the label) | `bio_show` |
   | `experience` | `experience_show` |
   | `languages` | `languages_show` |
-  | `accepting` | `accepting_show` |
   | `profile_button` | `profile_button_show` |
   | `booking_button` | `booking_button_show` |
 
@@ -637,7 +692,7 @@ Widgets:
   index is not also offered as a select in the filter row.
 
   One widget-local GET parameter extends the shared search state: `letter`
-  (`#` or `A`–`Z`). It filters the index only, never the results, and is ignored
+  (`A`–`Z`; anything else, including a stale `#`, means "all"). It filters the index only, never the results, and is ignored
   when the A–Z bar is switched off, since nothing would be able to clear it. `q`
   does double duty — it filters the index client-side by name *and* runs as the
   ordinary search query against the results. Index filtering is applied by
@@ -674,7 +729,7 @@ Widgets declare unique prefixed names, style/script dependencies, and semantic r
 Render non-empty sections only:
 
 1. Breadcrumbs
-2. Hero: photo, name, credentials, primary department/specialty, main booking CTA
+2. Hero: photo, name, primary department/specialty, main booking CTA
 3. Short introduction / About
 4. Scope of practice and clinical interests
 5. Procedures and treatments
@@ -843,7 +898,7 @@ Prefix cells beginning with `=`, `+`, `-`, or `@` according to the export policy
 | Legacy value | Canonical destination |
 |---|---|
 | Page title/name | `post_title` after identity review |
-| Credentials text | `_doctorpilot_credentials` |
+| Credentials text | Not imported — the field was removed (ADR-0024) |
 | Primary department/specialty | Taxonomy assignment plus validated primary term ID |
 | Languages | Language terms |
 | “15+ years” | Reviewed integer `_doctorpilot_years_experience` |
@@ -857,7 +912,7 @@ Prefix cells beginning with `=`, `+`, `-`, or `@` according to the export policy
 | Old URL | Redirect source path |
 | New reviewed URL | Doctor post slug/destination path |
 
-Review must catch wrong-doctor content (including “Dr. Kanso” references), placeholder counters, credentials, pronouns, specialties, contact, booking, copied testimonials, and staging URLs.
+Review must catch wrong-doctor content (including “Dr. Kanso” references), placeholder counters, pronouns, specialties, contact, booking, copied testimonials, and staging URLs.
 
 ## 16. SEO contract
 

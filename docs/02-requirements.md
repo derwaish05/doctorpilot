@@ -43,7 +43,7 @@ Three commercial tiers ship across two artifacts (ADR-0019). **Free** is the Wor
 | Single location | ✓ | — | ✓ | — |
 | Multiple locations | — | — | ✓ | — |
 | Name/department/specialty/symptom search | ✓ | — | ✓ | — |
-| Gender/language/accepting-new/online filters | ✓ | — | ✓ | — |
+| Gender/language/online filters | ✓ | — | ✓ | — |
 | Location, insurance, schedule, availability filters | — | — | ✓ | — |
 | Native templates and shortcodes | ✓ | — | ✓ | — |
 | Core Elementor widgets | ✓ | — | ✓ | — |
@@ -82,10 +82,10 @@ Closing the Pro column is a precondition for charging a renewal, not a roadmap p
 ### 4.1 Doctor profiles
 
 - **FR-001 [Free]** Store each doctor in the prefixed internal post type defined by `06-technical-spec.md`; public URLs remain human-readable.
-- **FR-002 [Free]** Provide a guided editor with these groups: Profile, Professional Information, Clinical Services, Experience & Education, Certifications & Memberships, Publications, Location & Contact, Booking, SEO, and FAQs.
+- **FR-002 [Free]** Provide a guided editor with these groups: Profile, Professional Information, Highlights, Clinical Services, Experience & Education, Certifications & Memberships, Publications, Booking, SEO, and FAQs. Location & contact is edited inside Profile as a single record, not a group of its own.
 - **FR-003 [Free]** Use one field registry as the source for storage type, default, sanitizer, validation, public visibility, REST shape, and tier.
 - **FR-004 [Free]** Support structured records for the doctor's professional history. Leadership positions and certifications/memberships are stored as doctor repeaters. Procedures, Experience & Education, Publications, and FAQs use the hybrid global-library model (reusable global records assignable to many doctors) plus per-doctor local items, per ADR-0017 and §4.10.
-- **FR-005 [Free]** Support name, prefix, credentials, photo, optional gender, short introduction, biography, featured state, accepting-new-patients state, departments, specialties, experience, languages, professional license, clinical terms, contact data, consultation type, optional consultation duration/price, and booking configuration.
+- **FR-005 [Free]** Support name, prefix, photo, optional gender, short introduction, biography, featured state, departments, specialties, experience, languages, professional license, clinical terms, contact data, consultation type, optional consultation duration/price, and booking configuration.
 - **FR-006 [Free]** Use WordPress post status for publication (`draft`, `pending`, `publish`) and a separate computed review/completeness state; do not duplicate publication state in editable meta.
 - **FR-007 [Free]** Hide all private/internal fields from public output unless an administrator explicitly changes the field's supported visibility setting.
 - **FR-008 [Free]** Validate that each primary department/specialty is also assigned in the corresponding taxonomy.
@@ -102,7 +102,8 @@ Closing the Pro column is a precondition for charging a renewal, not a roadmap p
 ### 4.3 Search and filters
 
 - **FR-015 [Free]** Search modes: doctor name, department, specialty, symptom, and universal keyword.
-- **FR-016 [Free]** Core filters: department, specialty, symptom, gender, language, accepting new patients, online consultation, and national/international.
+- **FR-016 [Free]** Core filters: department, specialty, symptom, gender, language, online consultation, and national/international.
+- **FR-016b** There is no accepting-new-patients field, filter, card row or badge. The whole feature was removed in 0.2.1 at the product owner's request; see ADR-0021 for what was removed and what was deliberately left in the database.
 - **FR-016a [Free]** The national/international filter is tri-state — All, National, International — because "national" is a selection a visitor makes, not merely the absence of a filter. It reads the existing `is_international` flag; no new field or taxonomy is introduced. A doctor with no stored flag counts as national, so profiles created by import or by code are not silently dropped from that result.
 - **FR-017 [Pro]** Advanced filters: location, insurance, condition, treatment, consultation type, available today, and available date.
 - **FR-018 [Free]** Debounced suggestions begin only after the configured minimum length and return bounded, public-safe results.
@@ -116,7 +117,7 @@ Closing the Pro column is a precondition for charging a renewal, not a roadmap p
 
 ### 4.4 Frontend display
 
-- **FR-026 [Free]** A core doctor card supports photo/placeholder, name, credentials, primary department/specialty, experience, languages, consultation type, View Profile, and booking action. Empty optional values are omitted without blank labels.
+- **FR-026 [Free]** A core doctor card supports photo/placeholder, name, headline, primary department/specialty, experience, languages, consultation type, View Profile, and booking action. Empty optional values are omitted without blank labels.
 - **FR-027 [Free]** Grid and list layouts support consistent media ratios, result count, pagination, loading state, empty state, and a mobile filter drawer.
 - **FR-028 [Free]** The single profile renders only non-empty structured sections in the order defined by the technical specification.
 - **FR-029 [Free]** Native templates and shortcodes provide functional output when Elementor is absent or inactive.
@@ -129,6 +130,8 @@ Closing the Pro column is a precondition for charging a renewal, not a roadmap p
 - **FR-031b [Free]** The widget's browse tabs open an index *above* the doctor results, and the results stay on screen with it. **By Doctor Name** indexes every published doctor (name plus primary specialty or department); **By Department**, **By Specialty**, and **By Symptom** index that taxonomy's terms, limited to terms at least one published doctor uses. Each index is browsable A–Z and by free text. Every configured tab browses — there is no tab that only scopes the query, because `mode` is not a ranking input and such a tab would change nothing. A site that does not want browse tabs configures none.
 - **FR-031c [Free]** Choosing an entry in a browse index narrows the doctor results below it rather than navigating away: the entry writes that index's search parameter (`doctor`, `department`, `specialty`, `symptom`), is marked as the current selection, and choosing it again clears it. Switching tabs clears the previous tab's selection, so no filter can stay active without a visible control for it. Because the selection travels as an ordinary search parameter it is shared by the URL, the REST route, the cache key, and the active-filter count, and it works as a plain GET link without JavaScript.
 - **FR-031d [Free]** Every filter the widget offers stays applicable at all times, because the results are always present. A parameter owned by a visible browse index is not also offered as a select in the filter row, so one value is never settable from two controls that could disagree.
+- **FR-031f [Free]** The Doctor Index block opens with no list showing — a search bar and its browse buttons, nothing more. A browse list is what a visitor gets after asking for one, not what greets them. Pressing the open button closes it again, so the starting state stays reachable. Because no list is selected at rest, the buttons are disclosure controls carrying `aria-expanded`, not a tablist: a tablist must always have exactly one selected tab, and its roving tabindex would leave no focusable button at all while everything is closed.
+- **FR-031e [Free]** The Doctor Index block — a browse index with no results grid, whose entries link out — offers a collapsible **Sort By / Gender / Languages Spoken** row. Gender and Languages describe doctors, so they narrow the **By Doctor Name** list. On a Department, Specialty or Symptom tab they have nothing to match, and the whole row is therefore unavailable: the **More Filters** button is disabled and dimmed rather than hidden, so the bar does not reflow and the control's absence reads as belonging to another tab rather than as a bug. Values are kept, not reset, so returning to **By Doctor Name** restores the visitor's choice. A term entry's link carries only its term, and a doctor entry's link is a profile permalink; neither gains a filter the visitor cannot see at the moment they click. The filters are read back from the query string on the server, so the block sorts and narrows identically without JavaScript, where the disabled state is correct from the first paint; a filter whose options would be empty is not rendered at all.
 - **FR-032 [Pro]** Advanced widgets: Advanced Search, Carousel, Doctor Information sections, Locations, Schedule, Related Doctors, Results Count, Active Filters, and pagination controls.
 - **FR-033 [Free/Pro]** Widgets expose controls appropriate to their output, including typography, color, spacing, border/radius, image ratio, columns, responsive behavior, focus/hover states, empty state, and loading state. Irrelevant controls must not be added merely to inflate feature count.
 - **FR-034 [Free/Pro]** Assets load only for widgets present on the page and use Elementor's dependency APIs.
@@ -141,6 +144,7 @@ Closing the Pro column is a precondition for charging a renewal, not a roadmap p
 - **FR-038 [Free]** Booking configuration is per doctor; unsafe schemes or malformed destinations are rejected.
 - **FR-039 [Pro]** BookPilot and location-aware actions use the booking adapter contract.
 - **FR-040 [Free/Pro]** A provider failure falls back only to a configured safe action; it must not invent availability or silently redirect elsewhere.
+- **FR-040a [Free]** The Page Header's Book and Call buttons and the Doctor Grid / List's Booking button each accept an optional per-widget link that replaces the resolved destination for that widget. A set link renders the button even when the doctor has no booking method or phone. The link is validated with the same scheme rules as booking destinations; an unsafe link yields no override, never a live link.
 
 ### 4.7 Import, export, and migration
 
@@ -178,6 +182,8 @@ Tier note (ADR-0019): FR-041 through FR-045 and FR-047 belong to the **Migration
 - **FR-061 [Free]** Resolve each type as a single ordered list — assigned global records (published only, in public contexts) first, then the doctor's local items — through one shared `DoctorContentResolver`, distinguishing global from local in admin context. Native templates, search document, REST `/doctors/{id}`, and Elementor consume the same resolved data.
 - **FR-062 [Free]** Prevent duplicate assignments (unique reference lists) and block exact-key duplicate global records on creation using a normalized per-type key (Unicode NFC, case-fold, whitespace/punctuation normalization, DOI normalization); an override requires `manage_doctorpilot_library` and is audit-logged.
 - **FR-063 [Free/Pro]** Define lifecycle behavior: editing a global propagates to all assigned doctors and, via a rebuildable reverse-reference index, immediately increments cache generation and enqueues bounded rebuilds of affected doctors' search documents; unpublished/trashed globals are hidden from public output but keep their references (restore re-links); permanent deletion removes references from all doctors in bounded batches with no dangling data; Pro may merge duplicate globals and repoint references. Draft, pending, private, or trashed globals must never appear in public templates, search, REST, or Elementor. Free surfaces basic blast-radius visibility ("used by N doctors", affected list, and a warning before unpublish/delete).
+- **FR-064 [Free]** Support WPML on a multilingual site. Doctors, the six library post types and all eight taxonomies are declared translatable through `wpml-config.xml`; term slugs saved in Elementor widgets or arriving in a URL resolve to the current language at render; stored primary-term IDs, library post IDs and the single-doctor template ID convert when read; the derived search index is built per language and rebuilt for a doctor created by any route, not only the editor form; the search cache is keyed per language; and both public REST routes accept a `lang` parameter and switch language before reading content. A single-language site behaves identically to before. Polylang is not supported; `Support\Multilingual` is the only place that would change. See ADR-0023.
+- **FR-065 [Free]** Derived search values are rebuilt once per doctor per request, at the end of the request, for every write path — the editor form, CSV import, WP-CLI, REST, Quick Edit and a translation plugin. A doctor with no search index is excluded from every result rather than ranked low, so "indexed" is a correctness property, not an optimisation.
 
 ## 5. Non-functional requirements
 

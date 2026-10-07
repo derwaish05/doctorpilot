@@ -90,6 +90,7 @@ final class DoctorProfile extends AbstractWidget {
 			array(
 				'label'     => __( 'Section heading color', 'doctorpilot' ),
 				'type'      => \Elementor\Controls_Manager::COLOR,
+				'default'   => '#136888',
 				'selectors' => array(
 					'{{WRAPPER}} .dp-profile__section h2' => 'color: {{VALUE}};',
 				),

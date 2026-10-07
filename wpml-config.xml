@@ -1,0 +1,176 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  WPML configuration for DoctorPilot.
+
+  WPML reads this file automatically from a plugin's root directory. It is what
+  makes the post types, taxonomies and custom fields below appear in WPML →
+  Settings → Multilingual Content Setup with a sensible default, instead of
+  arriving as "not translatable" or as an undifferentiated list the site owner
+  has to classify by hand.
+
+  Two of these declarations are load-bearing rather than cosmetic:
+
+  - The seven library post types are registered `public => false` (they are
+    editorial records surfaced through a doctor's profile, not standalone
+    pages). WPML lists them because `show_ui` is true, but without an explicit
+    entry they default to not-translatable, so a certification or FAQ shared
+    across doctors would render in the source language on every translated
+    profile.
+
+  - The seven `_ids` fields point at shared library records. `type="post-ids"`
+    with a `sub-type` is WPML's documented way to have those rewritten to the
+    translated record rather than copied.
+
+  Only the four actions WPML documents are used: translate, copy, copy-once and
+  ignore. An unrecognised action is not an error — WPML falls through to a
+  default — which is exactly why a typo here would be invisible.
+
+  Values used below:
+    translate="1"  offer for translation
+    translate="0"  do not translate
+    action="copy"       identical in every language (IDs, flags, numbers)
+    action="translate"  free text a translator should rewrite
+    action="copy-once"  seed from the original, then editable per language
+-->
+<wpml-config>
+
+	<custom-types>
+		<!-- Doctors. The reason the plugin exists; always translatable. -->
+		<custom-type translate="1">doctorpilot_doctor</custom-type>
+
+		<!--
+		  Shared library records. Assigned to many doctors and rendered inside
+		  a doctor's profile, so they have to exist per language or a translated
+		  profile shows source-language content.
+		-->
+		<custom-type translate="1">doctorpilot_exp</custom-type>
+		<custom-type translate="1">doctorpilot_edu</custom-type>
+		<custom-type translate="1">doctorpilot_proc</custom-type>
+		<custom-type translate="1">doctorpilot_pub</custom-type>
+		<custom-type translate="1">doctorpilot_cert</custom-type>
+		<custom-type translate="1">doctorpilot_mem</custom-type>
+		<custom-type translate="1">doctorpilot_faq</custom-type>
+	</custom-types>
+
+	<taxonomies>
+		<!-- Public, archive-backed vocabularies shown to visitors. -->
+		<taxonomy translate="1">doctorpilot_department</taxonomy>
+		<taxonomy translate="1">doctorpilot_specialty</taxonomy>
+		<taxonomy translate="1">doctorpilot_symptom</taxonomy>
+		<taxonomy translate="1">doctorpilot_condition</taxonomy>
+		<taxonomy translate="1">doctorpilot_treatment</taxonomy>
+
+		<!--
+		  No public archive, but both are filter facets whose names are shown to
+		  visitors in the filter panel and on cards, so they still need
+		  translating.
+		-->
+		<taxonomy translate="1">doctorpilot_language</taxonomy>
+		<taxonomy translate="1">doctorpilot_location</taxonomy>
+		<taxonomy translate="1">doctorpilot_insurance</taxonomy>
+	</taxonomies>
+
+	<custom-fields>
+		<!--
+		  Free text. A translator rewrites these per language.
+		-->
+		<custom-field action="translate">_doctorpilot_prefix</custom-field>
+		<custom-field action="translate">_doctorpilot_first_name</custom-field>
+		<custom-field action="translate">_doctorpilot_last_name</custom-field>
+		<custom-field action="translate">_doctorpilot_license_authority</custom-field>
+		<custom-field action="translate">_doctorpilot_clinical_interests</custom-field>
+		<custom-field action="translate">_doctorpilot_leadership_positions</custom-field>
+		<custom-field action="translate">_doctorpilot_academic_highlights</custom-field>
+		<custom-field action="translate">_doctorpilot_procedures</custom-field>
+		<custom-field action="translate">_doctorpilot_certifications</custom-field>
+		<custom-field action="translate">_doctorpilot_memberships</custom-field>
+		<custom-field action="translate">_doctorpilot_publications</custom-field>
+		<custom-field action="translate">_doctorpilot_exp_local</custom-field>
+		<custom-field action="translate">_doctorpilot_edu_local</custom-field>
+		<custom-field action="translate">_doctorpilot_faqs</custom-field>
+		<custom-field action="translate">_doctorpilot_locations</custom-field>
+		<custom-field action="translate">_doctorpilot_booking_label</custom-field>
+		<custom-field action="translate">_doctorpilot_seo_title</custom-field>
+		<custom-field action="translate">_doctorpilot_seo_description</custom-field>
+
+		<!--
+		  Term references. WPML's configuration format documents ID conversion
+		  for post IDs (`type="post-ids"`) but not for term IDs, so there is no
+		  declaration that would make it rewrite these — they are copied
+		  verbatim, and a translated doctor keeps the source language's term ID.
+		  `Support\Multilingual::term_id()` converts them at read time instead,
+		  which is where the fix actually lives. Listed here as `copy` so the
+		  field is classified deliberately rather than left for WPML to guess.
+		-->
+		<custom-field action="copy">_doctorpilot_primary_department_id</custom-field>
+		<custom-field action="copy">_doctorpilot_primary_specialty_id</custom-field>
+
+		<!--
+		  Post references into the shared library. WPML converts these when the
+		  target post types are translatable, which the block above makes them.
+		-->
+		<custom-field action="copy" type="post-ids" sub-type="doctorpilot_exp">_doctorpilot_exp_ids</custom-field>
+		<custom-field action="copy" type="post-ids" sub-type="doctorpilot_edu">_doctorpilot_edu_ids</custom-field>
+		<custom-field action="copy" type="post-ids" sub-type="doctorpilot_proc">_doctorpilot_proc_ids</custom-field>
+		<custom-field action="copy" type="post-ids" sub-type="doctorpilot_pub">_doctorpilot_pub_ids</custom-field>
+		<custom-field action="copy" type="post-ids" sub-type="doctorpilot_cert">_doctorpilot_cert_ids</custom-field>
+		<custom-field action="copy" type="post-ids" sub-type="doctorpilot_mem">_doctorpilot_mem_ids</custom-field>
+		<custom-field action="copy" type="post-ids" sub-type="doctorpilot_faq">_doctorpilot_faq_ids</custom-field>
+
+		<!--
+		  Identical in every language: flags, numbers, enums and IDs.
+		-->
+		<custom-field action="copy">_doctorpilot_gender</custom-field>
+		<custom-field action="copy">_doctorpilot_is_featured</custom-field>
+		<custom-field action="copy">_doctorpilot_is_international</custom-field>
+		<custom-field action="copy">_doctorpilot_years_experience</custom-field>
+		<custom-field action="copy">_doctorpilot_manual_order</custom-field>
+		<custom-field action="copy">_doctorpilot_license_number</custom-field>
+		<custom-field action="copy">_doctorpilot_booking_method</custom-field>
+		<custom-field action="copy">_doctorpilot_booking_external_url</custom-field>
+		<custom-field action="copy">_doctorpilot_booking_phone</custom-field>
+		<custom-field action="copy">_doctorpilot_consultation_duration_minutes</custom-field>
+		<custom-field action="copy">_doctorpilot_online_consultation</custom-field>
+		<custom-field action="copy">_doctorpilot_review_status</custom-field>
+
+		<!--
+		  Per-language by nature. A canonical URL or a legacy path copied across
+		  languages would point every translation at the source language's URL,
+		  which is an SEO defect rather than a convenience.
+		-->
+		<custom-field action="copy-once">_doctorpilot_seo_canonical_url</custom-field>
+		<custom-field action="copy-once">_doctorpilot_seo_index_status</custom-field>
+		<custom-field action="ignore">_doctorpilot_legacy_url</custom-field>
+
+		<!--
+		  Derived. Recomputed per language from that language's own title and
+		  terms by `SearchIndexBuilder`, which now runs on any save. Copying
+		  them would hand a translated doctor the source language's search
+		  index — the exact bug that made translations unfindable.
+		-->
+		<custom-field action="ignore">_doctorpilot_search_index</custom-field>
+		<custom-field action="ignore">_doctorpilot_search_document</custom-field>
+		<custom-field action="ignore">_doctorpilot_sort_name</custom-field>
+		<custom-field action="ignore">_doctorpilot_completeness_score</custom-field>
+	</custom-fields>
+
+	<custom-term-fields>
+		<!-- Patient-facing synonyms and prose on a symptom term. -->
+		<custom-term-field action="translate">_doctorpilot_alt_names</custom-term-field>
+		<custom-term-field action="translate">_doctorpilot_short_explanation</custom-term-field>
+		<custom-term-field action="copy">_doctorpilot_az_listed</custom-term-field>
+		<custom-term-field action="copy">_doctorpilot_priority</custom-term-field>
+	</custom-term-fields>
+
+	<!--
+	  No <admin-texts> block on purpose. The plugin's settings option
+	  (`bstdz_doctorpilot_settings`) holds only slugs, numbers, IDs, enums and
+	  booleans — nothing an admin types that a visitor then reads. Every
+	  visitor-facing default, including the booking button label, comes from a
+	  translated string in the booking providers rather than from an option, so
+	  it is covered by the `.pot` catalogue instead. Declaring option keys here
+	  that carry no visitor-facing text would put empty rows in WPML's String
+	  Translation screen.
+	-->
+
+</wpml-config>

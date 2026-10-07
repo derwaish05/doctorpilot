@@ -32,7 +32,7 @@ final class SuggestionService {
 	 * @param string $query    Partial query.
 	 * @param int    $limit    Maximum suggestions.
 	 * @param int    $min_chars Minimum characters before suggesting.
-	 * @return array<int, array<string, string>> List of {type, label, value}.
+	 * @return array<int, array<string, string>> List of {type, label, value, slug, url}.
 	 */
 	public function suggest( string $query, int $limit = 8, int $min_chars = 2 ): array {
 		$normalized = Normalizer::normalize( $query );
@@ -58,10 +58,16 @@ final class SuggestionService {
 			)
 		);
 		foreach ( (array) $doctors as $doctor_id ) {
+			$doctor_id  = (int) $doctor_id;
+			$doctor_url = get_permalink( $doctor_id );
+			$doctor     = get_post( $doctor_id );
+
 			$suggestions[] = array(
 				'type'  => 'doctor',
-				'label' => get_the_title( (int) $doctor_id ),
-				'value' => get_the_title( (int) $doctor_id ),
+				'label' => get_the_title( $doctor_id ),
+				'value' => get_the_title( $doctor_id ),
+				'slug'  => ( $doctor instanceof \WP_Post ) ? (string) $doctor->post_name : '',
+				'url'   => is_string( $doctor_url ) ? $doctor_url : '',
 			);
 		}
 
@@ -92,6 +98,9 @@ final class SuggestionService {
 					'type'  => $type,
 					'label' => $term->name,
 					'value' => $term->slug,
+					'slug'  => $term->slug,
+					// Deliberately empty: the front end builds the search URL itself, because the target page is a widget-level choice, not a service-level one.
+					'url'   => '',
 				);
 			}
 		}

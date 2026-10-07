@@ -17,6 +17,7 @@ use BrainStudioz\DoctorPilot\Application\Search\SearchService;
 use BrainStudioz\DoctorPilot\Domain\Search\SearchRequestFactory;
 use BrainStudioz\DoctorPilot\Infrastructure\Cache\SearchCache;
 use BrainStudioz\DoctorPilot\Support\ErrorFactory;
+use BrainStudioz\DoctorPilot\Support\Multilingual;
 use BrainStudioz\DoctorPilot\Support\RateLimiter;
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -101,6 +102,17 @@ final class DoctorsController {
 		// it is part of the request signature, so the cache stays correct.
 		$requested_pp   = (int) $request->get_param( 'per_page' );
 		$per_page       = $requested_pp > 0 ? $requested_pp : $default_pp;
+
+		/*
+		 * Establish language context before anything reads a term, a post or the
+		 * cache key. Everything below this line — slug resolution, the query, the
+		 * card payload, the facets — asks WordPress for content in "the current
+		 * language", so the switch has to happen first or the whole response is
+		 * built in the wrong one. A no-op unless a multilingual plugin is active
+		 * and the caller sent a language.
+		 */
+		Multilingual::switch_language( (string) $request->get_param( 'lang' ) );
+
 		$search_request = SearchRequestFactory::from_array( $request->get_params(), $per_page );
 
 		$cache_key = SearchCache::key( $search_request, 'doctors' );
@@ -217,9 +229,20 @@ final class DoctorsController {
 			'symptom'       => $string_arg,
 			'language'      => $string_arg,
 			'gender'        => $string_arg,
-			'accepting_new' => array( 'type' => 'string', 'required' => false ),
 			'online'        => array( 'type' => 'string', 'required' => false ),
 			'international' => array( 'type' => 'string', 'required' => false ),
+
+			/*
+			 * Language code, for multilingual sites. WPML normally establishes
+			 * language context from the request URL, but whether the REST URL
+			 * carries a language prefix depends on which URL mode the site uses
+			 * — in query-string mode it carries none at all, and the route
+			 * would answer in the default language while the page around it is
+			 * translated. The front end sends this explicitly so the answer
+			 * never depends on that. Ignored entirely when no multilingual
+			 * plugin is active.
+			 */
+			'lang'          => array( 'type' => 'string', 'required' => false ),
 			'sort'          => array_merge( $string_arg, array( 'default' => 'relevance' ) ),
 			'view'          => array_merge( $string_arg, array( 'default' => 'grid' ) ),
 			'page'          => array(

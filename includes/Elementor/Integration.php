@@ -9,6 +9,9 @@ declare( strict_types=1 );
 
 namespace BrainStudioz\DoctorPilot\Elementor;
 
+use BrainStudioz\DoctorPilot\Admin\Settings;
+use BrainStudioz\DoctorPilot\Frontend\DirectoryAssets;
+
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
@@ -65,35 +68,10 @@ final class Integration {
 	 * @return void
 	 */
 	public function register_style(): void {
-		if ( ! wp_style_is( self::STYLE_HANDLE, 'registered' ) ) {
-			$path = DOCTORPILOT_PLUGIN_DIR . 'assets/css/frontend.css';
-			$ver  = is_readable( $path ) ? (string) filemtime( $path ) : DOCTORPILOT_VERSION;
-
-			wp_register_style(
-				self::STYLE_HANDLE,
-				DOCTORPILOT_PLUGIN_URL . 'assets/css/frontend.css',
-				array(),
-				$ver
-			);
-		}
-
-		// The premium card layer is a separate handle so Elementor can load it
-		// through the widget's own style dependency — pages without the Doctor
-		// Grid / List widget never download it. It depends on the shared
-		// stylesheet so its overrides always cascade afterwards.
-		$premium = Widgets\DoctorGridList::PREMIUM_STYLE_HANDLE;
-
-		if ( ! wp_style_is( $premium, 'registered' ) ) {
-			$premium_path = DOCTORPILOT_PLUGIN_DIR . 'assets/css/directory-premium.css';
-			$premium_ver  = is_readable( $premium_path ) ? (string) filemtime( $premium_path ) : DOCTORPILOT_VERSION;
-
-			wp_register_style(
-				$premium,
-				DOCTORPILOT_PLUGIN_URL . 'assets/css/directory-premium.css',
-				array( self::STYLE_HANDLE ),
-				$premium_ver
-			);
-		}
+		// The shared stylesheet and the premium card layer are registered by the
+		// directory's own registrar, because the doctor archive renders the same
+		// markup without any widget and must load exactly the same CSS.
+		DirectoryAssets::register_styles();
 
 		// The carousel layer adds the track and its controls on top of the card
 		// tokens, so it depends on the premium layer rather than duplicating it.
@@ -107,7 +85,7 @@ final class Integration {
 			wp_register_style(
 				$carousel,
 				DOCTORPILOT_PLUGIN_URL . 'assets/css/carousel.css',
-				array( $premium ),
+				array( DirectoryAssets::PREMIUM_STYLE ),
 				$carousel_ver
 			);
 		}
@@ -120,27 +98,32 @@ final class Integration {
 	 */
 	public function register_scripts(): void {
 		$this->register_directory_script();
+		$this->register_index_script();
 		$this->register_carousel_script();
 	}
 
 	/**
-	 * Register the directory script and its localized strings.
+	 * Register the Doctor Search Index script and its localized strings.
+	 *
+	 * Separate from the directory script: the index never fetches doctors, so
+	 * it must not carry the directory's rendering code onto a page that only
+	 * shows the search block.
 	 *
 	 * @return void
 	 */
-	private function register_directory_script(): void {
-		$handle = Widgets\DoctorGridList::SCRIPT_HANDLE;
+	private function register_index_script(): void {
+		$handle = Widgets\DoctorIndex::SCRIPT_HANDLE;
 
 		if ( wp_script_is( $handle, 'registered' ) ) {
 			return;
 		}
 
-		$path = DOCTORPILOT_PLUGIN_DIR . 'assets/js/directory.js';
+		$path = DOCTORPILOT_PLUGIN_DIR . 'assets/js/doctor-index.js';
 		$ver  = is_readable( $path ) ? (string) filemtime( $path ) : DOCTORPILOT_VERSION;
 
 		wp_register_script(
 			$handle,
-			DOCTORPILOT_PLUGIN_URL . 'assets/js/directory.js',
+			DOCTORPILOT_PLUGIN_URL . 'assets/js/doctor-index.js',
 			array(),
 			$ver,
 			true
@@ -148,33 +131,32 @@ final class Integration {
 
 		wp_localize_script(
 			$handle,
-			'doctorPilotDirectory',
+			'doctorPilotIndex',
 			array(
-				'strings' => array(
-					/* translators: %d: number of matching doctors. */
-					'countSingular' => __( '%d doctor found', 'doctorpilot' ),
-					/* translators: %d: number of matching doctors. */
-					'countPlural'   => __( '%d doctors found', 'doctorpilot' ),
-					'empty'         => __( 'No doctors matched your search.', 'doctorpilot' ),
-					/* translators: %s: index name, e.g. "departments". */
-					'emptyTerms'    => __( 'No %s matched your search.', 'doctorpilot' ),
-					'error'         => __( 'Something went wrong. Please try again.', 'doctorpilot' ),
-					'viewProfile'   => __( 'View Profile', 'doctorpilot' ),
-					'featured'      => __( 'Featured', 'doctorpilot' ),
-					'international' => __( 'International', 'doctorpilot' ),
-					'acceptingNew'  => __( 'Accepting new patients', 'doctorpilot' ),
-					/* translators: %d: years of experience. */
-					'yearSingular'  => __( '%d year experience', 'doctorpilot' ),
-					/* translators: %d: years of experience. */
-					'yearPlural'    => __( '%d years experience', 'doctorpilot' ),
-					'pagination'    => __( 'Doctor results pages', 'doctorpilot' ),
-					/* translators: %s: doctor name. Appended, visually hidden, to a "View Profile" link. */
-					'profileFor'    => __( 'for %s', 'doctorpilot' ),
-					/* translators: %s: doctor name. Appended, visually hidden, to a booking button. */
-					'bookingWith'   => __( 'with %s', 'doctorpilot' ),
+				'restBase' => esc_url_raw( rest_url( 'doctorpilot/v1' ) ),
+				'minChars' => max( 1, (int) ( Settings::get()['search']['minimum_characters'] ?? 2 ) ),
+				'strings'  => array(
+					'doctors'     => __( 'By Doctor Name', 'doctorpilot' ),
+					'departments' => __( 'By Department', 'doctorpilot' ),
+					'specialties' => __( 'By Specialty', 'doctorpilot' ),
+					'symptoms'    => __( 'By Symptom', 'doctorpilot' ),
+					'viewAll'     => __( 'View all', 'doctorpilot' ),
+					'noMatches'   => __( 'No matches.', 'doctorpilot' ),
 				),
 			)
 		);
+	}
+
+	/**
+	 * Register the directory script.
+	 *
+	 * Delegated: the archive renders the same template without a widget, so the
+	 * handle and its strings are defined once, in the directory's own registrar.
+	 *
+	 * @return void
+	 */
+	private function register_directory_script(): void {
+		DirectoryAssets::register_script();
 	}
 
 	/**
@@ -248,6 +230,7 @@ final class Integration {
 		$widgets = array(
 			Widgets\DoctorSearch::class,
 			Widgets\DoctorGridList::class,
+			Widgets\DoctorIndex::class,
 			Widgets\DoctorCarousel::class,
 			Widgets\DepartmentGrid::class,
 			Widgets\SymptomDirectory::class,
@@ -260,6 +243,8 @@ final class Integration {
 			Widgets\BookingCard::class,
 			Widgets\DoctorFacts::class,
 			Widgets\AcademicHighlights::class,
+			Widgets\CommunityOutreach::class,
+			Widgets\HealthcareAchievements::class,
 			Widgets\Certifications::class,
 			Widgets\CertsPublications::class,
 			Widgets\BookingButton::class,

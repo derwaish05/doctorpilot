@@ -98,11 +98,9 @@ wp_set_object_terms(
 // Scalar meta (verified facts only).
 update_post_meta( $dp_id, $dp_meta . 'external_source_id', $dp_key );
 update_post_meta( $dp_id, $dp_meta . 'review_status', 'needs_review' );
-update_post_meta( $dp_id, $dp_meta . 'credentials', 'MD, MRCP, FRCR, EMBA' );
 update_post_meta( $dp_id, $dp_meta . 'gender', 'male' );
 update_post_meta( $dp_id, $dp_meta . 'years_experience', 15 );
 update_post_meta( $dp_id, $dp_meta . 'is_featured', 1 );
-update_post_meta( $dp_id, $dp_meta . 'accepting_new_patients', 1 );
 update_post_meta( $dp_id, $dp_meta . 'primary_specialty_id', $dp_specialty );
 update_post_meta( $dp_id, $dp_meta . 'legacy_url', '/doctor/ali-a-haydar/' );
 update_post_meta( $dp_id, $dp_meta . 'seo_canonical_url', 'https://amanhospital.org/find-a-doctor/dr-ali-a-haydar/' );

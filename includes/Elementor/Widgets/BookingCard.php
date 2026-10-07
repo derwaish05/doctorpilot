@@ -76,14 +76,19 @@ final class BookingCard extends AbstractWidget {
 			)
 		);
 
+		$this->register_icon_source( 'mark_icon', __( 'Mark icon', 'doctorpilot' ) );
+
 		$this->add_control(
 			'mark_icon',
 			array(
-				'label'   => __( 'Mark icon', 'doctorpilot' ),
-				'type'    => \Elementor\Controls_Manager::ICONS,
-				'default' => array( 'value' => 'far fa-star', 'library' => 'fa-regular' ),
+				'label'     => __( 'Mark icon', 'doctorpilot' ),
+				'type'      => \Elementor\Controls_Manager::ICONS,
+				'default'   => array( 'value' => 'far fa-star', 'library' => 'fa-regular' ),
+				'condition' => $this->icon_condition( 'mark_icon', 'elementor' ),
 			)
 		);
+
+		$this->register_pixfort_icon( 'mark_icon' );
 
 		$this->add_control(
 			'title',
@@ -115,14 +120,19 @@ final class BookingCard extends AbstractWidget {
 			)
 		);
 
+		$this->register_icon_source( 'book_icon', __( 'Book button icon', 'doctorpilot' ) );
+
 		$this->add_control(
 			'book_icon',
 			array(
-				'label'   => __( 'Book button icon', 'doctorpilot' ),
-				'type'    => \Elementor\Controls_Manager::ICONS,
-				'default' => array( 'value' => 'far fa-calendar-check', 'library' => 'fa-regular' ),
+				'label'     => __( 'Book button icon', 'doctorpilot' ),
+				'type'      => \Elementor\Controls_Manager::ICONS,
+				'default'   => array( 'value' => 'far fa-calendar-check', 'library' => 'fa-regular' ),
+				'condition' => $this->icon_condition( 'book_icon', 'elementor' ),
 			)
 		);
+
+		$this->register_pixfort_icon( 'book_icon' );
 
 		$this->add_control(
 			'call_show',
@@ -146,15 +156,19 @@ final class BookingCard extends AbstractWidget {
 			)
 		);
 
+		$this->register_icon_source( 'call_icon', __( 'Call button icon', 'doctorpilot' ), array( 'call_show' => 'yes' ) );
+
 		$this->add_control(
 			'call_icon',
 			array(
 				'label'     => __( 'Call button icon', 'doctorpilot' ),
 				'type'      => \Elementor\Controls_Manager::ICONS,
 				'default'   => array( 'value' => 'fas fa-phone', 'library' => 'fa-solid' ),
-				'condition' => array( 'call_show' => 'yes' ),
+				'condition' => $this->icon_condition( 'call_icon', 'elementor', array( 'call_show' => 'yes' ) ),
 			)
 		);
+
+		$this->register_pixfort_icon( 'call_icon', array( 'call_show' => 'yes' ) );
 
 		$this->register_heading_controls();
 
@@ -310,9 +324,13 @@ final class BookingCard extends AbstractWidget {
 			array(
 				'label'      => __( 'Icon size', 'doctorpilot' ),
 				'type'       => \Elementor\Controls_Manager::SLIDER,
-				'size_units' => array( 'px' ),
-				'range'      => array( 'px' => array( 'min' => 8, 'max' => 40 ) ),
-				'default'    => array( 'unit' => 'px', 'size' => 20 ),
+				'size_units' => array( 'px', 'em', 'rem' ),
+				'range'      => array(
+					'px'  => array( 'min' => 8, 'max' => 40 ),
+					'em'  => array( 'min' => 0.5, 'max' => 4, 'step' => 0.1 ),
+					'rem' => array( 'min' => 0.5, 'max' => 4, 'step' => 0.1 ),
+				),
+				'default'    => array( 'unit' => 'em', 'size' => 1 ),
 				'selectors'  => array( '{{WRAPPER}} .dp-bcard__btn i, {{WRAPPER}} .dp-bcard__btn svg' => 'width: {{SIZE}}{{UNIT}}; height: {{SIZE}}{{UNIT}}; font-size: {{SIZE}}{{UNIT}};' ),
 			)
 		);
@@ -488,10 +506,10 @@ final class BookingCard extends AbstractWidget {
 
 		echo '<div class="dp-bcard">';
 
-		if ( is_array( $settings['mark_icon'] ?? null ) && '' !== (string) ( $settings['mark_icon']['value'] ?? '' ) ) {
-			echo '<span class="dp-bcard__mark" aria-hidden="true">';
-			\Elementor\Icons_Manager::render_icon( $settings['mark_icon'], array( 'aria-hidden' => 'true' ) );
-			echo '</span>';
+		$mark_icon = $this->icon_markup( $settings, 'mark_icon' );
+		if ( '' !== $mark_icon ) {
+			// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Icons_Manager or pixfort SVG markup.
+			echo '<span class="dp-bcard__mark" aria-hidden="true">' . $mark_icon . '</span>';
 		}
 
 		if ( '' !== (string) ( $settings['title'] ?? '' ) ) {
@@ -507,18 +525,16 @@ final class BookingCard extends AbstractWidget {
 				esc_url( $book_url ),
 				$book_target // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Constant, safe attribute string.
 			);
-			if ( is_array( $settings['book_icon'] ?? null ) && '' !== (string) ( $settings['book_icon']['value'] ?? '' ) ) {
-				\Elementor\Icons_Manager::render_icon( $settings['book_icon'], array( 'aria-hidden' => 'true' ) );
-			}
+			// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Icons_Manager or pixfort SVG markup.
+			echo $this->icon_markup( $settings, 'book_icon' );
 			echo '<span>' . esc_html( (string) ( $settings['book_text'] ?? '' ) ) . '</span></a>';
 		}
 
 		if ( 'yes' === ( $settings['call_show'] ?? '' ) && '' !== $tel ) {
 			$call_text = '' !== (string) ( $settings['call_text'] ?? '' ) ? (string) $settings['call_text'] : $phone;
 			printf( '<a class="dp-bcard__btn dp-bcard__btn--ghost" href="tel:%1$s">', esc_attr( $tel ) );
-			if ( is_array( $settings['call_icon'] ?? null ) && '' !== (string) ( $settings['call_icon']['value'] ?? '' ) ) {
-				\Elementor\Icons_Manager::render_icon( $settings['call_icon'], array( 'aria-hidden' => 'true' ) );
-			}
+			// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Icons_Manager or pixfort SVG markup.
+			echo $this->icon_markup( $settings, 'call_icon' );
 			echo '<span>' . esc_html( $call_text ) . '</span></a>';
 		}
 

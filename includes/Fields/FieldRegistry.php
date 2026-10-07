@@ -66,6 +66,7 @@ final class FieldRegistry {
 		$fields = array_merge(
 			self::profile_fields(),
 			self::professional_fields(),
+			self::highlights_fields(),
 			self::clinical_fields(),
 			self::history_fields(),
 			self::location_fields(),
@@ -202,10 +203,10 @@ final class FieldRegistry {
 		return array(
 			'profile'        => __( 'Profile', 'doctorpilot' ),
 			'professional'   => __( 'Professional Information', 'doctorpilot' ),
+			'highlights'     => __( 'Highlights', 'doctorpilot' ),
 			'clinical'       => __( 'Clinical Services', 'doctorpilot' ),
 			'history'        => __( 'Experience & Education', 'doctorpilot' ),
 			'certifications' => __( 'Certifications & Publications', 'doctorpilot' ),
-			'location'       => __( 'Location & Contact', 'doctorpilot' ),
 			'booking'        => __( 'Booking', 'doctorpilot' ),
 			'seo'            => __( 'SEO', 'doctorpilot' ),
 			'faqs'           => __( 'FAQs', 'doctorpilot' ),
@@ -317,20 +318,6 @@ final class FieldRegistry {
 			),
 			self::def(
 				array(
-					'key'       => self::META_PREFIX . 'credentials',
-					'group'     => 'profile',
-					'sanitize'  => 'text',
-					'row'       => 'identity',
-					'width'     => 'minmax(0, 1fr)',
-					'public'    => true,
-					'searchable' => true,
-					'elementor' => true,
-					'label'     => __( 'Credentials', 'doctorpilot' ),
-					'description' => __( 'Shown after the name — e.g. MD, MRCP, FRCR.', 'doctorpilot' ),
-				)
-			),
-			self::def(
-				array(
 					'key'       => self::META_PREFIX . 'gender',
 					'group'     => 'profile',
 					'input'     => 'select',
@@ -401,20 +388,6 @@ final class FieldRegistry {
 					'elementor' => true,
 					'label'     => __( 'Featured doctor', 'doctorpilot' ),
 					'description' => __( 'Pinned above other doctors in department listings.', 'doctorpilot' ),
-				)
-			),
-			self::def(
-				array(
-					'key'       => self::META_PREFIX . 'accepting_new_patients',
-					'group'     => 'profile',
-					'type'      => 'bool',
-					'input'     => 'checkbox',
-					'sanitize'  => 'bool',
-					'box'       => 'listing_flags',
-					'public'    => true,
-					'elementor' => true,
-					'label'     => __( 'Accepting new patients', 'doctorpilot' ),
-					'description' => __( 'When off, the booking button is replaced with a waitlist note.', 'doctorpilot' ),
 				)
 			),
 			self::def(
@@ -585,21 +558,92 @@ final class FieldRegistry {
 					'description' => __( 'One per line — e.g. Head of Obstetrics, Aman Hospital.', 'doctorpilot' ),
 				)
 			),
+		);
+	}
+
+	/**
+	 * Highlights group fields.
+	 *
+	 * The stat grid and the achievement lists that sit under it on the public
+	 * profile. `academic_highlights` moved here from the professional group in
+	 * 0.3.0; the meta key is unchanged, so existing rows keep rendering — only
+	 * the editor tab they appear under is different.
+	 *
+	 * @return array<int, array<string, mixed>>
+	 */
+	private static function highlights_fields(): array {
+		return array(
 			self::def(
 				array(
 					'key'         => self::META_PREFIX . 'academic_highlights',
-					'group'       => 'professional',
+					'group'       => 'highlights',
 					'type'        => 'array',
 					'input'       => 'repeater',
 					'sanitize'    => 'repeater',
 					'public'      => true,
 					'elementor'   => true,
 					'label'       => __( 'Academic highlights', 'doctorpilot' ),
-					'description' => __( 'Key figures shown in the sidebar, e.g. “90+ Peer-Reviewed Publications”.', 'doctorpilot' ),
+					'description' => __( 'Key figures shown as stat cards, e.g. “90+ Peer-Reviewed Publications”.', 'doctorpilot' ),
 					'repeater'    => array(
 						'value' => array( 'label' => __( 'Value', 'doctorpilot' ), 'sanitize' => 'text', 'placeholder' => '90+', 'basis' => '90px', 'grow' => 0 ),
 						'label' => array( 'label' => __( 'Label', 'doctorpilot' ), 'sanitize' => 'text', 'placeholder' => __( 'Peer-Reviewed Publications', 'doctorpilot' ), 'basis' => '200px', 'grow' => 2 ),
 					),
+				)
+			),
+			self::def(
+				array(
+					'key'         => self::META_PREFIX . 'community_outreach_title',
+					'group'       => 'highlights',
+					'sanitize'    => 'text',
+					'box'         => 'outreach',
+					'public'      => true,
+					'elementor'   => true,
+					'label'       => __( 'Heading', 'doctorpilot' ),
+					'description' => __( 'Shown above the list. Leave blank to use the heading set on the widget.', 'doctorpilot' ),
+					'placeholder' => __( 'Community Outreach Activities / Achievements', 'doctorpilot' ),
+				)
+			),
+			self::def(
+				array(
+					'key'         => self::META_PREFIX . 'community_outreach',
+					'group'       => 'highlights',
+					'type'        => 'array',
+					'input'       => 'lines',
+					'sanitize'    => 'lines',
+					'box'         => 'outreach',
+					'public'      => true,
+					'elementor'   => true,
+					'label'       => __( 'Activities / achievements', 'doctorpilot' ),
+					'description' => __( 'One per line — e.g. Reviewer for Diagnostic and Interventional Radiology Journal.', 'doctorpilot' ),
+					'placeholder' => __( "Healthcare awareness and education campaigns across TV and social media\nReviewer for Cardiovascular and Interventional Radiology Journal", 'doctorpilot' ),
+				)
+			),
+			self::def(
+				array(
+					'key'         => self::META_PREFIX . 'healthcare_achievements_title',
+					'group'       => 'highlights',
+					'sanitize'    => 'text',
+					'box'         => 'profession',
+					'public'      => true,
+					'elementor'   => true,
+					'label'       => __( 'Heading', 'doctorpilot' ),
+					'description' => __( 'Shown above the list. Leave blank to use the heading set on the widget.', 'doctorpilot' ),
+					'placeholder' => __( 'Health Care Profession Achievements', 'doctorpilot' ),
+				)
+			),
+			self::def(
+				array(
+					'key'         => self::META_PREFIX . 'healthcare_achievements',
+					'group'       => 'highlights',
+					'type'        => 'array',
+					'input'       => 'lines',
+					'sanitize'    => 'lines',
+					'box'         => 'profession',
+					'public'      => true,
+					'elementor'   => true,
+					'label'       => __( 'Achievements', 'doctorpilot' ),
+					'description' => __( 'One per line — e.g. 15+ Years of Clinical and Academic Experience.', 'doctorpilot' ),
+					'placeholder' => __( "15+ Years of Clinical and Academic Experience\nLeadership in Interventional Radiology across Europe and the Middle East", 'doctorpilot' ),
 				)
 			),
 		);
@@ -863,11 +907,56 @@ final class FieldRegistry {
 					),
 				)
 			),
+			self::def(
+				array(
+					'key'          => self::META_PREFIX . 'mem_ids',
+					'group'        => 'certifications',
+					'type'         => 'array',
+					'input'        => 'library',
+					'sanitize'     => 'term_ids',
+					'library_type' => 'mem',
+					'public'       => true,
+					'elementor'    => true,
+					'label'        => __( 'Shared society memberships', 'doctorpilot' ),
+					'description'  => __( 'Reusable society records assigned to this doctor.', 'doctorpilot' ),
+					'count_noun'   => array( __( 'record', 'doctorpilot' ), __( 'records', 'doctorpilot' ) ),
+				)
+			),
+			self::def(
+				array(
+					'key'       => self::META_PREFIX . 'memberships',
+					'group'     => 'certifications',
+					'type'      => 'array',
+					'input'     => 'repeater',
+					'sanitize'  => 'repeater',
+					'public'    => true,
+					'elementor' => true,
+					'label'     => __( 'Society memberships (this doctor only)', 'doctorpilot' ),
+					'description' => __( 'Professional bodies this doctor belongs to.', 'doctorpilot' ),
+					'repeater'  => array(
+						'society' => array( 'label' => __( 'Society', 'doctorpilot' ), 'sanitize' => 'text', 'placeholder' => __( 'Royal College of Radiologists', 'doctorpilot' ), 'basis' => '220px', 'grow' => 2 ),
+						'role'    => array( 'label' => __( 'Role / grade', 'doctorpilot' ), 'sanitize' => 'text', 'placeholder' => __( 'Fellow', 'doctorpilot' ), 'basis' => '160px', 'grow' => 1 ),
+						'year'    => array( 'label' => __( 'Year', 'doctorpilot' ), 'sanitize' => 'text', 'placeholder' => '2015', 'basis' => '110px', 'grow' => 0 ),
+						'url'     => array( 'label' => __( 'URL', 'doctorpilot' ), 'sanitize' => 'url', 'placeholder' => 'https://', 'basis' => '180px', 'grow' => 1 ),
+					),
+				)
+			),
 		);
 	}
 
 	/**
-	 * Location and contact group fields.
+	 * Location and contact fields.
+	 *
+	 * Rendered inside the Profile tab as one flat set of inputs: a doctor has a
+	 * single practice location, so a repeater with Add row / Remove offered a
+	 * choice that does not exist.
+	 *
+	 * The storage shape is unchanged — still a list holding one row — because
+	 * `DoctorView::locations()`, the JSON-LD builder, three widgets and the
+	 * profile template all read it that way, and rows already in the database
+	 * must keep resolving. `input => 'single'` changes only how the editor draws
+	 * it. Restoring multiple locations later means flipping this back to
+	 * `repeater`, with no data to convert.
 	 *
 	 * @return array<int, array<string, mixed>>
 	 */
@@ -876,14 +965,14 @@ final class FieldRegistry {
 			self::def(
 				array(
 					'key'       => self::META_PREFIX . 'locations',
-					'group'     => 'location',
+					'group'     => 'profile',
 					'type'      => 'array',
-					'input'     => 'repeater',
+					'input'     => 'single',
 					'sanitize'  => 'repeater',
 					'public'    => true,
 					'elementor' => true,
 					'label'     => __( 'Location & contact', 'doctorpilot' ),
-					'description' => __( 'The Free plugin stores one location. DoctorPilot Pro supports multiple.', 'doctorpilot' ),
+					'description' => __( 'Where this doctor practises and how patients reach them.', 'doctorpilot' ),
 					'repeater'  => array(
 						'location_term_id'   => array( 'label' => __( 'Location', 'doctorpilot' ), 'sanitize' => 'int', 'taxonomy' => Taxonomies::LOCATION, 'basis' => '160px', 'grow' => 1 ),
 						'department_term_id' => array( 'label' => __( 'Department at location', 'doctorpilot' ), 'sanitize' => 'int', 'taxonomy' => Taxonomies::DEPARTMENT, 'basis' => '180px', 'grow' => 1 ),
@@ -914,12 +1003,20 @@ final class FieldRegistry {
 					'sanitize' => 'key',
 					'public'   => true,
 					'options'  => array(
+						// Empty means "inherit". It has to be an option, and the
+						// field default, or the editor would pre-select a concrete
+						// method and write it on the first save — pinning every
+						// doctor to one method and making the site default in
+						// Settings → Booking unreachable.
+						''             => __( 'Use site default', 'doctorpilot' ),
 						'external_url' => __( 'External URL', 'doctorpilot' ),
 						'phone'        => __( 'Phone', 'doctorpilot' ),
 						'enquiry'      => __( 'Enquiry form', 'doctorpilot' ),
+						'none'         => __( 'No booking button', 'doctorpilot' ),
 					),
-					'default'  => 'external_url',
+					'default'  => '',
 					'label'    => __( 'Booking method', 'doctorpilot' ),
+					'description' => __( 'Leave the fields below blank to inherit the site defaults from DoctorPilot → Settings → Booking. Choose “No booking button” for a doctor who does not take bookings.', 'doctorpilot' ),
 				)
 			),
 			self::def(

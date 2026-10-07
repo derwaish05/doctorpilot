@@ -49,9 +49,6 @@ $dp_department = isset( $data['primary_department']['name'] ) ? (string) $data['
 
 		<div class="dp-profile__intro">
 			<h1 class="dp-profile__name"><?php echo esc_html( (string) $data['name'] ); ?></h1>
-			<?php if ( '' !== (string) $data['credentials'] ) : ?>
-				<p class="dp-profile__credentials"><?php echo esc_html( (string) $data['credentials'] ); ?></p>
-			<?php endif; ?>
 			<?php if ( '' !== $dp_specialty || '' !== $dp_department ) : ?>
 				<p class="dp-profile__role"><?php echo esc_html( '' !== $dp_specialty ? $dp_specialty : $dp_department ); ?></p>
 			<?php endif; ?>
@@ -151,10 +148,24 @@ $dp_department = isset( $data['primary_department']['name'] ) ? (string) $data['
 
 	<?php if ( array() !== (array) $data['certifications'] ) : ?>
 		<section class="dp-profile__section dp-certifications">
-			<h2><?php esc_html_e( 'Certifications & memberships', 'doctorpilot' ); ?></h2>
+			<h2><?php esc_html_e( 'Certifications', 'doctorpilot' ); ?></h2>
 			<ul>
 				<?php foreach ( (array) $data['certifications'] as $dp_cert ) : ?>
 					<li><?php echo esc_html( trim( (string) ( $dp_cert['name'] ?? '' ) . ' — ' . (string) ( $dp_cert['organization'] ?? '' ), ' —' ) ); ?></li>
+				<?php endforeach; ?>
+			</ul>
+		</section>
+	<?php endif; ?>
+
+	<?php if ( array() !== (array) ( $data['memberships'] ?? array() ) ) : ?>
+		<section class="dp-profile__section dp-memberships">
+			<h2><?php esc_html_e( 'Society memberships', 'doctorpilot' ); ?></h2>
+			<ul>
+				<?php foreach ( (array) $data['memberships'] as $dp_mem ) : ?>
+					<?php
+					$dp_mem_meta = trim( implode( ' · ', array_filter( array( (string) ( $dp_mem['role'] ?? '' ), (string) ( $dp_mem['year'] ?? '' ) ) ) ) );
+					?>
+					<li><?php echo esc_html( trim( (string) ( $dp_mem['society'] ?? '' ) . ( '' !== $dp_mem_meta ? ' — ' . $dp_mem_meta : '' ) ) ); ?></li>
 				<?php endforeach; ?>
 			</ul>
 		</section>

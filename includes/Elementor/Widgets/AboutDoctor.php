@@ -149,6 +149,7 @@ final class AboutDoctor extends AbstractWidget {
 			array(
 				'label'     => __( 'Color', 'doctorpilot' ),
 				'type'      => \Elementor\Controls_Manager::COLOR,
+				'default'   => '#000000',
 				'selectors' => array( $selector . ', ' . $selector . ' p' => 'color: {{VALUE}};' ),
 			)
 		);

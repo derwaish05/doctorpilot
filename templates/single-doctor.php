@@ -20,7 +20,17 @@ $dp_view = new \BrainStudioz\DoctorPilot\Application\Doctors\DoctorView();
 // An admin may choose an Elementor template/page to render as the doctor layout.
 // The Doctor Profile widget inside it reads the queried doctor, so one design
 // serves every doctor — no Elementor Pro / Theme Builder required.
-$dp_template_id   = (int) \BrainStudioz\DoctorPilot\Admin\Settings::single_doctor_template();
+$dp_template_id = (int) \BrainStudioz\DoctorPilot\Admin\Settings::single_doctor_template();
+
+/*
+ * One template ID is stored for the whole site. WPML translates Elementor
+ * library templates as ordinary posts, so without this every language renders
+ * the source-language template — including its static headings and any term
+ * slugs baked into the widgets inside it. Falls back to the stored ID when the
+ * template has no translation.
+ */
+$dp_template_id = \BrainStudioz\DoctorPilot\Support\Multilingual::post_id( $dp_template_id, 'elementor_library' );
+
 $dp_use_elementor = $dp_template_id > 0 && did_action( 'elementor/loaded' ) && class_exists( '\Elementor\Plugin' );
 
 while ( have_posts() ) {

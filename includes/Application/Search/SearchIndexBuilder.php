@@ -30,6 +30,32 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 final class SearchIndexBuilder {
 
+	/**
+	 * The taxonomies the index is actually built from.
+	 *
+	 * Declared so callers can tell whether a term change is worth reacting to.
+	 * `doctorpilot_location` and `doctorpilot_insurance` are deliberately absent:
+	 * they are filter facets, matched by term rather than by text, so their names
+	 * never enter the searchable document.
+	 *
+	 * @var array<int, string>
+	 */
+	public const INDEXED_TAXONOMIES = array(
+		Taxonomies::DEPARTMENT,
+		Taxonomies::SPECIALTY,
+		Taxonomies::SYMPTOM,
+		Taxonomies::CONDITION,
+		Taxonomies::TREATMENT,
+		Taxonomies::LANGUAGE,
+	);
+
+	/**
+	 * Doctor IDs already rebuilt during this request.
+	 *
+	 * @var array<int, bool>
+	 */
+	private static array $rebuilt = array();
+
 	public const SORT_NAME  = FieldRegistry::META_PREFIX . 'sort_name';
 	public const DOCUMENT   = FieldRegistry::META_PREFIX . 'search_document';
 	public const INDEX      = FieldRegistry::META_PREFIX . 'search_index';
@@ -46,6 +72,15 @@ final class SearchIndexBuilder {
 			return;
 		}
 
+		/*
+		 * Recorded so a deferred rebuild queued earlier in the request can tell
+		 * that this doctor is already up to date. The direct callers — the
+		 * editor form and the CSV writer — both rebuild *after* writing
+		 * everything, so a second pass at `shutdown` would recompute identical
+		 * values.
+		 */
+		self::$rebuilt[ $post_id ] = true;
+
 		$departments = self::term_names( $post_id, Taxonomies::DEPARTMENT );
 		$specialties = self::term_names( $post_id, Taxonomies::SPECIALTY );
 		$symptoms    = self::term_names( $post_id, Taxonomies::SYMPTOM );
@@ -53,7 +88,6 @@ final class SearchIndexBuilder {
 		$treatments  = self::term_names( $post_id, Taxonomies::TREATMENT );
 		$languages   = self::term_names( $post_id, Taxonomies::LANGUAGE );
 
-		$credentials = (string) get_post_meta( $post_id, FieldRegistry::META_PREFIX . 'credentials', true );
 		$interests   = get_post_meta( $post_id, FieldRegistry::META_PREFIX . 'clinical_interests', true );
 		$interests   = is_array( $interests ) ? array_map( 'strval', $interests ) : array();
 
@@ -66,7 +100,7 @@ final class SearchIndexBuilder {
 			'specialties' => array_map( array( Normalizer::class, 'normalize' ), $specialties ),
 			'symptoms'    => array_map( array( Normalizer::class, 'normalize' ), $symptoms ),
 			'conditions'  => array_map( array( Normalizer::class, 'normalize' ), array_merge( $conditions, $treatments ) ),
-			'keywords'    => array_map( array( Normalizer::class, 'normalize' ), array_merge( array( $credentials ), $interests, $languages ) ),
+			'keywords'    => array_map( array( Normalizer::class, 'normalize' ), array_merge( $interests, $languages ) ),
 		);
 
 		update_post_meta( $post_id, self::SORT_NAME, $index['name'] );
@@ -76,7 +110,7 @@ final class SearchIndexBuilder {
 			' ',
 			array_filter(
 				array_merge(
-					array( $name, wp_strip_all_tags( (string) $post->post_excerpt ), $credentials ),
+					array( $name, wp_strip_all_tags( (string) $post->post_excerpt ) ),
 					$departments,
 					$specialties,
 					$symptoms,
@@ -101,5 +135,15 @@ final class SearchIndexBuilder {
 		$names = wp_get_object_terms( $post_id, $taxonomy, array( 'fields' => 'names' ) );
 
 		return is_wp_error( $names ) ? array() : array_map( 'strval', $names );
+	}
+
+	/**
+	 * Whether this doctor's derived values were already rebuilt this request.
+	 *
+	 * @param int $post_id Doctor post ID.
+	 * @return bool
+	 */
+	public static function was_rebuilt( int $post_id ): bool {
+		return isset( self::$rebuilt[ $post_id ] );
 	}
 }

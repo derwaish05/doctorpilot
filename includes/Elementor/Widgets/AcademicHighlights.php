@@ -17,11 +17,27 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * A small stat grid for the doctor sidebar (e.g. "90+ Peer-Reviewed
- * Publications"). Manual content via a repeater — there is no per-doctor stats
- * field — with an optional eyebrow title and configurable columns.
+ * The stat grid of the profile's "Highlights" section — "90+ Peer-Reviewed
+ * Publications" and the like — with an optional eyebrow heading and
+ * configurable columns. It renders nothing at all for a doctor with no stats,
+ * so it is safe on a shared single-doctor template.
+ *
+ * Figures come from the doctor's Highlights tab, or from a repeater when the
+ * data source is Manual. The two achievement lists that briefly lived here are
+ * their own widgets now — see `CommunityOutreach` and `HealthcareAchievements`,
+ * which share this widget's `dp-stats__*` styles.
  */
 final class AcademicHighlights extends AbstractWidget {
+
+	/**
+	 * Doctor view payloads already built during this render, keyed by post ID.
+	 *
+	 * `DoctorView::full()` resolves five global-library content types on every
+	 * call, so it is worth not repeating within one render.
+	 *
+	 * @var array<int, array<string, mixed>|null>
+	 */
+	private array $views = array();
 
 	/**
 	 * Belongs to the "Single DoctorPilot" category.
@@ -329,6 +345,7 @@ final class AcademicHighlights extends AbstractWidget {
 			array(
 				'label'     => __( 'Color', 'doctorpilot' ),
 				'type'      => \Elementor\Controls_Manager::COLOR,
+				'default'   => '#136888',
 				'selectors' => array( '{{WRAPPER}} .dp-stats__title' => 'color: {{VALUE}};' ),
 			)
 		);
@@ -357,6 +374,7 @@ final class AcademicHighlights extends AbstractWidget {
 			array(
 				'label'     => __( 'Color', 'doctorpilot' ),
 				'type'      => \Elementor\Controls_Manager::COLOR,
+				'default'   => '#000000',
 				'selectors' => array( '{{WRAPPER}} .dp-stats__label' => 'color: {{VALUE}};' ),
 			)
 		);
@@ -379,7 +397,7 @@ final class AcademicHighlights extends AbstractWidget {
 
 		if ( array() === $items ) {
 			if ( \Elementor\Plugin::instance()->editor->is_edit_mode() && 'doctor' === ( $settings['data_source'] ?? '' ) ) {
-				echo '<p>' . esc_html__( 'No academic highlights set for this doctor. Add them in the doctor editor, or switch Data source to Manual.', 'doctorpilot' ) . '</p>';
+				echo '<p>' . esc_html__( 'No academic highlights set for this doctor. Add them in the doctor editor’s Highlights tab, or switch Data source to Manual.', 'doctorpilot' ) . '</p>';
 			}
 			return;
 		}
@@ -416,6 +434,26 @@ final class AcademicHighlights extends AbstractWidget {
 	}
 
 	/**
+	 * The resolved doctor's public view, built at most once per doctor.
+	 *
+	 * @param array<string, mixed> $settings Widget settings.
+	 * @return array<string, mixed>|null
+	 */
+	private function doctor_data( array $settings ): ?array {
+		$doctor_id = $this->resolve_doctor_id( $settings );
+
+		if ( $doctor_id <= 0 ) {
+			return null;
+		}
+
+		if ( ! array_key_exists( $doctor_id, $this->views ) ) {
+			$this->views[ $doctor_id ] = ( new DoctorView() )->full( $doctor_id );
+		}
+
+		return $this->views[ $doctor_id ];
+	}
+
+	/**
 	 * Resolve the stat items from the doctor field or the manual repeater.
 	 *
 	 * @param array<string, mixed> $settings Widget settings.
@@ -426,13 +464,7 @@ final class AcademicHighlights extends AbstractWidget {
 			return is_array( $settings['items'] ?? null ) ? $settings['items'] : array();
 		}
 
-		$doctor_id = $this->resolve_doctor_id( $settings );
-
-		if ( $doctor_id <= 0 ) {
-			return array();
-		}
-
-		$data = ( new DoctorView() )->full( $doctor_id );
+		$data = $this->doctor_data( $settings );
 		$rows = null !== $data && is_array( $data['academic_highlights'] ?? null ) ? $data['academic_highlights'] : array();
 
 		$items = array();
