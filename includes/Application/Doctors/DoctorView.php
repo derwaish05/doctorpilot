@@ -133,6 +133,9 @@ final class DoctorView {
 				'faqs'                => ( new DoctorContentResolver() )->resolve( $post_id, 'faq', 'public' ),
 				'locations'           => $this->locations( $post_id ),
 				'online_consultation' => (bool) get_post_meta( $post_id, FieldRegistry::META_PREFIX . 'online_consultation', true ),
+				// Free text an international doctor's profile header shows as the
+				// "Upcoming Visit". On the full view only: the card has no use for it.
+				'visit_dates'         => (string) get_post_meta( $post_id, FieldRegistry::META_PREFIX . 'visit_dates', true ),
 			)
 		);
 	}

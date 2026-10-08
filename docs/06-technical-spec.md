@@ -165,6 +165,7 @@ The registry powers admin fields, meta registration, validation, public serializ
 | Gender | Post meta | `_doctorpilot_gender` | Free |
 | Featured | Post meta | `_doctorpilot_is_featured` bool | Free |
 | International doctor | Post meta | `_doctorpilot_is_international` bool | Free |
+| Upcoming visit dates | Post meta | `_doctorpilot_visit_dates` free text; on the full view only, rendered by the Page Header for international doctors | Free |
 | Years of experience | Post meta | `_doctorpilot_years_experience` non-negative int | Free |
 | Manual order | Post meta | `_doctorpilot_manual_order` bounded non-negative int | Free |
 | License number/authority | Post meta | `_doctorpilot_license_*`; private by default | Free |

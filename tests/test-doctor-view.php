@@ -70,6 +70,27 @@ final class Test_DoctorPilot_DoctorView extends WP_UnitTestCase {
 		$this->assertStringNotContainsString( 'SECRET-123', (string) $encoded );
 	}
 
+	public function test_full_view_exposes_visit_dates_for_the_header(): void {
+		$id = self::factory()->post->create(
+			array(
+				'post_type'   => DoctorPostType::POST_TYPE,
+				'post_status' => 'publish',
+				'post_title'  => 'Javier Elizalde',
+			)
+		);
+		update_post_meta( $id, FieldRegistry::META_PREFIX . 'is_international', 1 );
+		update_post_meta( $id, FieldRegistry::META_PREFIX . 'visit_dates', '16-17-18 May, 2025' );
+
+		$view = new DoctorView();
+		$full = $view->full( $id );
+
+		$this->assertIsArray( $full );
+		$this->assertTrue( $full['is_international'] );
+		$this->assertSame( '16-17-18 May, 2025', $full['visit_dates'] );
+		// Header-only data: the card contract stays as it was.
+		$this->assertArrayNotHasKey( 'visit_dates', (array) $view->card( $id ) );
+	}
+
 	public function test_primary_term_reconciles_when_not_assigned(): void {
 		$id   = self::factory()->post->create( array( 'post_type' => DoctorPostType::POST_TYPE ) );
 		$term = self::factory()->term->create( array( 'taxonomy' => Taxonomies::DEPARTMENT ) );
