@@ -404,6 +404,19 @@ final class FieldRegistry {
 					'description' => __( 'Shows an "International" tag on the doctor card and profile.', 'doctorpilot' ),
 				)
 			),
+			self::def(
+				array(
+					'key'         => self::META_PREFIX . 'visit_dates',
+					'group'       => 'profile',
+					'sanitize'    => 'text',
+					'box'         => 'listing_flags',
+					'public'      => true,
+					'elementor'   => true,
+					'placeholder' => __( '16-17-18 May, 2025', 'doctorpilot' ),
+					'label'       => __( 'Upcoming visit dates', 'doctorpilot' ),
+					'description' => __( 'For international doctors: shown as the "Upcoming Visit" in the profile header while the International doctor flag is on. Free text, for example a date range.', 'doctorpilot' ),
+				)
+			),
 		);
 	}
 

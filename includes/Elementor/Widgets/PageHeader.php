@@ -240,6 +240,58 @@ final class PageHeader extends AbstractWidget {
 		$this->register_pixfort_icon( 'call_icon' );
 
 		$this->add_control(
+			'heading_visit',
+			array(
+				'label'     => __( 'International doctors', 'doctorpilot' ),
+				'type'      => \Elementor\Controls_Manager::HEADING,
+				'separator' => 'before',
+			)
+		);
+
+		$this->add_control(
+			'visit_note',
+			array(
+				'type'            => \Elementor\Controls_Manager::RAW_HTML,
+				'raw'             => esc_html__( 'A doctor flagged as International gets the background and text color set under Style → International doctors, and their Upcoming visit dates from the doctor editor appear as a dated chip above the buttons. Nothing changes for other doctors.', 'doctorpilot' ),
+				'content_classes' => 'elementor-descriptor',
+			)
+		);
+
+		$this->add_control(
+			'visit_show',
+			array(
+				'label'        => __( 'Show upcoming visit', 'doctorpilot' ),
+				'type'         => \Elementor\Controls_Manager::SWITCHER,
+				'return_value' => 'yes',
+				'default'      => 'yes',
+			)
+		);
+
+		$this->add_control(
+			'visit_label',
+			array(
+				'label'       => __( 'Upcoming visit label', 'doctorpilot' ),
+				'type'        => \Elementor\Controls_Manager::TEXT,
+				'placeholder' => __( 'Upcoming Visit', 'doctorpilot' ),
+				'condition'   => array( 'visit_show' => 'yes' ),
+			)
+		);
+
+		$this->register_icon_source( 'visit_icon', __( 'Visit icon', 'doctorpilot' ), array( 'visit_show' => 'yes' ) );
+
+		$this->add_control(
+			'visit_icon',
+			array(
+				'label'     => __( 'Visit icon', 'doctorpilot' ),
+				'type'      => \Elementor\Controls_Manager::ICONS,
+				'default'   => array( 'value' => 'far fa-calendar-alt', 'library' => 'fa-regular' ),
+				'condition' => $this->icon_condition( 'visit_icon', 'elementor', array( 'visit_show' => 'yes' ) ),
+			)
+		);
+
+		$this->register_pixfort_icon( 'visit_icon', array( 'visit_show' => 'yes' ) );
+
+		$this->add_control(
 			'heading_certs',
 			array(
 				'label'     => __( 'Certifications', 'doctorpilot' ),
@@ -333,6 +385,7 @@ final class PageHeader extends AbstractWidget {
 		$this->register_image_controls();
 		$this->register_badge_controls();
 		$this->register_button_controls();
+		$this->register_international_controls();
 		$this->register_certs_controls();
 	}
 
@@ -439,6 +492,177 @@ final class PageHeader extends AbstractWidget {
 				'type'       => \Elementor\Controls_Manager::DIMENSIONS,
 				'size_units' => array( 'px', '%' ),
 				'selectors'  => array( '{{WRAPPER}} .dp-hero__chip' => 'border-radius: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};' ),
+			)
+		);
+
+		$this->end_controls_section();
+	}
+
+	/**
+	 * International doctor style controls: the hero background and text color
+	 * applied only while the doctor carries the International flag, plus the
+	 * Upcoming Visit label and date chip. Buttons are deliberately left to the
+	 * Buttons section, so an international profile keeps the same calls to
+	 * action as every other profile.
+	 *
+	 * @return void
+	 */
+	private function register_international_controls(): void {
+		$this->start_controls_section(
+			'section_international',
+			array(
+				'label' => __( 'International doctors', 'doctorpilot' ),
+				'tab'   => \Elementor\Controls_Manager::TAB_STYLE,
+			)
+		);
+
+		$this->add_control(
+			'intl_note',
+			array(
+				'type'            => \Elementor\Controls_Manager::RAW_HTML,
+				'raw'             => esc_html__( 'Applies only when the doctor is flagged as International. Buttons keep the styling from the Buttons section.', 'doctorpilot' ),
+				'content_classes' => 'elementor-descriptor',
+			)
+		);
+
+		// A variable rather than a background rule: the Background section's
+		// gradient is emitted on `{{WRAPPER}} .dp-hero`, which outranks any
+		// plain modifier rule in the stylesheet, so the stylesheet's
+		// `.dp-hero--international` rule clears that gradient with `!important`
+		// and paints this variable instead. The variable keeps the editor's
+		// color in charge, and the stylesheet's fallback covers a page whose
+		// Elementor CSS was generated before this control existed.
+		$this->add_control(
+			'intl_bg_color',
+			array(
+				'label'     => __( 'Background color', 'doctorpilot' ),
+				'type'      => \Elementor\Controls_Manager::COLOR,
+				'default'   => '#e8f0f6',
+				'selectors' => array( '{{WRAPPER}} .dp-hero--international' => '--dp-hero-intl-bg: {{VALUE}};' ),
+			)
+		);
+
+		$this->add_control(
+			'intl_text_color',
+			array(
+				'label'       => __( 'Text color', 'doctorpilot' ),
+				'type'        => \Elementor\Controls_Manager::COLOR,
+				'default'     => '#1a4f74',
+				'description' => __( 'Breadcrumbs, name, headline, facts and chips. Buttons are not affected.', 'doctorpilot' ),
+				// Each text element is named here, not left to inherit: the
+				// Typography and Breadcrumb sections emit their own colors on
+				// `{{WRAPPER}} .dp-hero__name` and friends, and only a longer
+				// wrapper-scoped selector outranks those. The visit label is left
+				// out so its own color control below still wins.
+				'selectors'   => array(
+					'{{WRAPPER}} .dp-hero--international' => '--dp-hero-intl-text: {{VALUE}}; color: {{VALUE}};',
+					'{{WRAPPER}} .dp-hero--international .dp-hero__name, {{WRAPPER}} .dp-hero--international .dp-hero__role, {{WRAPPER}} .dp-hero--international .dp-hero__k, {{WRAPPER}} .dp-hero--international .dp-hero__v, {{WRAPPER}} .dp-hero--international .dp-hero__crumbs, {{WRAPPER}} .dp-hero--international .dp-hero__crumbs a, {{WRAPPER}} .dp-hero--international .dp-hero__crumbs a:hover, {{WRAPPER}} .dp-hero--international .dp-hero__current, {{WRAPPER}} .dp-hero--international .dp-hero__sep, {{WRAPPER}} .dp-hero--international .dp-hero__chip' => 'color: {{VALUE}};',
+				),
+			)
+		);
+
+		$this->add_control(
+			'visit_label_heading',
+			array(
+				'label'     => __( 'Upcoming visit label', 'doctorpilot' ),
+				'type'      => \Elementor\Controls_Manager::HEADING,
+				'separator' => 'before',
+				'condition' => array( 'visit_show' => 'yes' ),
+			)
+		);
+
+		$this->add_group_control(
+			\Elementor\Group_Control_Typography::get_type(),
+			array(
+				'name'      => 'visit_label_typography',
+				'selector'  => '{{WRAPPER}} .dp-hero__visit-label',
+				'condition' => array( 'visit_show' => 'yes' ),
+			)
+		);
+
+		$this->add_control(
+			'visit_label_color',
+			array(
+				'label'     => __( 'Color', 'doctorpilot' ),
+				'type'      => \Elementor\Controls_Manager::COLOR,
+				'selectors' => array( '{{WRAPPER}} .dp-hero__visit-label' => 'color: {{VALUE}};' ),
+				'condition' => array( 'visit_show' => 'yes' ),
+			)
+		);
+
+		$this->add_control(
+			'visit_date_heading',
+			array(
+				'label'     => __( 'Date chip', 'doctorpilot' ),
+				'type'      => \Elementor\Controls_Manager::HEADING,
+				'separator' => 'before',
+				'condition' => array( 'visit_show' => 'yes' ),
+			)
+		);
+
+		$this->add_group_control(
+			\Elementor\Group_Control_Typography::get_type(),
+			array(
+				'name'      => 'visit_date_typography',
+				'selector'  => '{{WRAPPER}} .dp-hero__visit-date',
+				'condition' => array( 'visit_show' => 'yes' ),
+			)
+		);
+
+		$this->add_control(
+			'visit_date_bg',
+			array(
+				'label'     => __( 'Background', 'doctorpilot' ),
+				'type'      => \Elementor\Controls_Manager::COLOR,
+				'selectors' => array( '{{WRAPPER}} .dp-hero__visit-date' => 'background: {{VALUE}};' ),
+				'condition' => array( 'visit_show' => 'yes' ),
+			)
+		);
+
+		$this->add_control(
+			'visit_date_color',
+			array(
+				'label'     => __( 'Text color', 'doctorpilot' ),
+				'type'      => \Elementor\Controls_Manager::COLOR,
+				'selectors' => array( '{{WRAPPER}} .dp-hero__visit-date' => 'color: {{VALUE}};' ),
+				'condition' => array( 'visit_show' => 'yes' ),
+			)
+		);
+
+		$this->add_responsive_control(
+			'visit_icon_size',
+			array(
+				'label'      => __( 'Icon size', 'doctorpilot' ),
+				'type'       => \Elementor\Controls_Manager::SLIDER,
+				'size_units' => array( 'px', 'em' ),
+				'range'      => array(
+					'px' => array( 'min' => 8, 'max' => 40 ),
+					'em' => array( 'min' => 0.5, 'max' => 3, 'step' => 0.1 ),
+				),
+				'selectors'  => array( '{{WRAPPER}} .dp-hero__visit-date .dp-hero__ico, {{WRAPPER}} .dp-hero__visit-date i, {{WRAPPER}} .dp-hero__visit-date svg' => 'width: {{SIZE}}{{UNIT}}; height: {{SIZE}}{{UNIT}}; font-size: {{SIZE}}{{UNIT}};' ),
+				'condition'  => array( 'visit_show' => 'yes' ),
+			)
+		);
+
+		$this->add_responsive_control(
+			'visit_date_padding',
+			array(
+				'label'      => __( 'Padding', 'doctorpilot' ),
+				'type'       => \Elementor\Controls_Manager::DIMENSIONS,
+				'size_units' => array( 'px', 'em' ),
+				'selectors'  => array( '{{WRAPPER}} .dp-hero__visit-date' => 'padding: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};' ),
+				'condition'  => array( 'visit_show' => 'yes' ),
+			)
+		);
+
+		$this->add_responsive_control(
+			'visit_date_radius',
+			array(
+				'label'      => __( 'Border radius', 'doctorpilot' ),
+				'type'       => \Elementor\Controls_Manager::DIMENSIONS,
+				'size_units' => array( 'px', '%' ),
+				'selectors'  => array( '{{WRAPPER}} .dp-hero__visit-date' => 'border-radius: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};' ),
+				'condition'  => array( 'visit_show' => 'yes' ),
 			)
 		);
 
@@ -1108,7 +1332,10 @@ final class PageHeader extends AbstractWidget {
 		// name; this is the optional section label a page might put over it.
 		$this->render_heading( $settings );
 
-		echo '<section class="dp-hero">';
+		// The modifier is what the International doctors style section targets,
+		// so a doctor without the flag never picks up that background.
+		$hero_class = 'dp-hero' . ( $view['international'] ? ' dp-hero--international' : '' );
+		echo '<section class="' . esc_attr( $hero_class ) . '">';
 		echo '<div class="dp-hero__inner">';
 
 		// Breadcrumb.
@@ -1197,6 +1424,19 @@ final class PageHeader extends AbstractWidget {
 				echo '</li>';
 			}
 			echo '</ul>';
+		}
+
+		// Upcoming visit: international doctors only, and only when dates are
+		// recorded, so the label never stands above an empty chip.
+		if ( $view['international'] && '' !== $view['visit_dates'] && 'yes' === (string) ( $settings['visit_show'] ?? 'yes' ) ) {
+			$visit_label = '' !== (string) ( $settings['visit_label'] ?? '' ) ? (string) $settings['visit_label'] : __( 'Upcoming Visit', 'doctorpilot' );
+			echo '<div class="dp-hero__visit">';
+			echo '<div class="dp-hero__visit-label">' . esc_html( $visit_label ) . '</div>';
+			echo '<span class="dp-hero__visit-date">';
+			$this->render_button_icon( $this->icon_markup( $settings, 'visit_icon', 'dp-hero__ico', 18 ), 'icon_calendar' );
+			echo '<span>' . esc_html( $view['visit_dates'] ) . '</span>';
+			echo '</span>';
+			echo '</div>';
 		}
 
 		if ( '' !== $view['book_url'] || '' !== $view['call_url'] ) {
@@ -1333,6 +1573,7 @@ final class PageHeader extends AbstractWidget {
 			'tel'           => (string) $tel,
 			'certs'         => $certs,
 			'international'  => ! empty( $data['is_international'] ),
+			'visit_dates'    => trim( (string) ( $data['visit_dates'] ?? '' ) ),
 			'book_url'      => $book_url,
 			'book_label'    => $book_label,
 			'book_target'   => $book_target,
