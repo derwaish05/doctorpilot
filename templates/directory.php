@@ -321,8 +321,8 @@ $dp_state_url = static function ( array $args ): string {
 								<label class="dp-dir__field-label" for="<?php echo esc_attr( $dp_field_id ); ?>"><?php echo esc_html( $dp_label ); ?></label>
 								<select class="dp-dir__select" id="<?php echo esc_attr( $dp_field_id ); ?>" name="international">
 									<option value=""><?php esc_html_e( 'All', 'doctorpilot' ); ?></option>
-									<option value="0" <?php selected( false === $dp_intl ); ?>><?php esc_html_e( 'National', 'doctorpilot' ); ?></option>
-									<option value="1" <?php selected( true === $dp_intl ); ?>><?php esc_html_e( 'International', 'doctorpilot' ); ?></option>
+									<option value="0" <?php selected( false === $dp_intl ); ?>><?php esc_html_e( 'Aman Hospital Doctors', 'doctorpilot' ); ?></option>
+									<option value="1" <?php selected( true === $dp_intl ); ?>><?php esc_html_e( 'International Visiting Doctors', 'doctorpilot' ); ?></option>
 								</select>
 							</div>
 							<?php

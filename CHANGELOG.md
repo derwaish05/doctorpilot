@@ -6,6 +6,16 @@ versioning.
 
 ## [Unreleased]
 
+### Changed
+- **The National / International filter reads "Aman Hospital Doctors" and
+  "International Visiting Doctors".** The two choices in the directory filter,
+  and the chip shown for the choice once it is applied, use the new wording. The
+  filter itself is unchanged: "Aman Hospital Doctors" is still every doctor
+  without the International doctor flag and "International Visiting Doctors"
+  every doctor with it, and existing `?international=0|1` links keep working. The
+  filter's own label and the green International badge on doctor cards are not
+  changed.
+
 ### Added
 - **International doctors get their own header.** The doctor editor's Listing
   flags box takes **Upcoming visit dates** — free text such as *16-17-18 May,

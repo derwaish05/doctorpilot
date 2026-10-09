@@ -142,8 +142,8 @@ final class SearchService {
 				'type'  => 'international',
 				'value' => $request->international() ? '1' : '0',
 				'label' => $request->international()
-					? __( 'International', 'doctorpilot' )
-					: __( 'National', 'doctorpilot' ),
+					? __( 'International Visiting Doctors', 'doctorpilot' )
+					: __( 'Aman Hospital Doctors', 'doctorpilot' ),
 			);
 		}
 
