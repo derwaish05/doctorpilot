@@ -219,6 +219,7 @@ If the approved performance fixture fails after query/index optimization, a dedi
 - Dynamic tags and Theme Builder conditions load only with a compatible Elementor Pro version.
 - Widget scripts/styles are declared through Elementor dependency methods.
 - Compatibility checks run before referencing Elementor classes to prevent fatal errors.
+- The single-doctor view renders an optional Elementor page/template. Which one is a function of the doctor, not the site: `Settings::single_doctor_template_for()` returns the International layout for a doctor with the International flag when one is set and still published, otherwise the standard layout (ADR-0026). The single template and the Elementor stylesheet loader both call it.
 
 ### SEO
 

@@ -63,7 +63,7 @@ final class Assets {
 			return;
 		}
 
-		$template_id = (int) \BrainStudioz\DoctorPilot\Admin\Settings::single_doctor_template();
+		$template_id = (int) \BrainStudioz\DoctorPilot\Admin\Settings::single_doctor_template_for( (int) get_queried_object_id() );
 		if ( $template_id <= 0 ) {
 			return;
 		}

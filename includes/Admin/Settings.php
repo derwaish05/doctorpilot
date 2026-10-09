@@ -9,6 +9,7 @@ declare( strict_types=1 );
 
 namespace BrainStudioz\DoctorPilot\Admin;
 
+use BrainStudioz\DoctorPilot\Fields\FieldRegistry;
 use BrainStudioz\DoctorPilot\Infrastructure\Lifecycle\Activator;
 use BrainStudioz\DoctorPilot\Support\Capabilities;
 
@@ -98,6 +99,9 @@ final class Settings {
 				// 0 = native template; otherwise an Elementor template/page ID
 				// rendered on single-doctor views.
 				'single_doctor_template'    => 0,
+				// Same, for doctors flagged International. 0 = use the layout
+				// above, so a site that never sets it behaves exactly as before.
+				'single_doctor_template_international' => 0,
 				// 0 = unset; otherwise the published page the Doctor Search
 				// Index widget links department, specialty and symptom entries to.
 				'search_page_id'            => 0,
@@ -158,6 +162,37 @@ final class Settings {
 	 */
 	public static function single_doctor_template(): int {
 		$settings = self::get();
+
+		return (int) ( $settings['general']['single_doctor_template'] ?? 0 );
+	}
+
+	/**
+	 * The Elementor template/page ID to render for one doctor's single view, or 0
+	 * to use the native template.
+	 *
+	 * A doctor flagged International gets the International layout when one is
+	 * set; every other doctor, and a flagged doctor on a site with no
+	 * International layout, gets the standard layout. This is the one place that
+	 * decision is made, so the page output and the stylesheet loading cannot
+	 * disagree about which template a doctor uses.
+	 *
+	 * @param int $doctor_id Doctor post ID.
+	 * @return int
+	 */
+	public static function single_doctor_template_for( int $doctor_id ): int {
+		$settings = self::get();
+
+		$international = (int) ( $settings['general']['single_doctor_template_international'] ?? 0 );
+		if (
+			$international > 0
+			&& $doctor_id > 0
+			&& ! empty( get_post_meta( $doctor_id, FieldRegistry::META_PREFIX . 'is_international', true ) )
+			// A layout that has since been deleted or unpublished must not leave
+			// flagged doctors with an empty page; they fall back to the standard one.
+			&& in_array( get_post_status( $international ), array( 'publish', 'private' ), true )
+		) {
+			return $international;
+		}
 
 		return (int) ( $settings['general']['single_doctor_template'] ?? 0 );
 	}
@@ -249,6 +284,7 @@ final class Settings {
 		$clean['general']['default_sort']              = self::enum( $general['default_sort'] ?? $current['general']['default_sort'], self::ALLOWED_SORTS, 'relevance' );
 		$clean['general']['placeholder_attachment_id'] = max( 0, (int) ( $general['placeholder_attachment_id'] ?? 0 ) );
 		$clean['general']['single_doctor_template']    = max( 0, (int) ( $general['single_doctor_template'] ?? $current['general']['single_doctor_template'] ) );
+		$clean['general']['single_doctor_template_international'] = max( 0, (int) ( $general['single_doctor_template_international'] ?? $current['general']['single_doctor_template_international'] ) );
 		$clean['general']['search_page_id']            = absint( $general['search_page_id'] ?? $current['general']['search_page_id'] );
 
 		// Search.

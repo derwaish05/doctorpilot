@@ -20,7 +20,10 @@ $dp_view = new \BrainStudioz\DoctorPilot\Application\Doctors\DoctorView();
 // An admin may choose an Elementor template/page to render as the doctor layout.
 // The Doctor Profile widget inside it reads the queried doctor, so one design
 // serves every doctor — no Elementor Pro / Theme Builder required.
-$dp_template_id = (int) \BrainStudioz\DoctorPilot\Admin\Settings::single_doctor_template();
+//
+// Doctors flagged International can have their own layout; the settings helper
+// picks between the two so this file and the stylesheet loader always agree.
+$dp_template_id = (int) \BrainStudioz\DoctorPilot\Admin\Settings::single_doctor_template_for( (int) get_queried_object_id() );
 
 /*
  * One template ID is stored for the whole site. WPML translates Elementor
