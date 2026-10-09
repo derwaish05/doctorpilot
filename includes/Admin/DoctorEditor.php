@@ -108,6 +108,21 @@ final class DoctorEditor {
 				'chooseImage' => __( 'Choose image', 'doctorpilot' ),
 				'removeImage' => __( 'Remove', 'doctorpilot' ),
 				'confirmRow'  => __( 'Remove this row?', 'doctorpilot' ),
+				'bulk'        => array(
+					'show'       => __( 'Bulk edit', 'doctorpilot' ),
+					'hide'       => __( 'Close bulk edit', 'doctorpilot' ),
+					'copied'     => __( 'Copied to the clipboard.', 'doctorpilot' ),
+					'copyFailed' => __( 'Could not copy automatically. Select the text and copy it manually.', 'doctorpilot' ),
+					'applied'    => __( 'Applied to the form. Press Update to save.', 'doctorpilot' ),
+					'nothing'    => __( 'Nothing to apply: no “### Field” headings were found.', 'doctorpilot' ),
+					'unknown'    => __( 'Unrecognised fields were ignored:', 'doctorpilot' ),
+					'unmatched'  => __( 'Not found, so not assigned:', 'doctorpilot' ),
+					'extraCells' => __( 'Rows with more columns than the field has were trimmed:', 'doctorpilot' ),
+					'fieldApply' => __( 'Apply', 'doctorpilot' ),
+					'fieldClose' => __( 'Close', 'doctorpilot' ),
+					'hintChips'  => __( 'One name per line. Names must match an existing option.', 'doctorpilot' ),
+					'hintRows'   => __( 'One row per line, columns separated by |:', 'doctorpilot' ),
+				),
 			)
 		);
 	}
