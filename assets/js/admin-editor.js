@@ -290,6 +290,571 @@
 		} );
 	}
 
+	/**
+	 * Bulk edit: a plain-text view over every field in the editor.
+	 *
+	 * Export reads the current form state into "## Section" / "### Field" blocks;
+	 * Apply parses pasted text and writes it back into the same inputs. Nothing is
+	 * saved until the editor presses Update, so sanitization stays server-side.
+	 */
+	var bulk = ( function () {
+		var BOOL_YES = /^(yes|y|true|1|x|on|✓)$/i;
+
+		function norm( str ) {
+			return String( str || '' ).replace( /\s+/g, ' ' ).trim().toLowerCase();
+		}
+
+		function labelOf( $field ) {
+			var $el = $field.find( '> .dp-field__head .dp-field__label' ).first();
+			if ( ! $el.length ) {
+				$el = $field.find( '> .dp-label' ).first();
+			}
+			if ( ! $el.length ) {
+				$el = $field.find( '.dp-flag__title' ).first();
+			}
+			var $clone = $el.clone();
+			$clone.find( '.dp-badge' ).remove();
+			return $clone.text().replace( /\s+/g, ' ' ).trim();
+		}
+
+		function chipName( $chip ) {
+			return $chip.find( '.dp-chip__label' ).clone().find( '.dp-chip__draft' ).remove().end()
+				.text().replace( /\s+/g, ' ' ).trim();
+		}
+
+		function escCell( v ) {
+			return String( v ).replace( /\\/g, '\\\\' ).replace( /\|/g, '\\|' ).replace( /\r?\n/g, '\\n' );
+		}
+
+		function splitRow( line ) {
+			var cells = [];
+			var cur = '';
+			for ( var i = 0; i < line.length; i++ ) {
+				var c = line.charAt( i );
+				if ( '\\' === c && i + 1 < line.length ) {
+					var n = line.charAt( i + 1 );
+					cur += 'n' === n ? '\n' : n;
+					i++;
+				} else if ( '|' === c ) {
+					cells.push( cur.trim() );
+					cur = '';
+				} else {
+					cur += c;
+				}
+			}
+			cells.push( cur.trim() );
+			return cells;
+		}
+
+		function cellInput( $cell ) {
+			return $cell.find( 'input[type="checkbox"], select, textarea, input[type="text"]' ).first();
+		}
+
+		function cellValue( $cell ) {
+			var $in = cellInput( $cell );
+			if ( ! $in.length ) {
+				return '';
+			}
+			if ( $in.is( ':checkbox' ) ) {
+				return $in.prop( 'checked' ) ? 'yes' : '';
+			}
+			if ( $in.is( 'select' ) ) {
+				return '0' === $in.val() || '' === $in.val() ? '' : $.trim( $in.find( 'option:selected' ).text() );
+			}
+			return $in.val();
+		}
+
+		function setSelect( $sel, text ) {
+			var want = norm( text );
+			var found = false;
+			if ( '' === want ) {
+				$sel.val( $sel.find( 'option' ).first().val() );
+				return true;
+			}
+			$sel.find( 'option' ).each( function () {
+				if ( norm( $( this ).text() ) === want || norm( $( this ).val() ) === want ) {
+					$sel.val( $( this ).val() );
+					found = true;
+					return false;
+				}
+			} );
+			return found;
+		}
+
+		function setCell( $cell, text ) {
+			var $in = cellInput( $cell );
+			if ( ! $in.length ) {
+				return true;
+			}
+			if ( $in.is( ':checkbox' ) ) {
+				$in.prop( 'checked', BOOL_YES.test( text.trim() ) );
+				return true;
+			}
+			if ( $in.is( 'select' ) ) {
+				return setSelect( $in, text );
+			}
+			$in.val( text ).trigger( 'input' );
+			return true;
+		}
+
+		/** Describe one .dp-field, or null when it has no bulk-editable input. */
+		function describe( $f, section ) {
+			var label = labelOf( $f );
+			if ( ! label ) {
+				return null;
+			}
+			var kind;
+			if ( $f.find( '.dp-chips' ).length ) {
+				kind = 'chips';
+			} else if ( $f.find( '.dp-repeater' ).length ) {
+				kind = 'repeater';
+			} else if ( $f.find( '.dp-single' ).length ) {
+				kind = 'single';
+			} else if ( $f.find( '> .dp-flag, .dp-flag' ).length ) {
+				kind = 'checkbox';
+			} else if ( $f.find( 'select' ).length ) {
+				kind = 'select';
+			} else if ( $f.find( 'textarea' ).length ) {
+				kind = 'textarea';
+			} else if ( $f.find( 'input[type="text"], input[type="number"]' ).length ) {
+				kind = 'text';
+			} else {
+				return null;
+			}
+			return { section: section || '', label: label, kind: kind, $f: $f };
+		}
+
+		/** Describe every field in the editor, in document order. */
+		function collect() {
+			var fields = [];
+			$( '.dp-editor .dp-panel' ).each( function () {
+				var $panel = $( this );
+				var section = $.trim( $panel.find( '.dp-pane-title' ).first().text() );
+				$panel.find( '.dp-pane-body .dp-field' ).each( function () {
+					var f = describe( $( this ), section );
+					if ( f ) {
+						fields.push( f );
+					}
+				} );
+			} );
+			return fields;
+		}
+
+		function rowCells( $row ) {
+			return $row.find( '.dp-row__fields > .dp-row-field' );
+		}
+
+		function readField( f ) {
+			var out = [];
+			switch ( f.kind ) {
+				case 'chips':
+					f.$f.find( '.dp-chip input:checked' ).each( function () {
+						out.push( chipName( $( this ).closest( '.dp-chip' ) ) );
+					} );
+					return out.join( '\n' );
+				case 'repeater':
+					f.$f.find( '.dp-rows > .dp-row' ).each( function () {
+						var cells = [];
+						rowCells( $( this ) ).each( function () {
+							cells.push( escCell( cellValue( $( this ) ) ) );
+						} );
+						out.push( cells.join( ' | ' ) );
+					} );
+					return out.join( '\n' );
+				case 'single':
+					var cells = [];
+					rowCells( f.$f.find( '.dp-single' ).first() ).each( function () {
+						cells.push( escCell( cellValue( $( this ) ) ) );
+					} );
+					return cells.join( ' | ' );
+				case 'checkbox':
+					return f.$f.find( 'input[type="checkbox"]' ).first().prop( 'checked' ) ? 'yes' : 'no';
+				case 'select':
+					var $sel = f.$f.find( 'select' ).first();
+					return '' === $sel.val() ? '' : $.trim( $sel.find( 'option:selected' ).text() );
+				case 'textarea':
+					return f.$f.find( 'textarea' ).first().val().replace( /\r\n/g, '\n' );
+				default:
+					return f.$f.find( 'input[type="text"], input[type="number"]' ).first().val();
+			}
+		}
+
+		function exportText() {
+			var lines = [];
+			var section = null;
+			$.each( collect(), function ( i, f ) {
+				if ( f.section !== section ) {
+					section = f.section;
+					lines.push( '## ' + section, '' );
+				}
+				lines.push( '### ' + f.label );
+				var v = readField( f );
+				if ( '' !== v ) {
+					lines.push( v );
+				}
+				lines.push( '' );
+			} );
+			return lines.join( '\n' ).replace( /\n+$/, '\n' );
+		}
+
+		/** Split text into [{section,label,body}] blocks. */
+		function parse( text ) {
+			var blocks = [];
+			var section = '';
+			var cur = null;
+			$.each( text.replace( /\r\n?/g, '\n' ).split( '\n' ), function ( i, line ) {
+				var h2 = line.match( /^##\s+(.+?)\s*$/ );
+				var h3 = line.match( /^###\s+(.+?)\s*$/ );
+				if ( h3 ) {
+					cur = { section: section, label: h3[ 1 ], body: [] };
+					blocks.push( cur );
+				} else if ( h2 ) {
+					section = h2[ 1 ];
+					cur = null;
+				} else if ( cur ) {
+					cur.body.push( line );
+				}
+			} );
+			$.each( blocks, function ( i, b ) {
+				b.body = b.body.join( '\n' ).replace( /^\n+|\n+$/g, '' );
+			} );
+			return blocks;
+		}
+
+		function applyChips( f, body, report ) {
+			var lookup = {};
+			f.$f.find( '.dp-chip' ).each( function () {
+				lookup[ norm( chipName( $( this ) ) ) ] = $( this ).find( 'input' )[ 0 ];
+			} );
+			var chosen = [];
+			$.each( body.split( '\n' ), function ( i, raw ) {
+				var line = $.trim( raw.replace( /^[-*•]\s+/, '' ) );
+				if ( ! line ) {
+					return;
+				}
+				if ( lookup[ norm( line ) ] ) {
+					chosen.push( lookup[ norm( line ) ] );
+					return;
+				}
+				// Fall back to a comma/semicolon list on one line.
+				var parts = line.split( /\s*[;,]\s*/ );
+				if ( parts.length > 1 ) {
+					$.each( parts, function ( j, part ) {
+						if ( ! part ) {
+							return;
+						}
+						if ( lookup[ norm( part ) ] ) {
+							chosen.push( lookup[ norm( part ) ] );
+						} else {
+							report.unmatched.push( f.label + ': ' + part );
+						}
+					} );
+					return;
+				}
+				report.unmatched.push( f.label + ': ' + line );
+			} );
+			f.$f.find( '.dp-chip input' ).each( function () {
+				var want = -1 !== chosen.indexOf( this );
+				if ( this.checked !== want ) {
+					this.checked = want;
+					$( this ).trigger( 'change' );
+				}
+			} );
+		}
+
+		function applyRows( f, body, report ) {
+			var $rep = f.$f.find( '.dp-repeater' ).first();
+			var $rows = $rep.find( '.dp-rows' );
+			var template = $rep.find( '.dp-row-template' ).html();
+			var lines = $.grep( body.split( '\n' ), function ( l ) { return '' !== $.trim( l ); } );
+			$rows.empty();
+			$.each( lines, function ( i, line ) {
+				var $row = $( $.parseHTML( $.trim( template ) ) ).filter( '.dp-row' ).first();
+				$rows.append( $row );
+				var $cells = rowCells( $row );
+				var cells = splitRow( line );
+				if ( cells.length > $cells.length ) {
+					report.extra.push( f.label + ' (row ' + ( i + 1 ) + ')' );
+				}
+				$cells.each( function ( c ) {
+					if ( ! setCell( $( this ), cells[ c ] || '' ) ) {
+						report.unmatched.push( f.label + ': ' + cells[ c ] );
+					}
+				} );
+			} );
+			renumberRepeater( $rep );
+		}
+
+		function applyField( f, body, report ) {
+			switch ( f.kind ) {
+				case 'chips':
+					applyChips( f, body, report );
+					break;
+				case 'repeater':
+					applyRows( f, body, report );
+					break;
+				case 'single':
+					var cells = splitRow( body.split( '\n' )[ 0 ] || '' );
+					rowCells( f.$f.find( '.dp-single' ).first() ).each( function ( c ) {
+						if ( ! setCell( $( this ), cells[ c ] || '' ) ) {
+							report.unmatched.push( f.label + ': ' + cells[ c ] );
+						}
+					} );
+					break;
+				case 'checkbox':
+					f.$f.find( 'input[type="checkbox"]' ).first().prop( 'checked', BOOL_YES.test( $.trim( body ) ) ).trigger( 'change' );
+					break;
+				case 'select':
+					var $sel = f.$f.find( 'select' ).first();
+					if ( ! setSelect( $sel, $.trim( body ) ) ) {
+						report.unmatched.push( f.label + ': ' + body );
+					}
+					$sel.trigger( 'change' );
+					break;
+				case 'textarea':
+					f.$f.find( 'textarea' ).first().val( body ).trigger( 'input' );
+					break;
+				default:
+					f.$f.find( 'input[type="text"], input[type="number"]' ).first()
+						.val( body.split( '\n' )[ 0 ] ).trigger( 'input' );
+			}
+		}
+
+		/** Turn a report into the status parts shared by both bulk UIs. */
+		function summarize( r, t ) {
+			var parts = [];
+			if ( r.unknown.length ) {
+				parts.push( t.unknown + ' ' + r.unknown.join( ', ' ) + '.' );
+			}
+			if ( r.unmatched.length ) {
+				parts.push( t.unmatched + ' ' + r.unmatched.join( '; ' ) + '.' );
+			}
+			if ( r.extra.length ) {
+				parts.push( t.extraCells + ' ' + r.extra.join( ', ' ) + '.' );
+			}
+			return parts;
+		}
+
+		function apply( text ) {
+			var fields = collect();
+			var blocks = parse( text );
+			var report = { applied: 0, unknown: [], unmatched: [], extra: [] };
+			var used = [];
+			var queue = [];
+
+			$.each( blocks, function ( i, b ) {
+				var want = norm( b.label );
+				var hit = null;
+				$.each( fields, function ( j, f ) {
+					if ( used.indexOf( j ) === -1 && norm( f.label ) === want && norm( f.section ) === norm( b.section ) ) {
+						hit = j;
+						return false;
+					}
+				} );
+				if ( null === hit ) {
+					$.each( fields, function ( j, f ) {
+						if ( used.indexOf( j ) === -1 && norm( f.label ) === want ) {
+							hit = j;
+							return false;
+						}
+					} );
+				}
+				if ( null === hit ) {
+					report.unknown.push( b.label );
+					return;
+				}
+				used.push( hit );
+				queue.push( { f: fields[ hit ], body: b.body } );
+			} );
+
+			// Chips first so primary department/specialty selects can match them.
+			queue.sort( function ( a, b ) {
+				return ( 'chips' === b.f.kind ? 1 : 0 ) - ( 'chips' === a.f.kind ? 1 : 0 );
+			} );
+			$.each( queue, function ( i, q ) {
+				applyField( q.f, q.body, report );
+				report.applied++;
+			} );
+			return report;
+		}
+
+		/** Read one field as bulk text. */
+		function exportField( f ) {
+			return readField( f );
+		}
+
+		/** Write bulk text into one field; returns the report. */
+		function applyOne( f, body ) {
+			var report = { applied: 1, unknown: [], unmatched: [], extra: [] };
+			applyField( f, body, report );
+			return report;
+		}
+
+		/** Column names of a repeater, in the order the cells are written. */
+		function columns( f ) {
+			var names = [];
+			var $row = f.$f.find( '.dp-rows > .dp-row' ).first();
+			if ( ! $row.length ) {
+				$row = $( $.parseHTML( $.trim( f.$f.find( '.dp-row-template' ).html() || '' ) ) ).filter( '.dp-row' ).first();
+			}
+			rowCells( $row ).each( function () {
+				var $c = $( this );
+				var text = $c.find( '.dp-row-field__label' ).first().text() || $.trim( $c.find( '.dp-row-field__check' ).text() );
+				names.push( $.trim( text ) );
+			} );
+			return names;
+		}
+
+		return {
+			exportText: exportText,
+			apply: apply,
+			blocks: parse,
+			describe: describe,
+			exportField: exportField,
+			applyOne: applyOne,
+			columns: columns,
+			summarize: summarize
+		};
+	}() );
+
+	function initBulkEdit() {
+		var $wrap = $( '.dp-bulk' );
+		if ( ! $wrap.length ) {
+			return;
+		}
+		var t = l10n.bulk || {};
+		var $toggle = $wrap.find( '.dp-bulk__toggle' );
+		var $panel = $wrap.find( '.dp-bulk__panel' );
+		var $text = $wrap.find( '.dp-bulk__text' );
+		var $status = $wrap.find( '.dp-bulk__status' );
+
+		function say( msg, isError ) {
+			$status.text( msg ).toggleClass( 'is-error', !! isError );
+		}
+
+		function open( isOpen ) {
+			$panel.prop( 'hidden', ! isOpen );
+			$toggle.attr( 'aria-expanded', isOpen ? 'true' : 'false' );
+			$toggle.find( '.dp-bulk__toggle-label' ).text( isOpen ? t.hide : t.show );
+			if ( isOpen ) {
+				$text.val( bulk.exportText() );
+				say( '' );
+				$text.trigger( 'focus' );
+			}
+		}
+
+		$toggle.on( 'click', function () {
+			open( $panel.prop( 'hidden' ) );
+		} );
+
+		$wrap.on( 'click', '.dp-bulk__reset', function () {
+			$text.val( bulk.exportText() );
+			say( '' );
+		} );
+
+		$wrap.on( 'click', '.dp-bulk__copy', function () {
+			var value = $text.val();
+			var done = function () { say( t.copied ); };
+			var fallback = function () {
+				$text.trigger( 'select' );
+				try {
+					say( document.execCommand( 'copy' ) ? t.copied : t.copyFailed, ! document.execCommand );
+				} catch ( e ) {
+					say( t.copyFailed, true );
+				}
+			};
+			if ( navigator.clipboard && window.isSecureContext ) {
+				navigator.clipboard.writeText( value ).then( done, fallback );
+			} else {
+				fallback();
+			}
+		} );
+
+		$wrap.on( 'click', '.dp-bulk__apply', function () {
+			var text = $text.val();
+			if ( ! bulk.blocks( text ).length ) {
+				say( t.nothing, true );
+				return;
+			}
+			var r = bulk.apply( text );
+			var parts = [ t.applied ].concat( bulk.summarize( r, t ) );
+			say( parts.join( ' ' ), r.unknown.length + r.unmatched.length + r.extra.length > 0 );
+		} );
+	}
+
+	/**
+	 * Per-field bulk edit: a "Bulk edit" link in the header of every chip list
+	 * and repeater, opening a small text box for just that field.
+	 */
+	function initFieldBulk() {
+		var t = l10n.bulk || {};
+
+		$( '.dp-editor .dp-field' ).each( function () {
+			var $f = $( this );
+			var $head = $f.children( '.dp-field__head' ).first();
+			var f = bulk.describe( $f, '' );
+			if ( ! $head.length || ! f || ( 'chips' !== f.kind && 'repeater' !== f.kind ) ) {
+				return;
+			}
+			$( '<button type="button" class="button-link dp-fbulk__toggle" aria-expanded="false"></button>' )
+				.text( t.show )
+				.attr( 'aria-label', t.show + ': ' + f.label )
+				.appendTo( $head );
+		} );
+
+		$( '.dp-editor' ).on( 'click', '.dp-fbulk__toggle', function () {
+			var $btn = $( this );
+			var $f = $btn.closest( '.dp-field' );
+			var $panel = $f.children( '.dp-fbulk' );
+
+			if ( $panel.length ) {
+				$panel.remove();
+				$btn.attr( 'aria-expanded', 'false' ).text( t.show );
+				return;
+			}
+
+			var f = bulk.describe( $f, '' );
+			var hint = 'chips' === f.kind ? t.hintChips : t.hintRows + ' ' + bulk.columns( f ).join( ' | ' );
+			$panel = $(
+				'<div class="dp-fbulk">' +
+					'<textarea class="dp-fbulk__text large-text" rows="8" spellcheck="false" autocomplete="off" data-lpignore="true" data-1p-ignore></textarea>' +
+					'<p class="dp-desc dp-fbulk__hint"></p>' +
+					'<div class="dp-fbulk__actions">' +
+						'<button type="button" class="button button-primary dp-fbulk__apply"></button>' +
+						'<button type="button" class="button dp-fbulk__cancel"></button>' +
+					'</div>' +
+					'<div class="dp-fbulk__status" role="status" aria-live="polite"></div>' +
+				'</div>'
+			);
+			$panel.find( '.dp-fbulk__text' ).val( bulk.exportField( f ) ).attr( 'aria-label', t.show + ': ' + f.label );
+			$panel.find( '.dp-fbulk__hint' ).text( hint );
+			$panel.find( '.dp-fbulk__apply' ).text( t.fieldApply );
+			$panel.find( '.dp-fbulk__cancel' ).text( t.fieldClose );
+
+			var $head = $f.children( '.dp-field__head' ).first();
+			$head.after( $panel );
+			$btn.attr( 'aria-expanded', 'true' ).text( t.hide );
+			$panel.find( '.dp-fbulk__text' ).trigger( 'focus' );
+		} );
+
+		$( '.dp-editor' ).on( 'click', '.dp-fbulk__cancel', function () {
+			var $f = $( this ).closest( '.dp-field' );
+			$f.children( '.dp-fbulk' ).remove();
+			$f.find( '.dp-fbulk__toggle' ).attr( 'aria-expanded', 'false' ).text( t.show ).trigger( 'focus' );
+		} );
+
+		$( '.dp-editor' ).on( 'click', '.dp-fbulk__apply', function () {
+			var $f = $( this ).closest( '.dp-field' );
+			var $panel = $f.children( '.dp-fbulk' );
+			var f = bulk.describe( $f, '' );
+			var r = bulk.applyOne( f, $panel.find( '.dp-fbulk__text' ).val().replace( /^\n+|\n+$/g, '' ) );
+			var parts = [ t.applied ].concat( bulk.summarize( r, t ) );
+			$panel.find( '.dp-fbulk__status' )
+				.text( parts.join( ' ' ) )
+				.toggleClass( 'is-error', parts.length > 1 );
+		} );
+	}
+
 	$( function () {
 		initTabs();
 		initRepeaters();
@@ -297,5 +862,7 @@
 		initPrimarySelects();
 		initSeo();
 		initMedia();
+		initBulkEdit();
+		initFieldBulk();
 	} );
 } )( window.jQuery );

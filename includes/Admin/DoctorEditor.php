@@ -142,6 +142,8 @@ final class DoctorEditor {
 
 		echo '<div class="dp-editor">';
 
+		$this->render_bulk_edit();
+
 		// WordPress-native tab strip (role="tablist" of buttons).
 		echo '<div class="dp-tabs" role="tablist" aria-label="' . esc_attr__( 'Doctor detail sections', 'doctorpilot' ) . '">';
 		$first = true;
@@ -205,6 +207,49 @@ final class DoctorEditor {
 			$first = false;
 		}
 
+		echo '</div>';
+	}
+
+	/**
+	 * Render the bulk-edit toggle and its (initially hidden) text panel.
+	 *
+	 * The panel is a view over the form: admin-editor.js writes the current field
+	 * values into the textarea and, on Apply, writes pasted text back into the same
+	 * inputs. Nothing is saved until the editor presses Update, so persistence and
+	 * sanitization stay with {@see SaveDoctor}.
+	 *
+	 * @return void
+	 */
+	private function render_bulk_edit(): void {
+		echo '<div class="dp-bulk">';
+		printf(
+			'<button type="button" class="button dp-bulk__toggle" aria-expanded="false" aria-controls="dp-bulk-panel"><span class="dashicons dashicons-edit-page" aria-hidden="true"></span> <span class="dp-bulk__toggle-label">%s</span></button>',
+			esc_html__( 'Bulk edit', 'doctorpilot' )
+		);
+		echo '<span class="dp-bulk__intro">' . esc_html__( 'Edit every section as plain text, so details can be copied from another doctor or a document and pasted in.', 'doctorpilot' ) . '</span>';
+
+		echo '<div class="dp-bulk__panel" id="dp-bulk-panel" hidden>';
+		echo '<label class="dp-label" for="dp-bulk-text">' . esc_html__( 'All doctor details', 'doctorpilot' ) . '</label>';
+		echo '<textarea id="dp-bulk-text" class="dp-bulk__text large-text" rows="18" spellcheck="false" autocomplete="off" data-lpignore="true" data-1p-ignore></textarea>';
+		echo '<ul class="dp-bulk__help">';
+		echo '<li>' . wp_kses(
+			__( '<code>## Section</code> and <code>### Field</code> headings name where each value goes. Fields you leave out are not changed; a field with nothing under it is cleared.', 'doctorpilot' ),
+			array( 'code' => array() )
+		) . '</li>';
+		echo '<li>' . esc_html__( 'Specialties, departments, languages and other chip lists: one name per line. Names must match an existing term.', 'doctorpilot' ) . '</li>';
+		echo '<li>' . wp_kses(
+			__( 'Repeater rows (education, experience, FAQs…): one row per line, columns separated by <code>|</code>, in the order shown in the editor. Write <code>\|</code> for a literal pipe and <code>\n</code> for a line break inside a cell.', 'doctorpilot' ),
+			array( 'code' => array() )
+		) . '</li>';
+		echo '<li>' . esc_html__( 'Yes/no options: write yes or no.', 'doctorpilot' ) . '</li>';
+		echo '</ul>';
+		echo '<div class="dp-bulk__actions">';
+		printf( '<button type="button" class="button button-primary dp-bulk__apply">%s</button>', esc_html__( 'Apply to form', 'doctorpilot' ) );
+		printf( '<button type="button" class="button dp-bulk__copy">%s</button>', esc_html__( 'Copy', 'doctorpilot' ) );
+		printf( '<button type="button" class="button dp-bulk__reset">%s</button>', esc_html__( 'Reload from form', 'doctorpilot' ) );
+		echo '</div>';
+		echo '<div class="dp-bulk__status" role="status" aria-live="polite"></div>';
+		echo '</div>';
 		echo '</div>';
 	}
 
