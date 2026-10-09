@@ -616,38 +616,6 @@
 
 .dp-hero__btn--ghost:hover { filter: brightness(0.96); }
 
-/* International doctors. The widget's "International doctors" style section
-   sets --dp-hero-intl-bg and --dp-hero-intl-text; the rules below paint them
-   and keep the breadcrumbs, name, headline, facts and chips readable. The
-   `!important` pair is deliberate: the Background section's gradient is
-   emitted on the wrapper-scoped `.dp-hero` selector, which no plain modifier
-   rule can outrank, and the whole point of the modifier is to replace that
-   gradient. Buttons are untouched on purpose: they keep the styling from the
-   Buttons section. */
-.dp-hero--international {
-	background-image: none !important;
-	background-color: var(--dp-hero-intl-bg, #e8f0f6) !important;
-	color: var(--dp-hero-intl-text, #1a4f74);
-}
-
-.dp-hero--international .dp-hero__crumbs,
-.dp-hero--international .dp-hero__current,
-.dp-hero--international .dp-hero__name,
-.dp-hero--international .dp-hero__v,
-.dp-hero--international .dp-hero__crumbs a:hover {
-	color: inherit;
-}
-
-.dp-hero--international .dp-hero__crumbs a,
-.dp-hero--international .dp-hero__role,
-.dp-hero--international .dp-hero__k,
-.dp-hero--international .dp-hero__chip {
-	color: inherit;
-	opacity: 0.75;
-}
-
-.dp-hero--international .dp-hero__chip { border-color: currentColor; }
-
 /* Upcoming visit: a label and a dated chip, shown for international doctors
    who have visit dates recorded. */
 .dp-hero__visit { margin: 0 0 18px; }

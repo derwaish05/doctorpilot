@@ -59,17 +59,15 @@ versioning.
   field. It uses the same format and matching rules; a repeater shows its column
   order under the box. Fields that are already plain text lists (such as
   Clinical interests) need no extra control.
-- **International doctors get their own header.** The doctor editor's Listing
-  flags box takes **Upcoming visit dates** — free text such as *16-17-18 May,
-  2025* — under the International doctor checkbox. When that checkbox is on,
-  the Page Header swaps to the background and text color set in its new
-  **International doctors** style section (a pale blue with dark teal text by
-  default) and shows the dates as an **Upcoming Visit** chip above the buttons,
-  with its own label, icon, typography and color controls. The buttons keep
-  the styling from the Buttons section, so an international profile offers the
-  same calls to action as every other one. A doctor without the flag is not
-  affected, and a flagged doctor with no dates gets the background but no
-  chip, never an empty label.
+- **Upcoming visit dates for international doctors.** The doctor editor's
+  Listing flags box takes **Upcoming visit dates** — free text such as
+  *16-17-18 May, 2025* — under the International doctor checkbox. When that
+  checkbox is on, the Page Header shows the dates as an **Upcoming Visit** chip
+  above the buttons, with its own label, icon, typography and color controls
+  (Style → Upcoming visit). The header is not restyled for international
+  doctors: it looks like every other doctor's, and the buttons keep the styling
+  from the Buttons section. A doctor without the flag is not affected, and a
+  flagged doctor with no dates gets no chip, never an empty label.
 - **Button links on the Page Header and the Doctor Grid / List.** The Page
   Header's Book and Call buttons each take an optional link, and the Doctor Grid
   / List's Booking button takes one in its Card elements section, under the

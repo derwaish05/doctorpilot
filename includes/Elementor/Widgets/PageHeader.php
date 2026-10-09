@@ -252,7 +252,7 @@ final class PageHeader extends AbstractWidget {
 			'visit_note',
 			array(
 				'type'            => \Elementor\Controls_Manager::RAW_HTML,
-				'raw'             => esc_html__( 'A doctor flagged as International gets the background and text color set under Style → International doctors, and their Upcoming visit dates from the doctor editor appear as a dated chip above the buttons. Nothing changes for other doctors.', 'doctorpilot' ),
+				'raw'             => esc_html__( 'A doctor flagged as International shows their Upcoming visit dates from the doctor editor as a dated chip above the buttons. Nothing changes for other doctors.', 'doctorpilot' ),
 				'content_classes' => 'elementor-descriptor',
 			)
 		);
@@ -499,11 +499,9 @@ final class PageHeader extends AbstractWidget {
 	}
 
 	/**
-	 * International doctor style controls: the hero background and text color
-	 * applied only while the doctor carries the International flag, plus the
-	 * Upcoming Visit label and date chip. Buttons are deliberately left to the
-	 * Buttons section, so an international profile keeps the same calls to
-	 * action as every other profile.
+	 * Upcoming Visit style controls: the label and date chip shown for an
+	 * International doctor with visit dates. The header itself is not restyled
+	 * for international doctors.
 	 *
 	 * @return void
 	 */
@@ -511,53 +509,8 @@ final class PageHeader extends AbstractWidget {
 		$this->start_controls_section(
 			'section_international',
 			array(
-				'label' => __( 'International doctors', 'doctorpilot' ),
+				'label' => __( 'Upcoming visit', 'doctorpilot' ),
 				'tab'   => \Elementor\Controls_Manager::TAB_STYLE,
-			)
-		);
-
-		$this->add_control(
-			'intl_note',
-			array(
-				'type'            => \Elementor\Controls_Manager::RAW_HTML,
-				'raw'             => esc_html__( 'Applies only when the doctor is flagged as International. Buttons keep the styling from the Buttons section.', 'doctorpilot' ),
-				'content_classes' => 'elementor-descriptor',
-			)
-		);
-
-		// A variable rather than a background rule: the Background section's
-		// gradient is emitted on `{{WRAPPER}} .dp-hero`, which outranks any
-		// plain modifier rule in the stylesheet, so the stylesheet's
-		// `.dp-hero--international` rule clears that gradient with `!important`
-		// and paints this variable instead. The variable keeps the editor's
-		// color in charge, and the stylesheet's fallback covers a page whose
-		// Elementor CSS was generated before this control existed.
-		$this->add_control(
-			'intl_bg_color',
-			array(
-				'label'     => __( 'Background color', 'doctorpilot' ),
-				'type'      => \Elementor\Controls_Manager::COLOR,
-				'default'   => '#e8f0f6',
-				'selectors' => array( '{{WRAPPER}} .dp-hero--international' => '--dp-hero-intl-bg: {{VALUE}};' ),
-			)
-		);
-
-		$this->add_control(
-			'intl_text_color',
-			array(
-				'label'       => __( 'Text color', 'doctorpilot' ),
-				'type'        => \Elementor\Controls_Manager::COLOR,
-				'default'     => '#1a4f74',
-				'description' => __( 'Breadcrumbs, name, headline, facts and chips. Buttons are not affected.', 'doctorpilot' ),
-				// Each text element is named here, not left to inherit: the
-				// Typography and Breadcrumb sections emit their own colors on
-				// `{{WRAPPER}} .dp-hero__name` and friends, and only a longer
-				// wrapper-scoped selector outranks those. The visit label is left
-				// out so its own color control below still wins.
-				'selectors'   => array(
-					'{{WRAPPER}} .dp-hero--international' => '--dp-hero-intl-text: {{VALUE}}; color: {{VALUE}};',
-					'{{WRAPPER}} .dp-hero--international .dp-hero__name, {{WRAPPER}} .dp-hero--international .dp-hero__role, {{WRAPPER}} .dp-hero--international .dp-hero__k, {{WRAPPER}} .dp-hero--international .dp-hero__v, {{WRAPPER}} .dp-hero--international .dp-hero__crumbs, {{WRAPPER}} .dp-hero--international .dp-hero__crumbs a, {{WRAPPER}} .dp-hero--international .dp-hero__crumbs a:hover, {{WRAPPER}} .dp-hero--international .dp-hero__current, {{WRAPPER}} .dp-hero--international .dp-hero__sep, {{WRAPPER}} .dp-hero--international .dp-hero__chip' => 'color: {{VALUE}};',
-				),
 			)
 		);
 
@@ -566,7 +519,6 @@ final class PageHeader extends AbstractWidget {
 			array(
 				'label'     => __( 'Upcoming visit label', 'doctorpilot' ),
 				'type'      => \Elementor\Controls_Manager::HEADING,
-				'separator' => 'before',
 				'condition' => array( 'visit_show' => 'yes' ),
 			)
 		);
@@ -1332,10 +1284,7 @@ final class PageHeader extends AbstractWidget {
 		// name; this is the optional section label a page might put over it.
 		$this->render_heading( $settings );
 
-		// The modifier is what the International doctors style section targets,
-		// so a doctor without the flag never picks up that background.
-		$hero_class = 'dp-hero' . ( $view['international'] ? ' dp-hero--international' : '' );
-		echo '<section class="' . esc_attr( $hero_class ) . '">';
+		echo '<section class="dp-hero">';
 		echo '<div class="dp-hero__inner">';
 
 		// Breadcrumb.
