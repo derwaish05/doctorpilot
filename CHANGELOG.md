@@ -12,17 +12,23 @@ versioning.
   heading, then a `### Field` heading and its value for each field — so details
   can be copied from one doctor, or from a document or spreadsheet, and pasted
   into another. Chip lists (specialties, departments, languages, symptoms,
-  conditions, treatments and shared library records) are one name per line and
-  must match an existing term; repeater rows (education, experience,
+  conditions, treatments and shared library records) are one name per line;
+  repeater rows (education, experience,
   certifications, FAQs…) are one row per line with columns separated by `|`
   (`\|` for a literal pipe, `\n` for a line break in a cell); yes/no options take
   yes or no. **Apply to form** fills the editor's own inputs and reports
   anything it ignored — unknown fields, names that matched no term, rows with
   too many columns — and nothing is saved until Update, so the normal
   sanitising and validation still apply. Fields left out of the pasted text are
-  unchanged; a field with nothing under its heading is cleared. Names that don't
-  match an existing term are never created automatically, so a typo can't add
-  a stray specialty.
+  unchanged; a field with nothing under its heading is cleared. Names in a taxonomy list
+  (departments, specialties, languages, symptoms, conditions, treatments) that
+  match no existing term show as ticked **(new)** chips and are created when you
+  press Update — not before, and untick a chip to drop it. Only editors who can
+  manage terms (`manage_doctorpilot_terms`) get this; for anyone else, and for
+  shared library records, an unmatched name is reported and not assigned. A name
+  that already exists is reused, never duplicated, and a line is split into
+  several names only when every part is an existing name, so "ENT, Head & Neck"
+  is one new term, not two.
 
   Every chip list and repeater also has its own **Bulk edit** link in its
   header — Departments, Specialties, Languages, Symptoms, Conditions,

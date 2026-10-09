@@ -112,6 +112,16 @@ Notes:
 
 All directory taxonomies are hierarchical (category-style, checkbox UI) so terms are managed as a curated, structured vocabulary rather than free-text tags.
 
+### 4.0 Term creation from the editor
+
+The doctor editor form submits, per taxonomy field, `doctorpilot[new_terms_{taxonomy}][]` — an array of term **names** — alongside the usual `doctorpilot[terms_{taxonomy}][]` ID list. `SaveDoctor::save_terms()` resolves it before assigning terms:
+
+- Skipped entirely unless `current_user_can( 'manage_doctorpilot_terms' )`; the taxonomy's `assign_terms` capability alone does not allow creating terms.
+- Each name is run through `sanitize_text_field()` and trimmed; empty names, names longer than 200 characters, and duplicates within the request (case-insensitive) are dropped; at most 100 names per field per save.
+- An existing term with that name (`get_term_by( 'name' )`) is reused; otherwise `wp_insert_term()` creates it at the top level. A `term_exists` error from a concurrent save resolves to the existing ID, so a retried save is idempotent.
+- The resulting IDs are merged with the submitted IDs before the existing validation (`term_exists`) and `wp_set_object_terms()`.
+- Only taxonomy terms are created this way. Global library records are separate posts and are never created from this field.
+
 All attach to `doctorpilot_doctor`. Public archives are enabled only when a supported native/Elementor template exists; otherwise rewrite is false to avoid thin pages.
 
 ### 4.1 Symptom term metadata

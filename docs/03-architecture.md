@@ -95,7 +95,7 @@ Canonical clinical data must never be stored only in Elementor document JSON, ca
 1. Authenticated request passes nonce and capability checks.
 2. Transport converts input to a doctor command.
 3. Field registry sanitizes types; domain validators enforce cross-field invariants.
-4. Repository saves post, terms, and meta in a controlled order.
+4. Repository saves post, terms, and meta in a controlled order. Taxonomy names submitted by the editor's Bulk edit (`new_terms_{taxonomy}`) are resolved first: an existing name is reused, otherwise the term is created — only when the user holds `manage_doctorpilot_terms` (ADR-0025) — and then assigned with the doctor's other terms.
 5. Library assignment lists are de-duplicated to unique IDs; the diff updates the reverse-reference index on affected global records; each local repeater row is given a stable key.
 6. Derived completeness/search values are rebuilt, with the search document including resolved global + local library content.
 7. Search/template caches and related facets are invalidated.

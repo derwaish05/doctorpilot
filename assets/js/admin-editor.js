@@ -522,11 +522,36 @@
 		}
 
 		function applyChips( f, body, report ) {
+			// Terms can be created when the form is saved; library records cannot.
+			var firstName = f.$f.find( '.dp-chip input' ).not( '[name*="[new_terms_"]' ).first().attr( 'name' ) || '';
+			var tax = taxFromChip( firstName );
+			var canCreate = !! ( l10n.canCreateTerms && tax );
+
+			// Names pending creation from an earlier apply are rebuilt from the text.
+			f.$f.find( '.dp-chip--new' ).remove();
+
 			var lookup = {};
 			f.$f.find( '.dp-chip' ).each( function () {
 				lookup[ norm( chipName( $( this ) ) ) ] = $( this ).find( 'input' )[ 0 ];
 			} );
 			var chosen = [];
+			var toCreate = [];
+
+			function addNew( name ) {
+				var key = norm( name );
+				if ( ! key ) {
+					return;
+				}
+				if ( canCreate ) {
+					if ( -1 === $.inArray( key, $.map( toCreate, norm ) ) ) {
+						toCreate.push( name );
+						report.created.push( f.label + ': ' + name );
+					}
+				} else {
+					report.unmatched.push( f.label + ': ' + name );
+				}
+			}
+
 			$.each( body.split( '\n' ), function ( i, raw ) {
 				var line = $.trim( raw.replace( /^[-*•]\s+/, '' ) );
 				if ( ! line ) {
@@ -536,23 +561,20 @@
 					chosen.push( lookup[ norm( line ) ] );
 					return;
 				}
-				// Fall back to a comma/semicolon list on one line.
-				var parts = line.split( /\s*[;,]\s*/ );
-				if ( parts.length > 1 ) {
+				// A comma/semicolon list on one line is only split when every part is a
+				// known name. Anything else is one name, so a new term such as
+				// "ENT, Head & Neck" is never cut in two and created as junk.
+				var parts = $.grep( line.split( /\s*[;,]\s*/ ), function ( x ) { return '' !== x; } );
+				var known = $.grep( parts, function ( x ) { return !! lookup[ norm( x ) ]; } );
+				if ( parts.length > 1 && known.length === parts.length ) {
 					$.each( parts, function ( j, part ) {
-						if ( ! part ) {
-							return;
-						}
-						if ( lookup[ norm( part ) ] ) {
-							chosen.push( lookup[ norm( part ) ] );
-						} else {
-							report.unmatched.push( f.label + ': ' + part );
-						}
+						chosen.push( lookup[ norm( part ) ] );
 					} );
 					return;
 				}
-				report.unmatched.push( f.label + ': ' + line );
+				addNew( line );
 			} );
+
 			f.$f.find( '.dp-chip input' ).each( function () {
 				var want = -1 !== chosen.indexOf( this );
 				if ( this.checked !== want ) {
@@ -560,6 +582,25 @@
 					$( this ).trigger( 'change' );
 				}
 			} );
+
+			// Pending chips submit under new_terms_{taxonomy}[]; unticking one drops it.
+			var $chips = f.$f.find( '.dp-chips' ).first();
+			$.each( toCreate, function ( i, name ) {
+				var $chip = $(
+					'<label class="dp-chip dp-chip--new is-selected">' +
+						'<input type="checkbox" checked />' +
+						'<span class="dp-chip__check dashicons dashicons-yes" aria-hidden="true"></span>' +
+						'<span class="dp-chip__label"><span class="dp-chip__name"></span> <em class="dp-chip__draft"></em></span>' +
+					'</label>'
+				);
+				$chip.find( 'input' )
+					.attr( 'name', firstName.replace( '[terms_', '[new_terms_' ) )
+					.val( name );
+				$chip.find( '.dp-chip__name' ).text( name );
+				$chip.find( '.dp-chip__draft' ).text( '(' + ( l10n.bulk.newTag || 'new' ) + ')' );
+				$chips.append( $chip );
+			} );
+			updateFieldCount( f.$f );
 		}
 
 		function applyRows( f, body, report ) {
@@ -623,6 +664,9 @@
 		/** Turn a report into the status parts shared by both bulk UIs. */
 		function summarize( r, t ) {
 			var parts = [];
+			if ( r.created.length ) {
+				parts.push( t.created + ' ' + r.created.join( '; ' ) + '.' );
+			}
 			if ( r.unknown.length ) {
 				parts.push( t.unknown + ' ' + r.unknown.join( ', ' ) + '.' );
 			}
@@ -635,10 +679,15 @@
 			return parts;
 		}
 
+		/** Whether a report holds anything the editor should double-check. */
+		function hasWarnings( r ) {
+			return r.unknown.length + r.unmatched.length + r.extra.length > 0;
+		}
+
 		function apply( text ) {
 			var fields = collect();
 			var blocks = parse( text );
-			var report = { applied: 0, unknown: [], unmatched: [], extra: [] };
+			var report = { applied: 0, unknown: [], unmatched: [], extra: [], created: [] };
 			var used = [];
 			var queue = [];
 
@@ -685,7 +734,7 @@
 
 		/** Write bulk text into one field; returns the report. */
 		function applyOne( f, body ) {
-			var report = { applied: 1, unknown: [], unmatched: [], extra: [] };
+			var report = { applied: 1, unknown: [], unmatched: [], extra: [], created: [] };
 			applyField( f, body, report );
 			return report;
 		}
@@ -713,7 +762,8 @@
 			exportField: exportField,
 			applyOne: applyOne,
 			columns: columns,
-			summarize: summarize
+			summarize: summarize,
+			hasWarnings: hasWarnings
 		};
 	}() );
 
@@ -778,7 +828,7 @@
 			}
 			var r = bulk.apply( text );
 			var parts = [ t.applied ].concat( bulk.summarize( r, t ) );
-			say( parts.join( ' ' ), r.unknown.length + r.unmatched.length + r.extra.length > 0 );
+			say( parts.join( ' ' ), bulk.hasWarnings( r ) );
 		} );
 	}
 
@@ -814,7 +864,10 @@
 			}
 
 			var f = bulk.describe( $f, '' );
-			var hint = 'chips' === f.kind ? t.hintChips : t.hintRows + ' ' + bulk.columns( f ).join( ' | ' );
+			var isTerms = 'chips' === f.kind && f.$f.find( '.dp-chip input[name*="[terms_"]' ).length > 0;
+			var hint = 'chips' === f.kind
+				? ( isTerms && l10n.canCreateTerms ? t.hintTerms : t.hintChips )
+				: t.hintRows + ' ' + bulk.columns( f ).join( ' | ' );
 			$panel = $(
 				'<div class="dp-fbulk">' +
 					'<textarea class="dp-fbulk__text large-text" rows="8" spellcheck="false" autocomplete="off" data-lpignore="true" data-1p-ignore></textarea>' +
@@ -851,7 +904,7 @@
 			var parts = [ t.applied ].concat( bulk.summarize( r, t ) );
 			$panel.find( '.dp-fbulk__status' )
 				.text( parts.join( ' ' ) )
-				.toggleClass( 'is-error', parts.length > 1 );
+				.toggleClass( 'is-error', bulk.hasWarnings( r ) );
 		} );
 	}
 
