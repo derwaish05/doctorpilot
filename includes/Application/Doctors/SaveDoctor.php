@@ -17,6 +17,7 @@ use BrainStudioz\DoctorPilot\Fields\Sanitizer;
 use BrainStudioz\DoctorPilot\Library\DoctorContentResolver;
 use BrainStudioz\DoctorPilot\Library\ReverseIndex;
 use BrainStudioz\DoctorPilot\PostTypes\DoctorPostType;
+use BrainStudioz\DoctorPilot\Support\Capabilities;
 use BrainStudioz\DoctorPilot\Taxonomies\Taxonomies;
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -72,6 +73,13 @@ final class SaveDoctor {
 	 * @var string
 	 */
 	public const NONCE_NAME = 'doctorpilot_doctor_nonce';
+
+	/**
+	 * Most terms one field may create in a single save.
+	 *
+	 * Bounds a pasted list so a mistaken paste cannot flood a taxonomy.
+	 */
+	private const MAX_NEW_TERMS = 100;
 
 	/**
 	 * Hook into save_post for the doctor post type.
@@ -373,7 +381,9 @@ final class SaveDoctor {
 				}
 			}
 
-			$ids   = array_unique( array_merge( $chip_ids, $sidebar_ids ) );
+			$new_ids = $this->create_requested_terms( $taxonomy, $raw[ 'new_' . $key ] ?? array() );
+
+			$ids   = array_unique( array_merge( $chip_ids, $sidebar_ids, $new_ids ) );
 			$valid = array();
 			foreach ( $ids as $id ) {
 				if ( $id > 0 && term_exists( $id, $taxonomy ) ) {
@@ -383,6 +393,70 @@ final class SaveDoctor {
 
 			wp_set_object_terms( $post_id, $valid, $taxonomy, false );
 		}
+	}
+
+	/**
+	 * Resolve names submitted from the editor's Bulk edit into term IDs, creating
+	 * the ones that do not exist yet.
+	 *
+	 * Creating a term needs the taxonomy's `manage_terms` capability
+	 * (`manage_doctorpilot_terms`), which assigning a term to a doctor does not,
+	 * so an editor without it gets no new terms and the names are ignored. A name
+	 * that already exists (case-insensitively, as WordPress matches names) is
+	 * reused rather than duplicated, which also makes a retried save idempotent.
+	 *
+	 * @param string $taxonomy Taxonomy key.
+	 * @param mixed  $names    Submitted names (untrusted).
+	 * @return array<int, int> Term IDs to assign.
+	 */
+	private function create_requested_terms( string $taxonomy, $names ): array {
+		if ( ! is_array( $names ) || array() === $names || ! current_user_can( Capabilities::MANAGE_TERMS ) ) {
+			return array();
+		}
+
+		$ids  = array();
+		$seen = array();
+
+		foreach ( $names as $name ) {
+			if ( ! is_string( $name ) ) {
+				continue;
+			}
+
+			$name = trim( sanitize_text_field( $name ) );
+			$fold = function_exists( 'mb_strtolower' ) ? mb_strtolower( $name ) : strtolower( $name );
+			if ( '' === $name || isset( $seen[ $fold ] ) ) {
+				continue;
+			}
+			// wp_terms.name is varchar(200); a longer value is truncated, so refuse it.
+			if ( ( function_exists( 'mb_strlen' ) ? mb_strlen( $name ) : strlen( $name ) ) > 200 ) {
+				continue;
+			}
+			if ( count( $seen ) >= self::MAX_NEW_TERMS ) {
+				break;
+			}
+			$seen[ $fold ] = true;
+
+			// By name, not term_exists(): that treats a numeric string as a term ID.
+			$existing = get_term_by( 'name', $name, $taxonomy );
+			if ( $existing instanceof \WP_Term ) {
+				$ids[] = (int) $existing->term_id;
+				continue;
+			}
+
+			$created = wp_insert_term( $name, $taxonomy );
+			if ( is_wp_error( $created ) ) {
+				// A concurrent request may have created it first.
+				$data = $created->get_error_data( 'term_exists' );
+				if ( is_numeric( $data ) ) {
+					$ids[] = (int) $data;
+				}
+				continue;
+			}
+
+			$ids[] = (int) $created['term_id'];
+		}
+
+		return $ids;
 	}
 
 	/**
