@@ -475,8 +475,7 @@ final class Menu {
 		// single-doctor view (works with free Elementor via the Doctor Profile
 		// widget, which auto-fills the current doctor).
 		if ( did_action( 'elementor/loaded' ) || defined( 'ELEMENTOR_VERSION' ) ) {
-			$current_tpl = (int) $settings['general']['single_doctor_template'];
-			$candidates  = get_posts(
+			$candidates = get_posts(
 				array(
 					'post_type'        => array( 'elementor_library', 'page' ),
 					'post_status'      => array( 'publish', 'private' ),
@@ -488,25 +487,44 @@ final class Menu {
 				)
 			);
 
-			echo '<tr><th scope="row"><label for="dp-single-template">' . esc_html__( 'Single doctor layout', 'doctorpilot' ) . '</label></th><td>';
-			printf( '<select name="%1$s[general][single_doctor_template]" id="dp-single-template">', esc_attr( Settings::OPTION_KEY ) );
-			printf(
-				'<option value="0" %1$s>%2$s</option>',
-				selected( 0, $current_tpl, false ),
-				esc_html__( 'Native template (default)', 'doctorpilot' )
+			$layouts = array(
+				'single_doctor_template'               => array(
+					'id'      => 'dp-single-template',
+					'label'   => __( 'Aman Hospital doctor layout', 'doctorpilot' ),
+					'default' => __( 'Native template (default)', 'doctorpilot' ),
+					'help'    => __( 'Design a page or Elementor template using the "Doctor Profile" widget (DoctorPilot category); it renders for every doctor without the International doctor flag. Choose "Native template" to use the built-in layout.', 'doctorpilot' ),
+				),
+				'single_doctor_template_international' => array(
+					'id'      => 'dp-single-template-international',
+					'label'   => __( 'International visiting doctor layout', 'doctorpilot' ),
+					'default' => __( 'Same as the Aman Hospital doctor layout (default)', 'doctorpilot' ),
+					'help'    => __( 'Rendered for doctors with the International doctor flag turned on. Leave on the default to give them the same layout as every other doctor.', 'doctorpilot' ),
+				),
 			);
-			foreach ( $candidates as $candidate ) {
-				$type_label = 'page' === $candidate->post_type ? __( 'Page', 'doctorpilot' ) : __( 'Template', 'doctorpilot' );
+
+			foreach ( $layouts as $layout_key => $layout ) {
+				$current_tpl = (int) $settings['general'][ $layout_key ];
+
+				echo '<tr><th scope="row"><label for="' . esc_attr( $layout['id'] ) . '">' . esc_html( $layout['label'] ) . '</label></th><td>';
+				printf( '<select name="%1$s[general][%2$s]" id="%3$s">', esc_attr( Settings::OPTION_KEY ), esc_attr( $layout_key ), esc_attr( $layout['id'] ) );
 				printf(
-					'<option value="%1$d" %2$s>%3$s</option>',
-					(int) $candidate->ID,
-					selected( (int) $candidate->ID, $current_tpl, false ),
-					esc_html( sprintf( '%1$s (%2$s #%3$d)', '' !== $candidate->post_title ? $candidate->post_title : __( '(untitled)', 'doctorpilot' ), $type_label, (int) $candidate->ID ) )
+					'<option value="0" %1$s>%2$s</option>',
+					selected( 0, $current_tpl, false ),
+					esc_html( $layout['default'] )
 				);
+				foreach ( $candidates as $candidate ) {
+					$type_label = 'page' === $candidate->post_type ? __( 'Page', 'doctorpilot' ) : __( 'Template', 'doctorpilot' );
+					printf(
+						'<option value="%1$d" %2$s>%3$s</option>',
+						(int) $candidate->ID,
+						selected( (int) $candidate->ID, $current_tpl, false ),
+						esc_html( sprintf( '%1$s (%2$s #%3$d)', '' !== $candidate->post_title ? $candidate->post_title : __( '(untitled)', 'doctorpilot' ), $type_label, (int) $candidate->ID ) )
+					);
+				}
+				echo '</select>';
+				echo '<p class="description">' . esc_html( $layout['help'] ) . '</p>';
+				echo '</td></tr>';
 			}
-			echo '</select>';
-			echo '<p class="description">' . esc_html__( 'Design a page or Elementor template using the "Doctor Profile" widget (DoctorPilot category); it renders for every doctor. Choose "Native template" to use the built-in layout.', 'doctorpilot' ) . '</p>';
-			echo '</td></tr>';
 		}
 
 		// Search page — where the Doctor Search Index widget sends a visitor who

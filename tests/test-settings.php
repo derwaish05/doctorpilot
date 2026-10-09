@@ -8,6 +8,8 @@
 declare( strict_types=1 );
 
 use BrainStudioz\DoctorPilot\Admin\Settings;
+use BrainStudioz\DoctorPilot\Fields\FieldRegistry;
+use BrainStudioz\DoctorPilot\PostTypes\DoctorPostType;
 
 /**
  * @covers \BrainStudioz\DoctorPilot\Admin\Settings
@@ -61,5 +63,64 @@ final class Test_DoctorPilot_Settings extends WP_UnitTestCase {
 		$clean    = $settings->sanitize( array( 'evil' => array( 'x' => 1 ) ) );
 
 		$this->assertArrayNotHasKey( 'evil', $clean );
+	}
+
+	/**
+	 * Store the two single-doctor layout IDs.
+	 *
+	 * @param int $standard      Standard layout ID.
+	 * @param int $international International layout ID.
+	 */
+	private function set_layouts( int $standard, int $international ): void {
+		update_option(
+			Settings::OPTION_KEY,
+			( new Settings() )->sanitize(
+				array(
+					'general' => array(
+						'single_doctor_template'               => $standard,
+						'single_doctor_template_international' => $international,
+					),
+				)
+			)
+		);
+	}
+
+	private function doctor( bool $international ): int {
+		$id = self::factory()->post->create( array( 'post_type' => DoctorPostType::POST_TYPE ) );
+		update_post_meta( $id, FieldRegistry::META_PREFIX . 'is_international', $international ? 1 : 0 );
+
+		return $id;
+	}
+
+	public function test_international_layout_defaults_to_unset(): void {
+		$this->assertSame( 0, Settings::defaults()['general']['single_doctor_template_international'] );
+	}
+
+	public function test_flagged_doctor_gets_the_international_layout(): void {
+		$standard      = self::factory()->post->create( array( 'post_type' => 'page' ) );
+		$international = self::factory()->post->create( array( 'post_type' => 'page' ) );
+		$this->set_layouts( $standard, $international );
+
+		$this->assertSame( $international, Settings::single_doctor_template_for( $this->doctor( true ) ) );
+		$this->assertSame( $standard, Settings::single_doctor_template_for( $this->doctor( false ) ) );
+	}
+
+	public function test_unset_international_layout_leaves_every_doctor_on_the_standard_one(): void {
+		$standard = self::factory()->post->create( array( 'post_type' => 'page' ) );
+		$this->set_layouts( $standard, 0 );
+
+		$this->assertSame( $standard, Settings::single_doctor_template_for( $this->doctor( true ) ) );
+	}
+
+	public function test_deleted_or_unpublished_international_layout_falls_back(): void {
+		$standard = self::factory()->post->create( array( 'post_type' => 'page' ) );
+		$draft    = self::factory()->post->create( array( 'post_type' => 'page', 'post_status' => 'draft' ) );
+		$flagged  = $this->doctor( true );
+
+		$this->set_layouts( $standard, $draft );
+		$this->assertSame( $standard, Settings::single_doctor_template_for( $flagged ) );
+
+		$this->set_layouts( $standard, 99999999 );
+		$this->assertSame( $standard, Settings::single_doctor_template_for( $flagged ) );
 	}
 }

@@ -7,6 +7,18 @@ versioning.
 ## [Unreleased]
 
 ### Added
+- **Separate single-doctor layouts for Aman Hospital and International visiting
+  doctors.** Settings → DoctorPilot now has two layout pickers: **Aman Hospital
+  doctor layout** (the existing "Single doctor layout", unchanged) and
+  **International visiting doctor layout**. A doctor with the International
+  doctor flag turned on gets the second; every other doctor gets the first. Left
+  on its default — "Same as the Aman Hospital doctor layout" — nothing changes
+  for anyone, so a site that never sets it behaves exactly as before. If the
+  chosen International layout is later deleted or unpublished, flagged doctors
+  fall back to the Aman layout rather than an empty page. Build each layout as
+  an Elementor page or template with the Doctor Profile widget, as before; the
+  page and its own stylesheet are loaded for the right doctor, so the two
+  designs never mix.
 - **International doctors get their own header.** The doctor editor's Listing
   flags box takes **Upcoming visit dates** — free text such as *16-17-18 May,
   2025* — under the International doctor checkbox. When that checkbox is on,

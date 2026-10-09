@@ -778,7 +778,8 @@ Use one versioned option object, `bstdz_doctorpilot_settings`, with schema:
     "per_page": 12,
     "default_sort": "relevance",
     "placeholder_attachment_id": 0,
-    "single_doctor_template": 0
+    "single_doctor_template": 0,
+    "single_doctor_template_international": 0
   },
   "search": {
     "minimum_characters": 2,
@@ -804,6 +805,8 @@ Use one versioned option object, `bstdz_doctorpilot_settings`, with schema:
   }
 }
 ```
+
+`general.single_doctor_template` is the layout for doctors without the International flag; `general.single_doctor_template_international` is the layout for doctors with `_doctorpilot_is_international` set. Both are an Elementor library template or page ID, `0` meaning "not set". `Settings::single_doctor_template_for( $doctor_id )` resolves a doctor to one ID: the International ID when it is > 0, the doctor is flagged, and the post is `publish` or `private`; otherwise the standard ID (which may itself be 0 for the native template). The key is merged in by `merge_defaults()`; no schema version bump or migration is needed.
 
 Unknown keys are discarded. Secrets are stored separately from exportable design/general settings and never autoloaded when large. Settings validation enforces ranges and safe enums.
 
