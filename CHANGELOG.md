@@ -7,6 +7,20 @@ versioning.
 ## [Unreleased]
 
 ### Changed
+- **The Default booking URL setting accepts any link, not just a full
+  `https://` address.** The field under DoctorPilot → Settings → Booking is now
+  a plain text input: relative paths such as `/book-an-appointment/` and
+  in-page anchors such as `#enquiry` (popup triggers) can be saved, where the
+  browser's URL validation previously refused to submit them. The booking
+  button is still protected at render time — the resolver revalidates every
+  destination and hides the button rather than emit an unsafe link.
+- **Page Header meta rows put the colon next to the label.** In the Department,
+  Languages, Email and Phone rows the colon now follows the label ("Phone:")
+  instead of sitting against the value. The label column sizes to the longest
+  label and values line up in one column, so long values such as a department
+  name wrap within the value column on mobile instead of being squeezed by a
+  fixed-width label column. The `.dp-hero__k` label colour and typography
+  controls cover the colon; the value no longer carries a leading ": ".
 - **The National / International filter reads "Aman Hospital Doctors" and
   "International Visiting Doctors".** The two choices in the directory filter,
   and the chip shown for the choice once it is applied, use the new wording. The

@@ -297,7 +297,12 @@ final class Settings {
 		$clean['booking']['default_type']   = self::enum( $booking['default_type'] ?? $current['booking']['default_type'], self::ALLOWED_BOOKING_METHODS, 'enquiry' );
 		$clean['booking']['default_label']  = sanitize_text_field( (string) ( $booking['default_label'] ?? $current['booking']['default_label'] ) );
 		$clean['booking']['default_target'] = self::enum( $booking['default_target'] ?? $current['booking']['default_target'], self::ALLOWED_TARGETS, '_blank' );
-		$clean['booking']['default_url']    = esc_url_raw( (string) ( $booking['default_url'] ?? $current['booking']['default_url'] ?? '' ), array( 'http', 'https' ) );
+		// Stored as plain text rather than forced through esc_url_raw(): the
+		// field accepts relative paths and in-page anchors (popup triggers)
+		// that strict URL sanitization would mangle. Safety is enforced where
+		// it matters — BookingResolver::is_safe() revalidates the destination
+		// before any button renders, and templates escape with esc_url().
+		$clean['booking']['default_url']    = sanitize_text_field( (string) ( $booking['default_url'] ?? $current['booking']['default_url'] ?? '' ) );
 		$clean['booking']['default_phone']  = self::sanitize_phone( $booking['default_phone'] ?? $current['booking']['default_phone'] ?? '' );
 
 		// Design.

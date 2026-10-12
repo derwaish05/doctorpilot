@@ -548,17 +548,20 @@
 
 .dp-hero__meta {
 	display: grid;
-	gap: 9px;
+	/* Label column sizes to the longest label; values line up in one column. */
+	grid-template-columns: max-content minmax(0, 1fr);
+	column-gap: 14px;
+	row-gap: 9px;
 	margin-bottom: 22px;
 }
 
 .dp-hero__row {
-	display: grid;
-	grid-template-columns: 160px 1fr;
+	display: contents;
 	font-size: 15px;
 }
 
 .dp-hero__k { color: rgba(255, 255, 255, 0.6); }
+.dp-hero__k::after { content: ":"; }
 .dp-hero__v { font-weight: 700; color: var(--dp-on-accent); }
 
 .dp-hero__tags {
@@ -652,7 +655,7 @@
 @media (max-width: 782px) {
 	.dp-hero__grid { grid-template-columns: 1fr; gap: 28px; }
 	.dp-hero__photo { max-width: 260px; margin-top: 0; }
-	.dp-hero__row { grid-template-columns: 130px 1fr; }
+	.dp-hero__meta { column-gap: 10px; }
 }
 
 /* International badge on the hero photo (top-left; specialty badge sits bottom). */

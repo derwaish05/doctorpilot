@@ -1549,7 +1549,7 @@ final class PageHeader extends AbstractWidget {
 		}
 		echo '<div class="dp-hero__row">';
 		echo '<span class="dp-hero__k">' . esc_html( $label ) . '</span>';
-		echo '<span class="dp-hero__v">: ' . esc_html( $value ) . '</span>';
+		echo '<span class="dp-hero__v">' . esc_html( $value ) . '</span>';
 		echo '</div>';
 	}
 

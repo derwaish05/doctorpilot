@@ -561,11 +561,11 @@ final class Menu {
 
 		echo '<tr><th scope="row"><label for="dp-booking-url">' . esc_html__( 'Default booking URL', 'doctorpilot' ) . '</label></th><td>';
 		printf(
-			'<input name="%1$s[booking][default_url]" id="dp-booking-url" type="url" class="regular-text" value="%2$s" placeholder="https://" />',
+			'<input name="%1$s[booking][default_url]" id="dp-booking-url" type="text" class="regular-text" value="%2$s" placeholder="https://" />',
 			esc_attr( Settings::OPTION_KEY ),
 			esc_attr( (string) ( $settings['booking']['default_url'] ?? '' ) )
 		);
-		echo '<p class="description">' . esc_html__( 'Site-wide booking page, used when a doctor books by URL but has none of their own.', 'doctorpilot' ) . '</p>';
+		echo '<p class="description">' . esc_html__( 'Site-wide booking page, used when a doctor books by URL but has none of their own. Full URLs, relative paths such as /book-an-appointment/, and in-page anchors such as #enquiry are all accepted.', 'doctorpilot' ) . '</p>';
 		echo '</td></tr>';
 
 		echo '<tr><th scope="row"><label for="dp-booking-phone">' . esc_html__( 'Default booking phone', 'doctorpilot' ) . '</label></th><td>';
