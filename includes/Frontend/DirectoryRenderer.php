@@ -64,8 +64,8 @@ final class DirectoryRenderer {
 			'az_show'      => true,
 			'read_query'   => true,
 			'default_sort' => 'name',
-			'modes'        => array( 'name', 'department', 'symptom' ),
-			'filters'      => array( 'sort', 'gender', 'language' ),
+			'modes'        => array( 'name', 'department' ),
+			'filters'      => array( 'sort', 'gender', 'language', 'international' ),
 			'prefill'      => array(),
 			'enqueue'      => true,
 			'settings'     => array(),
@@ -115,7 +115,8 @@ final class DirectoryRenderer {
 			? array_values( array_intersect( $modes, array_keys( self::INDEX_MODES ) ) )
 			: array();
 		// With no tab named in the URL the first one opens, so the A–Z index is
-		// on screen the moment the page loads — the same thing the widget does.
+		// on screen the moment the page loads — unless the request is a search
+		// result, which closes it below.
 		// Only the *displayed* index is defaulted: `$raw['mode']` is left alone,
 		// because writing a mode into the search request would narrow it.
 		$active_mode = sanitize_key( self::scalar( $raw['mode'] ?? '' ) );
@@ -130,6 +131,13 @@ final class DirectoryRenderer {
 
 		$request = SearchRequestFactory::from_array( $raw, $per_page );
 		$result  = ( new SearchService() )->search( $request );
+
+		// A search result shows the doctor grid alone. The index is how a
+		// visitor picks something; once a query, an index entry or a filter is
+		// applied, listing every name above the matches only pushes them down.
+		if ( self::is_search_result( $request, $result ) ) {
+			$active = '';
+		}
 
 		$view  = new DoctorView();
 		$cards = array();
@@ -195,6 +203,24 @@ final class DirectoryRenderer {
 		$data = self::data( $args );
 
 		include Templates::locate( 'directory.php' );
+	}
+
+	/**
+	 * Whether the request is a search result rather than the browse view.
+	 *
+	 * True once free text, an index entry or any filter is applied. Sort and
+	 * the open tab are not filters (`active_filters` already excludes them), so
+	 * reordering the list or switching tabs keeps the index on screen.
+	 *
+	 * Shared by the archive and the Doctor Grid / List widget so both close the
+	 * index in the same cases; `directory.js` mirrors it client-side.
+	 *
+	 * @param SearchRequest        $request Parsed search request.
+	 * @param array<string, mixed> $result  `SearchService::search()` result.
+	 * @return bool
+	 */
+	public static function is_search_result( SearchRequest $request, array $result ): bool {
+		return $request->has_query() || array() !== (array) ( $result['active_filters'] ?? array() );
 	}
 
 	/**

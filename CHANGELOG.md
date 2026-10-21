@@ -7,6 +7,18 @@ versioning.
 ## [Unreleased]
 
 ### Changed
+- **Search results show the doctor grid alone.** On the doctor archive and the
+  Doctor Grid / List widget, the A–Z index closes once a search is applied —
+  free text submitted, an index entry picked, or any filter chosen — so a link
+  like `/doctor/?department=adult-dentistry` opens straight on the matching
+  doctors instead of the full name list. Sort and switching tabs keep the
+  index open. Clear resets everything.
+- **By Symptom tab off by default; National / International filter on.** The
+  doctor archive's tabs are now By Doctor Name and By Department, and its
+  filter row adds the National / International select. Doctor Grid / List and
+  Doctor Search Index widgets that never changed their tabs or filters get the
+  same defaults; widgets with saved settings keep them, and By Symptom can
+  still be added back in the widget.
 - **The Default booking URL setting accepts any link, not just a full
   `https://` address.** The field under DoctorPilot → Settings → Booking is now
   a plain text input: relative paths such as `/book-an-appointment/` and

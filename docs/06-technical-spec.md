@@ -686,7 +686,15 @@ Widgets:
   region always holds the doctor output of the shared search services and
   refreshes from the public `/doctors` route. The **index** region sits above it
   and holds one hidden panel per browse tab; the `mode` parameter decides which
-  one is shown.
+  one is shown (the native archive opens its first tab when `mode` is absent).
+  `DirectoryRenderer::is_search_result()` — `SearchRequest::has_query()` or a
+  non-empty `active_filters` — closes the index on the server for both the
+  archive and the widget, whatever `mode` says. `directory.js` mirrors it with
+  `closeIndex()`: on submit, on picking an entry, and on any filter-row change
+  except `sort`. `closeIndex()` keeps index selections and unchecks the `mode`
+  radio, so the pushed URL has no `mode` and a reload renders the same view.
+  Default tabs are `name`, `department`; the archive's and the widget's default
+  filters are `sort`, `gender`, `language`, `international`.
 
   | Tab | Index source | Bound | Parameter an entry writes |
   | --- | --- | --- | --- |

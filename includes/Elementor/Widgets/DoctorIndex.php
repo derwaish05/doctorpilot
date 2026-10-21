@@ -101,7 +101,7 @@ final class DoctorIndex extends AbstractWidget {
 				'type'        => \Elementor\Controls_Manager::SELECT2,
 				'multiple'    => true,
 				'options'     => $this->mode_labels(),
-				'default'     => array( 'name', 'department', 'symptom' ),
+				'default'     => array( 'name', 'department' ),
 				'description' => __( 'One tab per entry. The first is the tab that opens.', 'doctorpilot' ),
 			)
 		);

@@ -17,6 +17,7 @@ use BrainStudioz\DoctorPilot\Application\Search\SearchService;
 use BrainStudioz\DoctorPilot\Domain\Search\SearchRequest;
 use BrainStudioz\DoctorPilot\Domain\Search\SearchRequestFactory;
 use BrainStudioz\DoctorPilot\Fields\FieldRegistry;
+use BrainStudioz\DoctorPilot\Frontend\DirectoryRenderer;
 use BrainStudioz\DoctorPilot\Frontend\Templates;
 use BrainStudioz\DoctorPilot\PostTypes\DoctorPostType;
 use BrainStudioz\DoctorPilot\Rest\RouteRegistry;
@@ -429,7 +430,7 @@ final class DoctorGridList extends AbstractWidget {
 				'type'        => \Elementor\Controls_Manager::SELECT2,
 				'multiple'    => true,
 				'options'     => $this->mode_labels(),
-				'default'     => array( 'name', 'department', 'symptom' ),
+				'default'     => array( 'name', 'department' ),
 				'description' => __( 'Each tab opens an A–Z index above the results — doctor names, departments, specialties or symptoms — and picking an entry filters the doctors shown below. Leave empty to hide the tabs.', 'doctorpilot' ),
 				'condition'   => array( 'search_show' => 'yes' ),
 			)
@@ -442,7 +443,7 @@ final class DoctorGridList extends AbstractWidget {
 				'type'        => \Elementor\Controls_Manager::SELECT2,
 				'multiple'    => true,
 				'options'     => $this->filter_labels(),
-				'default'     => array( 'sort', 'gender', 'language' ),
+				'default'     => array( 'sort', 'gender', 'language', 'international' ),
 				'description' => __( 'Taxonomy filters only appear when the site has matching terms.', 'doctorpilot' ),
 				'separator'   => 'before',
 			)
@@ -844,6 +845,11 @@ final class DoctorGridList extends AbstractWidget {
 
 		$request = SearchRequestFactory::from_array( $raw, $per_page );
 		$result  = ( new SearchService() )->search( $request );
+
+		// A search result shows the doctor grid alone, as on the archive.
+		if ( DirectoryRenderer::is_search_result( $request, $result ) ) {
+			$active = '';
+		}
 
 		$view  = new DoctorView();
 		$cards = array();

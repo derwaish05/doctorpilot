@@ -289,6 +289,7 @@
 			this.form.addEventListener( 'submit', function ( event ) {
 				event.preventDefault();
 				window.clearTimeout( self.timer );
+				self.closeIndex();
 				self.update();
 			} );
 
@@ -299,6 +300,10 @@
 				}
 				if ( target.type === 'radio' && target.name === 'mode' ) {
 					self.setIndex( self.indexFor( target.value ) );
+				} else if ( target.name !== 'sort' && ( target.tagName === 'SELECT' || target.type === 'checkbox' ) ) {
+					// A filter turns the view into a search result, which shows
+					// the grid alone. Sort only reorders, so it keeps the index.
+					self.closeIndex();
 				}
 				if ( target.tagName === 'SELECT' || target.type === 'checkbox' || target.type === 'radio' ) {
 					self.update();
@@ -426,6 +431,39 @@
 	};
 
 	/**
+	 * Close the index once the view becomes a search result, keeping every
+	 * selection: the picked entry is the filter the results now show.
+	 *
+	 * The tab radio is unchecked too, so the URL carries no `mode` and a reload
+	 * lands on the same grid-only view the server renders for a search result.
+	 */
+	Directory.prototype.closeIndex = function () {
+		var self = this;
+
+		if ( this.activeIndex === '' ) {
+			return;
+		}
+
+		if ( this.form ) {
+			Array.prototype.forEach.call( this.form.querySelectorAll( 'input[name="mode"]' ), function ( input ) {
+				input.checked = false;
+			} );
+		}
+
+		this.activeIndex = '';
+		this.letter = '';
+
+		Object.keys( this.panels ).forEach( function ( name ) {
+			self.panels[ name ].hidden = true;
+		} );
+
+		if ( this.index ) {
+			this.index.hidden = true;
+		}
+		this.root.setAttribute( 'data-active-index', '' );
+	};
+
+	/**
 	 * Record an index selection in the form and mark the chosen row.
 	 */
 	Directory.prototype.setSelection = function ( mode, value ) {
@@ -481,6 +519,11 @@
 		var next = this.selection( this.activeIndex ) === value ? '' : value;
 
 		this.setSelection( this.activeIndex, next );
+		// Picking an entry produces a search result, shown as the grid alone.
+		// Unpicking one leaves the visitor browsing, so the index stays open.
+		if ( next !== '' ) {
+			this.closeIndex();
+		}
 		this.update();
 	};
 

@@ -3,11 +3,11 @@
  * Doctor directory template: optional search bar, browse tabs, filters, an A–Z
  * browse index for the active tab, and the doctor results below it.
  *
- * The index and the results are two separate regions that are on screen at the
- * same time. A tab decides which index is shown; picking an entry in that index
- * writes the index's own search parameter (`doctor`, `department`, `specialty`,
- * `symptom`) and narrows the results underneath. Nothing is ever swapped out,
- * so a visitor can see what they picked and what it produced together.
+ * The index and the results are two separate regions. A tab decides which index
+ * is shown; picking an entry in that index writes the index's own search
+ * parameter (`doctor`, `department`, `specialty`, `symptom`) and narrows the
+ * results underneath. A search result — free text, an index entry or a filter
+ * applied — closes the index, so the results are shown as the doctor grid alone.
  *
  * Expects $data with keys: settings, request, indexes, selected, cards, result,
  * active_index, letter, query, layout, search_on, index_modes, index_params,
